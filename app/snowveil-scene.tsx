@@ -130,6 +130,31 @@ export function SnowveilScene() {
           },
         });
 
+        const snowOverlayPipeline = activeDevice.createRenderPipeline({
+          label: "Snowveil foreground snow pipeline",
+          layout: "auto",
+          vertex: { module: skyShaderModule, entryPoint: "vsMain" },
+          fragment: {
+            module: skyShaderModule,
+            entryPoint: "fsSnowOverlay",
+            targets: [
+              {
+                format,
+                blend: {
+                  color: { srcFactor: "src-alpha", dstFactor: "one-minus-src-alpha" },
+                  alpha: { srcFactor: "one", dstFactor: "one-minus-src-alpha" },
+                },
+              },
+            ],
+          },
+          primitive: { topology: "triangle-list" },
+          depthStencil: {
+            format: "depth24plus",
+            depthWriteEnabled: false,
+            depthCompare: "always",
+          },
+        });
+
         const terrainPipeline = activeDevice.createRenderPipeline({
           label: "Snowveil raster terrain pipeline",
           layout: "auto",
@@ -167,6 +192,10 @@ export function SnowveilScene() {
         });
         const terrainBindGroup = activeDevice.createBindGroup({
           layout: terrainPipeline.getBindGroupLayout(0),
+          entries: [{ binding: 0, resource: { buffer: uniformBuffer } }],
+        });
+        const snowOverlayBindGroup = activeDevice.createBindGroup({
+          layout: snowOverlayPipeline.getBindGroupLayout(0),
           entries: [{ binding: 0, resource: { buffer: uniformBuffer } }],
         });
         const uniforms = new Float32Array(16);
@@ -302,6 +331,9 @@ export function SnowveilScene() {
           pass.setVertexBuffer(0, terrainVertexBuffer);
           pass.setIndexBuffer(terrainIndexBuffer, "uint32");
           pass.drawIndexed(terrainIndices.length);
+          pass.setPipeline(snowOverlayPipeline);
+          pass.setBindGroup(0, snowOverlayBindGroup);
+          pass.draw(3);
           pass.end();
           activeDevice.queue.submit([encoder.finish()]);
 

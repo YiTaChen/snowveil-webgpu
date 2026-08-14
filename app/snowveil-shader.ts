@@ -81,6 +81,27 @@ fn snowParticles(uv: vec2<f32>, time: f32) -> f32 {
   return result;
 }
 
+fn foregroundSnow(uv: vec2<f32>, time: f32) -> f32 {
+  let aspect = globals.viewport.x / max(globals.viewport.y, 1.0);
+  let point = (uv - 0.5) * vec2<f32>(aspect, 1.0);
+  var result = 0.0;
+  for (var layer = 0; layer < 2; layer = layer + 1) {
+    let depth = f32(layer) + 1.0;
+    let scale = 8.5 + depth * 6.0;
+    let samplePoint = point * scale + vec2<f32>(time * 0.17, time * 1.45 + time * 0.22 * depth);
+    let cell = floor(samplePoint);
+    let local = fract(samplePoint) - 0.5;
+    let random = hash22(cell + f32(layer) * 113.0);
+    let offset = (random - 0.5) * 0.76;
+    let flake = local - offset;
+    let stretched = length(vec2<f32>(flake.x * 1.45, flake.y * 0.68));
+    let size = mix(0.018, 0.052, random.x) / depth;
+    let enabled = step(0.72, hash12(cell + vec2<f32>(33.7, 94.1)));
+    result = result + (1.0 - smoothstep(size * 0.2, size, stretched)) * enabled / depth;
+  }
+  return result;
+}
+
 fn aces(color: vec3<f32>) -> vec3<f32> {
   let a = 2.51;
   let b = 0.03;
@@ -119,6 +140,13 @@ fn fsMain(input: SkyVertexOut) -> @location(0) vec4<f32> {
   let grain = hash12(input.uv * resolution + fract(time) * 91.0) - 0.5;
   color = aces(color * 1.07) + grain * 0.007;
   return vec4<f32>(pow(max(color, vec3<f32>(0.0)), vec3<f32>(0.95)), 1.0);
+}
+
+@fragment
+fn fsSnowOverlay(input: SkyVertexOut) -> @location(0) vec4<f32> {
+  let flake = foregroundSnow(input.uv, globals.viewport.z);
+  let alpha = saturate(flake * 0.42);
+  return vec4<f32>(vec3<f32>(0.78, 0.89, 0.96), alpha);
 }
 `;
 
@@ -272,12 +300,14 @@ fn fsTerrain(input: TerrainVertexOut) -> @location(0) vec4<f32> {
   let across = vec2<f32>(-wind.y, wind.x);
 
   var normal = normalize(input.worldNormal);
+  let detailFade = 1.0 - smoothstep(18.0, 62.0, input.viewDistance);
   let microA = noise2(input.worldPosition.xz * 31.0) - 0.5;
   let microB = noise2(input.worldPosition.xz * 57.0 + 19.0) - 0.5;
-  let ripple = sin(dot(input.worldPosition.xz, across) * 2.9 + noise2(input.worldPosition.xz * 0.68) * 2.2);
+  let microC = noise2(vec2<f32>(dot(input.worldPosition.xz, across) * 8.7, dot(input.worldPosition.xz, wind) * 0.7)) - 0.5;
+  let ripple = sin(dot(input.worldPosition.xz, across) * 3.8 + noise2(input.worldPosition.xz * 0.68) * 2.2);
   normal = normalize(
-    normal + vec3<f32>(microA * 0.032, 0.0, microB * 0.032) +
-    vec3<f32>(across.x, 0.0, across.y) * ripple * 0.018
+    normal + vec3<f32>(microA * 0.054, 0.0, microB * 0.054) * detailFade +
+    vec3<f32>(across.x, 0.0, across.y) * (ripple * 0.032 + microC * 0.045) * detailFade
   );
 
   let direct = saturate(dot(normal, sunDirection));
@@ -299,17 +329,17 @@ fn fsTerrain(input: TerrainVertexOut) -> @location(0) vec4<f32> {
 
   let glintCell = floor(input.worldPosition.xz * 190.0);
   let glintSeed = hash12(glintCell);
-  let glintMask = smoothstep(0.9975, 1.0, glintSeed);
+  let glintMask = smoothstep(0.996, 1.0, glintSeed);
   let glintDistance = 1.0 - smoothstep(8.0, 44.0, input.viewDistance);
   let glint = glintMask * pow(saturate(dot(normal, halfway)), 96.0) * shadow * glintDistance;
-  let ridgeTone = pow(abs(sin(dot(input.worldPosition.xz, across) * 3.2)), 24.0);
-  let surfaceVariation = 0.955 + 0.045 * noise2(input.worldPosition.xz * 3.1) - ridgeTone * 0.012;
+  let ridgeTone = pow(abs(sin(dot(input.worldPosition.xz, across) * 3.2)), 24.0) * detailFade;
+  let surfaceVariation = 0.95 + 0.05 * noise2(input.worldPosition.xz * 3.1) - ridgeTone * 0.018;
 
   var snow = base * (bounce + warmSun * wrapped * shadow * 1.35 + subsurface);
   snow = snow * surfaceVariation;
   snow = snow + vec3<f32>(1.0, 0.84, 0.62) * roughSpecular * 0.46;
   snow = snow + vec3<f32>(0.76, 0.9, 1.0) * fresnel * 0.15;
-  snow = snow + vec3<f32>(1.0, 0.9, 0.7) * glint * 2.2;
+  snow = snow + vec3<f32>(1.0, 0.9, 0.7) * glint * 3.4;
 
   let rayDirection = -viewDirection;
   let fog = smoothstep(16.0, 82.0, input.viewDistance);

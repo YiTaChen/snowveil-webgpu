@@ -39,8 +39,11 @@ Original project code is released under the [MIT License](./LICENSE).
 
 ## Milestones
 
-1. Cinematic snow visual gate.
+1. Cinematic snow visual gate — in progress; stable raster baseline established.
 2. Geometry terrain and temporal rendering.
 3. Persistent deformable snow.
 4. Character motion, contact, and snow-surfing.
 5. Original spell interactions and performance hardening.
+
+The current build is a development milestone, not a claim that the final visual
+gate has passed. See [PERF.md](./PERF.md) and [QUALITY.md](./QUALITY.md).
