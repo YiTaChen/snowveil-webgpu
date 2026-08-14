@@ -53,6 +53,7 @@ export function SnowveilScene() {
     let playerHeading = 0;
     let playerVelocityX = 0;
     let playerVelocityZ = 0;
+    let spellAge = 100;
     const pressedKeys = new Set<string>();
     const keyPulseUntil = new Map<string, number>();
 
@@ -91,6 +92,9 @@ export function SnowveilScene() {
       }
       pressedKeys.add(event.code);
       keyPulseUntil.set(event.code, performance.now() + 145);
+      if (event.code === "Space" && !event.repeat) {
+        spellAge = 0;
+      }
     };
 
     const onKeyUp = (event: KeyboardEvent) => {
@@ -520,6 +524,8 @@ export function SnowveilScene() {
             playerHeading += headingDelta * (1 - Math.exp(-delta * 9));
           }
           const playerY = snowHeightAt(playerX, playerZ);
+          spellAge += delta;
+          const spellPulse = Math.exp(-spellAge * 2.7);
 
           uniforms[0] = canvas.width;
           uniforms[1] = canvas.height;
@@ -531,8 +537,8 @@ export function SnowveilScene() {
           uniforms[7] = 0.72;
           uniforms[8] = dragging ? 1 : 0;
           uniforms[9] = playerY;
-          uniforms[10] = inputLength;
-          uniforms[11] = 0;
+          uniforms[10] = spellPulse;
+          uniforms[11] = spellAge;
           uniforms[12] = playerX;
           uniforms[13] = playerZ;
           uniforms[14] = playerHeading;
@@ -640,7 +646,7 @@ export function SnowveilScene() {
         ref={canvasRef}
         className="snowveil__canvas"
         data-ready={sceneState === "ready"}
-        aria-label="Interactive procedural snow landscape. Drag to orbit and scroll to change distance."
+        aria-label="Interactive procedural snow landscape. Ride with WASD, cast with Space, drag to orbit, and scroll to change distance."
       />
 
       <div className="snowveil__veil" aria-hidden="true" />
@@ -653,7 +659,7 @@ export function SnowveilScene() {
 
       {sceneState === "ready" && (
         <footer className="snowveil__footer">
-          <span>WASD to ride</span>
+          <span>WASD ride · Space cast</span>
           <span className="snowveil__rule" aria-hidden="true" />
           <span ref={speedRef}>0.0 m/s</span>
           <span className="snowveil__rule" aria-hidden="true" />

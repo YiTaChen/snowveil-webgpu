@@ -109,6 +109,7 @@ export function createRiderGeometry() {
   addSphere([0, 1.57, -0.268], [0.15, 0.13, 0.048], 4, 20, 12);
   addSphere([0.37, 1.18, -0.25], [0.086, 0.11, 0.086], 9, 18, 12);
   addSphere([0, 1.39, -0.245], [0.1, 0.065, 0.065], 8, 18, 10);
+  addSphere([0.9, 0.88, -3.2], [0.155, 0.155, 0.155], 11, 24, 14);
 
   return {
     vertices: new Float32Array(vertices),

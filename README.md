@@ -23,8 +23,8 @@ npm run build
 This starter does not use `wrangler.jsonc`.
 
 Use a desktop browser with WebGPU enabled. Ride with WASD or the arrow keys,
-drag the scene to orbit, hold Shift for a faster traverse, and use the mouse
-wheel to change camera distance.
+cast Ice Pulse with Space, drag the scene to orbit, hold Shift for a faster
+traverse, and use the mouse wheel to change camera distance.
 
 ## Originality and licensing
 
@@ -44,7 +44,7 @@ Original project code is released under the [MIT License](./LICENSE).
 2. Temporal stability and measured capture evidence.
 3. Persistent GPU deformable snow — interactive baseline established.
 4. Character motion, contact, and snow-surfing — prototype in progress.
-5. Original spell interactions and performance hardening.
+5. Original spell interactions and performance hardening — Ice Pulse baseline established.
 
 The current build is a development milestone, not a claim that the final visual
 gate has passed. See [PERF.md](./PERF.md) and [QUALITY.md](./QUALITY.md).

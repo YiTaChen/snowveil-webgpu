@@ -66,3 +66,17 @@ its separated parts read as a toy. The active prototype is generated as one
 project-owned mesh: a ring-profiled tapered cloak, hood, face inset, curved
 double-sided scarf, board, clasp, and emissive focus. It has a coherent silhouette
 and supports lean and cloth motion, but its final character-art gate remains open.
+
+## 2026-08-13 — Ice Pulse shares snow simulation history
+
+Space casts the original Ice Pulse interaction at a point ahead and to the
+rider's right. The compute pass presses a shallow centre into the snow and lifts
+an annular displacement ridge. The green channel of the existing deformation
+history stores a slowly fading procedural frost residue, so a cast remains
+visually verifiable after the emissive projectile and screen-space energy ring
+have disappeared. No decal or external effect asset is used.
+
+The first energy target overlapped the rider's head in the review still and was
+rejected. The offset target now creates a readable rider–projectile–impact
+composition. Speed-dependent foreground spray also moves behind the rider rather
+than crossing the cloak silhouette.

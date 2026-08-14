@@ -102,6 +102,44 @@ fn foregroundSnow(uv: vec2<f32>, time: f32) -> f32 {
   return result;
 }
 
+fn riderSpray(uv: vec2<f32>, time: f32, speed: f32) -> f32 {
+  if (speed < 0.04) {
+    return 0.0;
+  }
+  let aspect = globals.viewport.x / max(globals.viewport.y, 1.0);
+  let point = (uv - vec2<f32>(0.5, 0.405)) * vec2<f32>(aspect, 1.0);
+  if (length(point) > 0.42) {
+    return 0.0;
+  }
+  var result = 0.0;
+  for (var particle = 0; particle < 16; particle = particle + 1) {
+    let id = f32(particle);
+    let seed = hash12(vec2<f32>(id * 17.31, id * 9.73 + 4.2));
+    let age = fract(time * (0.72 + seed * 0.46) + seed * 7.1);
+    let side = hash12(vec2<f32>(id + 31.0, id * 3.7)) - 0.5;
+    let origin = vec2<f32>(side * 0.16, 0.0);
+    let drift = vec2<f32>(side * age * (0.18 + speed * 0.14), -age * (0.07 + speed * 0.15));
+    let particlePosition = origin + drift;
+    let size = mix(0.008, 0.0028, age) * (0.35 + speed * 0.72);
+    let flake = 1.0 - smoothstep(size * 0.25, size, length(point - particlePosition));
+    result = result + flake * (1.0 - age) * speed;
+  }
+  return result;
+}
+
+fn spellBurst(uv: vec2<f32>, pulse: f32) -> f32 {
+  if (pulse < 0.01) {
+    return 0.0;
+  }
+  let aspect = globals.viewport.x / max(globals.viewport.y, 1.0);
+  let point = (uv - vec2<f32>(0.543, 0.58)) * vec2<f32>(aspect, 1.0);
+  let radius = length(point);
+  let ringRadius = 0.025 + (1.0 - pulse) * 0.105;
+  let ring = 1.0 - smoothstep(0.008, 0.024, abs(radius - ringRadius));
+  let core = 1.0 - smoothstep(0.0, 0.038, radius);
+  return (ring * 0.8 + core * pulse) * pulse;
+}
+
 fn aces(color: vec3<f32>) -> vec3<f32> {
   let a = 2.51;
   let b = 0.03;
@@ -140,8 +178,11 @@ fn fsMain(input: SkyVertexOut) -> @location(0) vec4<f32> {
 @fragment
 fn fsSnowOverlay(input: SkyVertexOut) -> @location(0) vec4<f32> {
   let flake = foregroundSnow(input.uv, globals.viewport.z);
-  let alpha = saturate(flake * 0.42);
-  return vec4<f32>(vec3<f32>(0.78, 0.89, 0.96), alpha);
+  let spray = riderSpray(input.uv, globals.viewport.z, globals.reserved.w);
+  let spell = spellBurst(input.uv, globals.weather.z);
+  let alpha = saturate(flake * 0.42 + spray * 0.48 + spell * 0.68);
+  let color = mix(vec3<f32>(0.78, 0.89, 0.96), vec3<f32>(0.18, 0.76, 1.0) * 2.4, saturate(spell * 1.8));
+  return vec4<f32>(color, alpha);
 }
 `;
 
@@ -202,12 +243,16 @@ fn outcropField(point: vec2<f32>) -> f32 {
   return max(outcropA, outcropB);
 }
 
-fn snowDeformation(point: vec2<f32>) -> f32 {
+fn snowMemory(point: vec2<f32>) -> vec2<f32> {
   let uv = point / 128.0 + 0.5;
   if (uv.x <= 0.0 || uv.y <= 0.0 || uv.x >= 1.0 || uv.y >= 1.0) {
-    return 0.0;
+    return vec2<f32>(0.0);
   }
-  return textureSampleLevel(deformationMap, deformationSampler, uv, 0.0).r;
+  return textureSampleLevel(deformationMap, deformationSampler, uv, 0.0).rg;
+}
+
+fn snowDeformation(point: vec2<f32>) -> f32 {
+  return snowMemory(point).r;
 }
 
 fn terrainBaseHeight(point: vec2<f32>) -> f32 {
@@ -365,7 +410,9 @@ fn fsTerrain(input: TerrainVertexOut) -> @location(0) vec4<f32> {
   let surfaceVariation = 0.95 + 0.05 * noise2(input.worldPosition.xz * 3.1) - ridgeTone * 0.018 - fineCrest * 0.032;
   let outcrop = outcropField(input.worldPosition.xz);
   let rockReveal = smoothstep(0.24, 0.72, outcrop) * smoothstep(0.1, 0.46, 1.0 - normal.y);
-  let deformation = snowDeformation(input.worldPosition.xz);
+  let memory = snowMemory(input.worldPosition.xz);
+  let deformation = memory.r;
+  let spellResidue = memory.g;
   let compactedSnow = saturate(-deformation * 8.5);
   let pushedSnow = saturate(deformation * 19.0);
   let playerRelative = input.worldPosition.xz - globals.reserved.xy;
@@ -375,6 +422,7 @@ fn fsTerrain(input: TerrainVertexOut) -> @location(0) vec4<f32> {
   snow = snow * surfaceVariation;
   snow = mix(snow, snow * vec3<f32>(0.68, 0.8, 0.93), compactedSnow * 0.46);
   snow = snow + vec3<f32>(0.58, 0.78, 0.94) * pushedSnow * (0.055 + wrapped * 0.1);
+  snow = snow + vec3<f32>(0.05, 0.52, 1.0) * spellResidue * (0.22 + fresnel * 0.32);
   snow = snow * (1.0 - contactShadow * 0.09);
   snow = snow + vec3<f32>(1.0, 0.84, 0.62) * roughSpecular * 0.46;
   snow = snow + vec3<f32>(0.76, 0.9, 1.0) * fresnel * 0.15;
@@ -412,9 +460,10 @@ fn updateSnow(@builtin(global_invocation_id) invocation: vec3<u32>) {
   let pixel = vec2<i32>(invocation.xy);
   let uv = (vec2<f32>(invocation.xy) + 0.5) / vec2<f32>(dimensions);
   let world = (uv - 0.5) * 128.0;
-  let previous = textureLoad(previousSnow, pixel, 0).r;
+  let previous = textureLoad(previousSnow, pixel, 0);
   let delta = min(globals.viewport.w, 0.05);
-  var deformation = previous * exp(-delta * 0.0035);
+  var deformation = previous.r * exp(-delta * 0.0035);
+  var magicResidue = previous.g * exp(-delta * 0.22);
 
   let speed = globals.reserved.w;
   if (speed > 0.035) {
@@ -438,7 +487,30 @@ fn updateSnow(@builtin(global_invocation_id) invocation: vec3<u32>) {
     }
   }
 
-  textureStore(nextSnow, pixel, vec4<f32>(deformation, 0.0, 0.0, 1.0));
+  let spellPulse = globals.weather.z;
+  if (spellPulse > 0.01) {
+    let spellForward = vec2<f32>(sin(globals.reserved.z), -cos(globals.reserved.z));
+    let spellRight = vec2<f32>(cos(globals.reserved.z), sin(globals.reserved.z));
+    let spellCenter = globals.reserved.xy + spellForward * 3.2 + spellRight * 0.9;
+    let spellDistance = length(world - spellCenter);
+    let spellCrater = -(1.0 - smoothstep(0.2, 1.2, spellDistance)) * 0.14 * spellPulse;
+    let spellRidge =
+      smoothstep(0.82, 1.18, spellDistance) *
+      (1.0 - smoothstep(1.18, 1.72, spellDistance)) *
+      0.095 * spellPulse;
+    let residueRing =
+      smoothstep(0.68, 1.05, spellDistance) *
+      (1.0 - smoothstep(1.05, 1.62, spellDistance));
+    let residueCore = (1.0 - smoothstep(0.0, 0.82, spellDistance)) * 0.3;
+    magicResidue = max(magicResidue, (residueRing + residueCore) * spellPulse);
+    if (spellCrater < -0.001) {
+      deformation = min(deformation, spellCrater);
+    } else if (spellRidge > 0.001 && deformation > -0.018) {
+      deformation = max(deformation, spellRidge);
+    }
+  }
+
+  textureStore(nextSnow, pixel, vec4<f32>(deformation, magicResidue, 0.0, 1.0));
 }
 `;
 
@@ -495,12 +567,17 @@ fn vsPlayer(input: PlayerVertexIn) -> PlayerVertexOut {
     local.x = local.x + sin(time * 3.25 + tail * 5.7) * (0.025 + tail * 0.1) * (0.45 + speed);
     local.y = local.y + sin(time * 2.7 + tail * 4.2) * tail * 0.035;
   }
+  if (part == 11u) {
+    let spellCenter = vec3<f32>(0.9, 0.88, -3.2);
+    local = spellCenter + (local - spellCenter) * (0.3 + globals.weather.z * 0.7);
+    local.y = local.y + sin(time * 7.0) * 0.045;
+  }
   if (part == 1u) {
     let hem = 1.0 - saturate(local.y / 1.38);
     local.x = local.x + sin(time * 2.15 + local.z * 3.1) * hem * speed * 0.035;
   }
   let lean = speed * 0.115;
-  if (part != 0u) {
+  if (part != 0u && part != 11u) {
     local = rotateX(local, lean);
     localNormal = rotateX(localNormal, lean);
   }
@@ -577,14 +654,21 @@ fn fsPlayer(input: PlayerVertexOut) -> @location(0) vec4<f32> {
   color = color + vec3<f32>(1.0, 0.82, 0.61) * specular * (1.0 - roughness) * 0.6;
 
   var snowCatch = 0.0;
-  if (input.part == 0u || input.part == 2u || input.part == 10u) {
+  if (input.part == 2u || input.part == 10u) {
     snowCatch = smoothstep(0.58, 0.91, normal.y) * 0.14;
   }
   color = mix(color, vec3<f32>(0.63, 0.78, 0.88) * (0.7 + direct * 0.7), snowCatch);
 
   if (input.part == 9u) {
     let pulse = 0.88 + sin(globals.viewport.z * 3.2) * 0.12;
-    color = vec3<f32>(0.22, 0.72, 1.0) * 4.6 * pulse;
+    color = vec3<f32>(0.22, 0.72, 1.0) * (4.6 + globals.weather.z * 3.8) * pulse;
+  }
+  if (input.part == 11u) {
+    if (globals.weather.z < 0.012) {
+      discard;
+    }
+    let energyRim = pow(1.0 - saturate(dot(normal, viewDirection)), 2.0);
+    color = vec3<f32>(0.08, 0.64, 1.0) * (3.8 + energyRim * 4.5) * globals.weather.z;
   }
 
   let fog = smoothstep(18.0, 74.0, input.viewDistance);
