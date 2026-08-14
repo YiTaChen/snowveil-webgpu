@@ -175,6 +175,120 @@ canvas {
   letter-spacing: 0.13em;
 }
 
+.snowveil__audio {
+  position: absolute;
+  top: clamp(24px, 4vw, 54px);
+  right: clamp(22px, 4vw, 58px);
+  z-index: 2;
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  padding: 8px 10px;
+  border: 1px solid rgba(213, 237, 249, 0.2);
+  border-radius: 999px;
+  background: rgba(6, 20, 31, 0.16);
+  color: rgba(227, 243, 251, 0.58);
+  font-size: 8px;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  text-shadow: 0 2px 14px rgba(2, 10, 16, 0.55);
+  backdrop-filter: blur(8px);
+  cursor: pointer;
+}
+
+.snowveil__audio span {
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: rgba(164, 206, 228, 0.42);
+  box-shadow: 0 0 8px rgba(103, 203, 249, 0.1);
+}
+
+.snowveil__audio[aria-pressed="true"] {
+  border-color: rgba(133, 219, 255, 0.35);
+  color: rgba(226, 246, 255, 0.8);
+}
+
+.snowveil__audio[aria-pressed="true"] span {
+  background: rgba(128, 223, 255, 0.9);
+  box-shadow: 0 0 11px rgba(79, 194, 255, 0.52);
+}
+
+.snowveil__audio:focus-visible {
+  outline: 1px solid rgba(159, 226, 255, 0.8);
+  outline-offset: 3px;
+}
+
+.snowveil__completion {
+  position: absolute;
+  top: 22%;
+  left: 50%;
+  z-index: 2;
+  display: grid;
+  justify-items: center;
+  gap: 9px;
+  color: rgba(235, 250, 255, 0.94);
+  text-align: center;
+  text-transform: uppercase;
+  text-shadow:
+    0 2px 24px rgba(2, 12, 20, 0.7),
+    0 0 26px rgba(99, 211, 255, 0.24);
+  pointer-events: none;
+  animation: snowveil-completion 5.2s cubic-bezier(0.2, 0.78, 0.2, 1) both;
+}
+
+.snowveil__completion::before,
+.snowveil__completion::after {
+  content: "";
+  position: absolute;
+  top: 34px;
+  width: 62px;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, rgba(157, 226, 255, 0.56));
+}
+
+.snowveil__completion::before {
+  right: calc(100% + 22px);
+}
+
+.snowveil__completion::after {
+  left: calc(100% + 22px);
+  transform: scaleX(-1);
+}
+
+.snowveil__completion span,
+.snowveil__completion small {
+  color: rgba(185, 225, 242, 0.62);
+  font-size: 8px;
+  font-weight: 450;
+  letter-spacing: 0.28em;
+}
+
+.snowveil__completion strong {
+  font-size: clamp(18px, 2vw, 30px);
+  font-weight: 430;
+  letter-spacing: 0.22em;
+}
+
+@keyframes snowveil-completion {
+  0% {
+    opacity: 0;
+    transform: translate(-50%, 12px) scale(0.97);
+    filter: blur(5px);
+  }
+  13%,
+  68% {
+    opacity: 1;
+    transform: translate(-50%, 0) scale(1);
+    filter: blur(0);
+  }
+  100% {
+    opacity: 0;
+    transform: translate(-50%, -8px) scale(1.015);
+    filter: blur(1px);
+  }
+}
+
 .snowveil__footer {
   position: absolute;
   right: clamp(22px, 4vw, 58px);
@@ -288,5 +402,9 @@ canvas {
 
   .snowveil__loader-line::after {
     animation-duration: 3s;
+  }
+
+  .snowveil__completion {
+    animation-duration: 7s;
   }
 }

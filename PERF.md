@@ -113,3 +113,18 @@ The beacon mesh is rendered as three instances in one draw and the terrain
 evaluates three compact analytic sigils only after activation. The completed
 interactive rate remains inside the earlier warmed range. Fixed 1440p remains a
 quality-comparison target, not a release-performance pass.
+
+## 2026-08-14 — procedural audio and finale review
+
+Environment: native WebGPU Chrome. Audio was explicitly enabled before the
+deterministic route so wind, speed hiss, each Ice Pulse, beacon drones, and the
+final chord were all live during measurement.
+
+| Review state | Observed HUD | Result |
+| --- | ---: | --- |
+| route at 2 / 3 with audio, 1182×749 | 51 FPS · P95 33.2 ms · 1% 29 | retained |
+| exact completion beat with audio, 1182×749 | 53 FPS · P95 33.3 ms · 1% 30 | retained |
+| exact completion beat, fixed 2560×1440 | 16 FPS · P95 82.5 ms · 1% 10 | still-evidence path only |
+
+The browser exposed no AudioContext or WebGPU error. Web Audio work does not
+create a visible interactive regression; fixed 1440p remains evidence-only.

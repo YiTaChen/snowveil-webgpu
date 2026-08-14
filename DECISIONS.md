@@ -186,3 +186,24 @@ crystal and ring emission, lifts the stone's cool ambient response, and keeps
 the ritual mark subordinate to the landscape. All new geometry, animation,
 symbol design, route logic, and shading are original project code; no external
 game, model, texture, icon, or audio asset is used.
+
+## 2026-08-14 — Procedural audio shares gameplay state
+
+Snowveil does not import recordings or a music track. A project-authored Web
+Audio graph creates deterministic filtered noise for wind and board hiss, a low
+environmental rumble, three restrained beacon drones, a short Ice Pulse sweep,
+and a non-melodic three-layer completion chord. Board-hiss gain follows the same
+measured rider speed shown in the HUD, and beacon tones start from the same
+activation event that changes the shader uniform.
+
+The audio graph is created or resumed only after a keyboard, canvas, or explicit
+button gesture. The top-right control distinguishes never-enabled, playing, and
+muted states, and the graph closes during component cleanup. This respects
+browser autoplay policy while keeping deterministic `?demo` silent until a
+reviewer explicitly enables sound.
+
+The third activation also sets a dedicated completion age in the shared uniform.
+Post-processing uses it for one expanding cold wave while the interface presents
+a timed `Veil stabilized` title. Both are deliberately transient: the accepted
+frame preserves terrain relief and crystal facets instead of replacing the
+scene with an opaque win screen.

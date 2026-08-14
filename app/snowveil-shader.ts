@@ -1050,6 +1050,19 @@ fn fsPost(input: PostVertexOut) -> @location(0) vec4<f32> {
   let vignette = pow(saturate(vignetteUv.x * vignetteUv.y * 18.0), 0.11);
   color = color * mix(0.79, 1.0, vignette);
 
+  let completionAge = globals.objective.z;
+  if (completionAge < 4.2) {
+    let aspect = dimensions.x / max(dimensions.y, 1.0);
+    let ritualPoint = (input.uv - 0.5) * vec2<f32>(aspect, 1.0);
+    let ritualRadius = length(ritualPoint);
+    let waveRadius = completionAge * 0.43;
+    let waveWidth = 0.018 + completionAge * 0.012;
+    let wave = 1.0 - smoothstep(waveWidth, waveWidth * 3.4, abs(ritualRadius - waveRadius));
+    let flash = exp(-completionAge * 2.6);
+    let crystallineEdge = pow(saturate(1.0 - ritualRadius * 0.72), 4.0) * exp(-completionAge * 0.74);
+    color = color + vec3<f32>(0.08, 0.48, 0.86) * (wave * 0.2 + flash * 0.1 + crystallineEdge * 0.035);
+  }
+
   let grain = hash12(input.uv * dimensions + fract(globals.viewport.z) * 91.0) - 0.5;
   color = color + grain * 0.0065;
   color = pow(max(color, vec3<f32>(0.0)), vec3<f32>(0.95));

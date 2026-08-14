@@ -12,6 +12,7 @@ import {
 import { snowHeightAt } from "./snowveil-terrain";
 import { createRiderGeometry } from "./snowveil-rider-geometry";
 import { createBeaconGeometry } from "./snowveil-beacon-geometry";
+import { createSnowveilAudio, type SnowveilAudio } from "./snowveil-audio";
 
 type SceneState = "loading" | "ready" | "unsupported" | "error";
 
@@ -21,8 +22,12 @@ export function SnowveilScene() {
   const speedRef = useRef<HTMLSpanElement>(null);
   const objectiveRef = useRef<HTMLSpanElement>(null);
   const promptRef = useRef<HTMLSpanElement>(null);
+  const audioControllerRef = useRef<SnowveilAudio | null>(null);
   const [sceneState, setSceneState] = useState<SceneState>("loading");
   const [message, setMessage] = useState("Preparing atmosphere");
+  const [audioEnabled, setAudioEnabled] = useState(false);
+  const [audioReady, setAudioReady] = useState(false);
+  const [riteComplete, setRiteComplete] = useState(false);
 
   useEffect(() => {
     const canvas = canvasRef.current;
@@ -45,6 +50,9 @@ export function SnowveilScene() {
       };
     }
 
+    const audio = createSnowveilAudio();
+    audioControllerRef.current = audio;
+
     let animationFrame = 0;
     let device: GPUDevice | undefined;
     let resizeObserver: ResizeObserver | undefined;
@@ -66,6 +74,7 @@ export function SnowveilScene() {
     let playerVelocityZ = 0;
     let spellAge = 100;
     let completionPulse = 0;
+    let completionAge = 100;
     let activatedCount = 0;
     const beaconPositions = [
       { x: -6.5, z: -14.5 },
@@ -77,6 +86,10 @@ export function SnowveilScene() {
     const keyPulseUntil = new Map<string, number>();
 
     const onPointerDown = (event: PointerEvent) => {
+      void audio.unlock().then((enabled) => {
+        setAudioReady(true);
+        setAudioEnabled(enabled);
+      });
       dragging = true;
       previousX = event.clientX;
       previousY = event.clientY;
@@ -107,6 +120,7 @@ export function SnowveilScene() {
 
     const castIcePulse = () => {
       spellAge = 0;
+      audio.cast();
       const spellForwardX = Math.sin(playerHeading);
       const spellForwardZ = -Math.cos(playerHeading);
       const spellRightX = Math.cos(playerHeading);
@@ -128,10 +142,20 @@ export function SnowveilScene() {
         beaconActive[closestBeacon] = true;
         activatedCount += 1;
         completionPulse = 1;
+        const finalBeacon = activatedCount === beaconPositions.length;
+        audio.activateBeacon(closestBeacon, finalBeacon);
+        if (finalBeacon) {
+          completionAge = 0;
+          setRiteComplete(true);
+        }
       }
     };
 
     const onKeyDown = (event: KeyboardEvent) => {
+      void audio.unlock().then((enabled) => {
+        setAudioReady(true);
+        setAudioEnabled(enabled);
+      });
       if (["ArrowUp", "ArrowDown", "ArrowLeft", "ArrowRight", "Space"].includes(event.code)) {
         event.preventDefault();
       }
@@ -637,6 +661,7 @@ export function SnowveilScene() {
             playerZ *= boundaryScale;
           }
           const playerSpeed = Math.hypot(playerVelocityX, playerVelocityZ);
+          audio.setMotion(playerSpeed);
           if (speedRef.current) speedRef.current.textContent = `${playerSpeed.toFixed(1)} m/s`;
           if (playerSpeed > 0.08) {
             const desiredHeading = Math.atan2(playerVelocityX, -playerVelocityZ);
@@ -650,6 +675,7 @@ export function SnowveilScene() {
           spellAge += delta;
           const spellPulse = Math.exp(-spellAge * 2.7);
           completionPulse = Math.max(0, completionPulse - delta * 0.34);
+          completionAge += delta;
 
           const spellForwardX = Math.sin(playerHeading);
           const spellForwardZ = -Math.cos(playerHeading);
@@ -710,6 +736,7 @@ export function SnowveilScene() {
           }
           uniforms[28] = activatedCount / beaconPositions.length;
           uniforms[29] = completionPulse;
+          uniforms[30] = completionAge;
           activeDevice.queue.writeBuffer(uniformBuffer, 0, uniforms);
 
           if (!depthTexture || !sceneColorTexture || !postBindGroup) {
@@ -808,6 +835,8 @@ export function SnowveilScene() {
       canvas.removeEventListener("wheel", onWheel);
       window.removeEventListener("keydown", onKeyDown);
       window.removeEventListener("keyup", onKeyUp);
+      audio.dispose();
+      audioControllerRef.current = null;
       if (evidenceMode) {
         delete document.documentElement.dataset.snowveilEvidence;
       }
@@ -843,6 +872,29 @@ export function SnowveilScene() {
               Follow the blue light
             </span>
           </aside>
+
+          {riteComplete && (
+            <div className="snowveil__completion" role="status" aria-live="polite">
+              <span>Frost rite</span>
+              <strong>Veil stabilized</strong>
+              <small>Three sigils resonate</small>
+            </div>
+          )}
+
+          <button
+            className="snowveil__audio"
+            type="button"
+            aria-pressed={audioEnabled}
+            onClick={() => {
+              void audioControllerRef.current?.toggle().then((enabled) => {
+                setAudioReady(true);
+                setAudioEnabled(enabled);
+              });
+            }}
+          >
+            <span aria-hidden="true" />
+            {audioEnabled ? "Audio on" : audioReady ? "Audio off" : "Enable audio"}
+          </button>
 
           <footer className="snowveil__footer">
             <span>WASD ride · Space cast</span>

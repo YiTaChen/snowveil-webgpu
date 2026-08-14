@@ -20,6 +20,11 @@ can be committed:
 Screenshots and videos from other projects are references only. They are never
 input textures, training material, meshes, traces, or reconstruction targets.
 
+Audio references follow the same rule. Snowveil does not copy, sample, stem,
+transcribe, or imitate an existing recording or composition; its current sound
+is generated from project-authored oscillators, filters, deterministic noise,
+and gameplay envelopes at runtime.
+
 Generated assets may be used only when the generation tool grants the necessary
 commercial usage rights and the prompt does not request a living artist's style,
 a protected character, or recreation of a copyrighted asset.

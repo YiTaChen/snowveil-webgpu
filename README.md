@@ -24,7 +24,9 @@ This starter does not use `wrangler.jsonc`.
 
 Use a desktop browser with WebGPU enabled. Ride with WASD or the arrow keys,
 cast Ice Pulse with Space, drag the scene to orbit, hold Shift for a faster
-traverse, and use the mouse wheel to change camera distance.
+traverse, and use the mouse wheel to change camera distance. Audio begins only
+after a key, canvas, or explicit audio-button gesture and can be muted from the
+top-right control.
 
 The playable Frost Rite asks the rider to awaken three original sigil beacons.
 Follow the dormant blue cores, aim the visible casting hand toward a beacon,
@@ -41,8 +43,9 @@ evidence scene. Append `&evidence` for the fixed 2560×1440 still-review path.
 
 No reference-project code or assets are copied into this repository. The current
 scene uses no image, model, HDRI, animation, or audio assets. Terrain, lighting,
-atmosphere, snow particles, surface detail, rider, beacons, and sigils are
-produced procedurally by project-owned TypeScript and WGSL code.
+atmosphere, snow particles, surface detail, rider, beacons, sigils, wind, board
+hiss, spell tones, and the completion chord are produced procedurally by
+project-owned TypeScript and WGSL code.
 
 See [ORIGINALITY.md](./ORIGINALITY.md) and [ASSETS.md](./ASSETS.md) before adding
 any visual or audio dependency.
@@ -58,6 +61,8 @@ Original project code is released under the [MIT License](./LICENSE).
 5. Original spell interactions and performance hardening — Ice Pulse baseline established.
 6. Playable Frost Rite loop — three instanced sigils, shared spell activation,
    persistent ritual marks, HUD progress, and deterministic completion route established.
+7. Procedural sound and synchronized finale — gesture-safe Web Audio mix,
+   three-state audio control, completion chord, title, and frost-wave checkpoint established.
 
 The current build is a development milestone, not a claim that the final visual
 gate has passed. See [PERF.md](./PERF.md) and [QUALITY.md](./QUALITY.md).

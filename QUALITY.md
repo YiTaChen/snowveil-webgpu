@@ -155,3 +155,24 @@ intensity. The visual checkpoint passes as an original playable loop, but it is
 not a final production-content claim. Fixed 1440p remains too slow for gameplay,
 the compact rider rig still has no authored transitions, and procedural audio
 and a stronger completion presentation remain open release tasks.
+
+### 2026-08-14 — synchronized audio and completion checkpoint
+
+Evidence:
+
+- interactive completion beat: [`evidence/ritual-finale-audio-1182x749.png`](./evidence/ritual-finale-audio-1182x749.png)
+- fixed 1440p completion beat: [`evidence/gate-1-frost-rite-finale-2560x1440.png`](./evidence/gate-1-frost-rite-finale-2560x1440.png)
+
+The exact third-activation frames show the normal running scene rather than a
+separate victory page: Ice Pulse remains visible, the final crystal and snow
+mark are active, a cold post-process wave crosses the composition, the central
+title appears, and the rider decelerates. With audio explicitly enabled, the
+same event schedules the third drone and original three-layer completion chord.
+
+At 1182×749 the captured beat reports 53 FPS, P95 33.3 ms, and 1% low 30. The
+fixed 1440p frame preserves the terrain ridges and low-sun palette beneath the
+transient blue wave, with no clipped full-screen flash. Audio enable, mute, and
+re-enable states were verified through the accessible button; browser logs show
+no AudioContext or WebGPU error. This closes the earlier open audio and completion
+presentation tasks, while release-grade 1440p performance and production skeletal
+animation remain outside the current checkpoint.

@@ -40,3 +40,7 @@ They are review artefacts, not third-party source material.
   metrics.
 - `gate-1-frost-rite-2560x1440.png` — fixed native 1440p material and composition
   review of the accepted Frost Rite checkpoint.
+- `ritual-finale-audio-1182x749.png` — exact interactive third-activation beat
+  with audio enabled, completion title, Ice Pulse, and cold expansion wave.
+- `gate-1-frost-rite-finale-2560x1440.png` — fixed native 1440p inspection of
+  the synchronized completion presentation.
