@@ -44,3 +44,9 @@ They are review artefacts, not third-party source material.
   with audio enabled, completion title, Ice Pulse, and cold expansion wave.
 - `gate-1-frost-rite-finale-2560x1440.png` — fixed native 1440p inspection of
   the synchronized completion presentation.
+- `performance-shadow-before-2560x1440.png` — fixed-camera ten-step terrain
+  shadow baseline at 17–18 FPS.
+- `performance-shadow-after-2560x1440.png` — retained six-step, fog-aligned
+  terrain-shadow result at 26 FPS.
+- `performance-rite-after-2560x1440.png` — completed fixed-1440p route with the
+  retained shadow path, audio enabled, and synchronized finale at 22 FPS.

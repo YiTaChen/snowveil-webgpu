@@ -176,3 +176,23 @@ re-enable states were verified through the accessible button; browser logs show
 no AudioContext or WebGPU error. This closes the earlier open audio and completion
 presentation tasks, while release-grade 1440p performance and production skeletal
 animation remain outside the current checkpoint.
+
+### 2026-08-14 — 1440p shadow-cost checkpoint
+
+Evidence:
+
+- ten-step baseline: [`evidence/performance-shadow-before-2560x1440.png`](./evidence/performance-shadow-before-2560x1440.png)
+- retained six-step result: [`evidence/performance-shadow-after-2560x1440.png`](./evidence/performance-shadow-after-2560x1440.png)
+- retained full-rite result: [`evidence/performance-rite-after-2560x1440.png`](./evidence/performance-rite-after-2560x1440.png)
+
+The fixed-camera pair preserves the low-sun dune shading, foreground surface
+relief, outcrop shadow, three-beacon depth order, and exact sky/fog continuity.
+Pixel comparison records only 0.241% mean absolute 8-bit-channel difference even
+with different procedural particle and grain frames. The accepted shader raises
+idle fixed-1440p performance from 17–18 to 26 FPS and the complete rite from 16
+to 22 FPS by stopping terrain shadows before fog dominates.
+
+The more aggressive four-step version and reduced bloom resolve were rejected
+after measured browser review. This checkpoint therefore improves a documented
+bottleneck without weakening the HDR resolve or claiming that 22–26 FPS is a
+release-grade native-1440p target.

@@ -63,6 +63,8 @@ Original project code is released under the [MIT License](./LICENSE).
    persistent ritual marks, HUD progress, and deterministic completion route established.
 7. Procedural sound and synchronized finale — gesture-safe Web Audio mix,
    three-state audio control, completion chord, title, and frost-wave checkpoint established.
+8. Native-resolution performance pass — fog-aligned six-step terrain shadows
+   replace the ten-step 38-metre path, with pixel-difference and route evidence recorded.
 
 The current build is a development milestone, not a claim that the final visual
 gate has passed. See [PERF.md](./PERF.md) and [QUALITY.md](./QUALITY.md).

@@ -207,3 +207,23 @@ Post-processing uses it for one expanding cold wave while the interface presents
 a timed `Veil stabilized` title. Both are deliberately transient: the accepted
 frame preserves terrain relief and crystal facets instead of replacing the
 scene with an opaque win screen.
+
+## 2026-08-14 — Near-field shadows spend work before the fog
+
+The original terrain fragment path ray-marched ten self-shadow samples out to
+38 metres for every lit pixel within 34 metres of the camera. At fixed 1440p,
+that repeated the full procedural terrain-height stack across most visible snow
+and held the idle review at 17–18 FPS.
+
+The retained path traces six samples, stops at 28 metres, evaluates only within
+24 camera metres, and smoothly returns to unshadowed snow from 19 to 24 metres.
+This aligns the expensive shadow range with the existing atmospheric transition
+instead of calculating detail that fog will immediately remove. The same fixed
+idle frame reaches 26 FPS and the full rite reaches 22 FPS.
+
+A four-step shadow experiment reached 27 FPS but increased the proportion of
+pixel channels differing by more than eight levels, so the two-frame-per-second
+gain did not justify the reduced safety margin and was rejected. Reducing the
+HDR resolve from eight bloom taps to four also returned only 24 FPS and was
+fully reverted. The accepted before/after images differ by 0.241% mean absolute
+8-bit channel value, including independently timed snow particles and grain.

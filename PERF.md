@@ -128,3 +128,25 @@ final chord were all live during measurement.
 
 The browser exposed no AudioContext or WebGPU error. Web Audio work does not
 create a visible interactive regression; fixed 1440p remains evidence-only.
+
+## 2026-08-14 — native 1440p shadow-cost review
+
+Environment: native WebGPU Chrome, fixed 2560×1440 evidence mode. Before and
+after idle captures use the same camera, world state, HDR resolve, and UI.
+
+| Review state | Observed HUD | Result |
+| --- | ---: | --- |
+| ten-step shadows, fixed idle | 17–18 FPS · P95 67.6 ms · 1% 10 | baseline |
+| six-step fog-aligned shadows, fixed idle | 26 FPS · P95 50.5 ms · 1% 12 | retained; about 44% FPS gain |
+| ten-step shadows, exact rite completion | 16 FPS · P95 82.5 ms · 1% 10 | baseline |
+| six-step shadows, full rite completion | 22 FPS · P95 50.8 ms · 1% 10 | retained; 37.5% FPS gain |
+| retained shader, completed 1182×749 route | 60 FPS · P95 17.4 ms · 1% 57 | retained |
+
+Raw-image comparison of the fixed idle pair reports 0.241% mean absolute
+8-bit-channel difference and 0.583% of channels differing by more than eight
+levels. Those figures include independently timed particles and post-process
+grain. A four-step shadow test and a four-tap bloom resolve were both rejected:
+their small or absent gain did not justify the visual or sampling reduction.
+
+This materially improves the native evidence path but does not declare fixed
+1440p release-ready; 22–26 FPS remains below the release target.

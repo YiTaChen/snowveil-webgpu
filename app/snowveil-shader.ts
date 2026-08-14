@@ -334,11 +334,11 @@ fn vsTerrain(input: TerrainVertexIn) -> TerrainVertexOut {
 fn softShadow(position: vec3<f32>, sunDirection: vec3<f32>) -> f32 {
   var shade = 1.0;
   var travel = 0.18;
-  for (var step = 0; step < 10; step = step + 1) {
+  for (var step = 0; step < 6; step = step + 1) {
     let samplePosition = position + sunDirection * travel;
     let clearance = samplePosition.y - terrainBaseHeight(samplePosition.xz);
     shade = min(shade, 6.0 * clearance / travel);
-    if (clearance < 0.002 || travel > 38.0) {
+    if (clearance < 0.002 || travel > 28.0) {
       break;
     }
     travel = travel + clamp(clearance * 0.88, 0.16, 4.2);
@@ -417,8 +417,9 @@ fn fsTerrain(input: TerrainVertexOut) -> @location(0) vec4<f32> {
 
   let direct = saturate(dot(normal, sunDirection));
   var shadow = 1.0;
-  if (input.viewDistance < 34.0 && direct > 0.01) {
+  if (input.viewDistance < 24.0 && direct > 0.01) {
     shadow = softShadow(input.worldPosition + normal * 0.04, sunDirection);
+    shadow = mix(shadow, 1.0, smoothstep(19.0, 24.0, input.viewDistance));
   }
 
   let wrapped = saturate((dot(normal, sunDirection) + 0.3) / 1.3);
