@@ -96,3 +96,20 @@ of terrain cost. A rejected 230-metre terrain-warp experiment appeared around
 40 FPS during its short review, but the same session showed 59 FPS after warmup;
 the experiment is not used and the project retains the previously profiled
 86-metre terrain grid. Fixed 1440p remains evidence-only.
+
+## 2026-08-14 — Frost Rite route review
+
+Environment: native WebGPU Chrome. The deterministic `?demo` route uses the
+same movement integration and Ice Pulse activation test as manual play, visits
+all three instanced beacons, and stops after the third activation.
+
+| Review state | Observed HUD | Result |
+| --- | ---: | --- |
+| route at 2 / 3, 1182×749 | 40 FPS · P95 34.5 ms · 1% 28 | retained functional midpoint |
+| completed route after warmup, 1182×749 | 56 FPS · P95 33.3 ms · 1% 29 | retained interactive checkpoint |
+| completed route, fixed 2560×1440 | 18 FPS · P95 100.0 ms · 1% 10 | still-evidence path only |
+
+The beacon mesh is rendered as three instances in one draw and the terrain
+evaluates three compact analytic sigils only after activation. The completed
+interactive rate remains inside the earlier warmed range. Fixed 1440p remains a
+quality-comparison target, not a release-performance pass.

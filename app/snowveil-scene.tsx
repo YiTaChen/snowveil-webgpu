@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import {
+  snowveilBeaconShader,
   snowveilDeformationShader,
   snowveilPlayerShader,
   snowveilPostShader,
@@ -10,6 +11,7 @@ import {
 } from "./snowveil-shader";
 import { snowHeightAt } from "./snowveil-terrain";
 import { createRiderGeometry } from "./snowveil-rider-geometry";
+import { createBeaconGeometry } from "./snowveil-beacon-geometry";
 
 type SceneState = "loading" | "ready" | "unsupported" | "error";
 
@@ -17,6 +19,8 @@ export function SnowveilScene() {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const fpsRef = useRef<HTMLSpanElement>(null);
   const speedRef = useRef<HTMLSpanElement>(null);
+  const objectiveRef = useRef<HTMLSpanElement>(null);
+  const promptRef = useRef<HTMLSpanElement>(null);
   const [sceneState, setSceneState] = useState<SceneState>("loading");
   const [message, setMessage] = useState("Preparing atmosphere");
 
@@ -61,6 +65,14 @@ export function SnowveilScene() {
     let playerVelocityX = 0;
     let playerVelocityZ = 0;
     let spellAge = 100;
+    let completionPulse = 0;
+    let activatedCount = 0;
+    const beaconPositions = [
+      { x: -6.5, z: -14.5 },
+      { x: 12.5, z: -25.5 },
+      { x: -15.5, z: -36.5 },
+    ];
+    const beaconActive = [false, false, false];
     const pressedKeys = new Set<string>();
     const keyPulseUntil = new Map<string, number>();
 
@@ -93,6 +105,32 @@ export function SnowveilScene() {
       distance = Math.max(4.2, Math.min(11.5, distance + event.deltaY * 0.006));
     };
 
+    const castIcePulse = () => {
+      spellAge = 0;
+      const spellForwardX = Math.sin(playerHeading);
+      const spellForwardZ = -Math.cos(playerHeading);
+      const spellRightX = Math.cos(playerHeading);
+      const spellRightZ = Math.sin(playerHeading);
+      const impactX = playerX + spellForwardX * 3.2 + spellRightX * 0.9;
+      const impactZ = playerZ + spellForwardZ * 3.2 + spellRightZ * 0.9;
+      let closestBeacon = -1;
+      let closestDistance = Number.POSITIVE_INFINITY;
+      for (let index = 0; index < beaconPositions.length; index += 1) {
+        if (beaconActive[index]) continue;
+        const beacon = beaconPositions[index];
+        const impactDistance = Math.hypot(impactX - beacon.x, impactZ - beacon.z);
+        if (impactDistance < closestDistance) {
+          closestDistance = impactDistance;
+          closestBeacon = index;
+        }
+      }
+      if (closestBeacon >= 0 && closestDistance < 2.6) {
+        beaconActive[closestBeacon] = true;
+        activatedCount += 1;
+        completionPulse = 1;
+      }
+    };
+
     const onKeyDown = (event: KeyboardEvent) => {
       if (["ArrowUp", "ArrowDown", "ArrowLeft", "ArrowRight", "Space"].includes(event.code)) {
         event.preventDefault();
@@ -100,7 +138,7 @@ export function SnowveilScene() {
       pressedKeys.add(event.code);
       keyPulseUntil.set(event.code, performance.now() + 145);
       if (event.code === "Space" && !event.repeat) {
-        spellAge = 0;
+        castIcePulse();
       }
     };
 
@@ -155,17 +193,28 @@ export function SnowveilScene() {
           label: "Snowveil original procedural rider shader",
           code: snowveilPlayerShader,
         });
+        const beaconShaderModule = activeDevice.createShaderModule({
+          label: "Snowveil original frost-sigil beacon shader",
+          code: snowveilBeaconShader,
+        });
         const deformationShaderModule = activeDevice.createShaderModule({
           label: "Snowveil persistent snow deformation shader",
           code: snowveilDeformationShader,
         });
 
-        const [skyCompilation, terrainCompilation, postCompilation, playerCompilation, deformationCompilation] =
-          await Promise.all([
+        const [
+          skyCompilation,
+          terrainCompilation,
+          postCompilation,
+          playerCompilation,
+          beaconCompilation,
+          deformationCompilation,
+        ] = await Promise.all([
             skyShaderModule.getCompilationInfo(),
             terrainShaderModule.getCompilationInfo(),
             postShaderModule.getCompilationInfo(),
             playerShaderModule.getCompilationInfo(),
+            beaconShaderModule.getCompilationInfo(),
             deformationShaderModule.getCompilationInfo(),
           ]);
         const shaderErrors = [
@@ -173,6 +222,7 @@ export function SnowveilScene() {
           ...terrainCompilation.messages,
           ...postCompilation.messages,
           ...playerCompilation.messages,
+          ...beaconCompilation.messages,
           ...deformationCompilation.messages,
         ].filter((entry: { type: string }) => entry.type === "error");
         if (shaderErrors.length) {
@@ -277,6 +327,32 @@ export function SnowveilScene() {
           },
         });
 
+        const beaconPipeline = activeDevice.createRenderPipeline({
+          label: "Snowveil frost-sigil beacon pipeline",
+          layout: "auto",
+          vertex: {
+            module: beaconShaderModule,
+            entryPoint: "vsBeacon",
+            buffers: [
+              {
+                arrayStride: 28,
+                attributes: [
+                  { shaderLocation: 0, offset: 0, format: "float32x3" },
+                  { shaderLocation: 1, offset: 12, format: "float32x3" },
+                  { shaderLocation: 2, offset: 24, format: "float32" },
+                ],
+              },
+            ],
+          },
+          fragment: { module: beaconShaderModule, entryPoint: "fsBeacon", targets: [{ format: sceneFormat }] },
+          primitive: { topology: "triangle-list", cullMode: "none" },
+          depthStencil: {
+            format: "depth24plus",
+            depthWriteEnabled: true,
+            depthCompare: "less",
+          },
+        });
+
         const deformationPipeline = activeDevice.createComputePipeline({
           label: "Snowveil persistent snow compute pipeline",
           layout: "auto",
@@ -285,7 +361,7 @@ export function SnowveilScene() {
 
         const uniformBuffer = activeDevice.createBuffer({
           label: "Snowveil frame uniforms",
-          size: 64,
+          size: 128,
           usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST,
         });
         const skyBindGroup = activeDevice.createBindGroup({
@@ -298,6 +374,10 @@ export function SnowveilScene() {
         });
         const playerBindGroup = activeDevice.createBindGroup({
           layout: playerPipeline.getBindGroupLayout(0),
+          entries: [{ binding: 0, resource: { buffer: uniformBuffer } }],
+        });
+        const beaconBindGroup = activeDevice.createBindGroup({
+          layout: beaconPipeline.getBindGroupLayout(0),
           entries: [{ binding: 0, resource: { buffer: uniformBuffer } }],
         });
         const postSampler = activeDevice.createSampler({
@@ -348,7 +428,7 @@ export function SnowveilScene() {
           throw new Error(`Snow deformation setup failed: ${deformationSetupError.message}`);
         }
         let deformationReadIndex = 0;
-        const uniforms = new Float32Array(16);
+        const uniforms = new Float32Array(32);
 
         const terrainSegments = 352;
         const terrainVertexCount = (terrainSegments + 1) * (terrainSegments + 1);
@@ -407,6 +487,20 @@ export function SnowveilScene() {
         });
         activeDevice.queue.writeBuffer(riderVertexBuffer, 0, riderGeometry.vertices);
         activeDevice.queue.writeBuffer(riderIndexBuffer, 0, riderGeometry.indices);
+
+        const beaconGeometry = createBeaconGeometry();
+        const beaconVertexBuffer = activeDevice.createBuffer({
+          label: "Snowveil frost-sigil beacon vertices",
+          size: beaconGeometry.vertices.byteLength,
+          usage: GPUBufferUsage.VERTEX | GPUBufferUsage.COPY_DST,
+        });
+        const beaconIndexBuffer = activeDevice.createBuffer({
+          label: "Snowveil frost-sigil beacon indices",
+          size: beaconGeometry.indices.byteLength,
+          usage: GPUBufferUsage.INDEX | GPUBufferUsage.COPY_DST,
+        });
+        activeDevice.queue.writeBuffer(beaconVertexBuffer, 0, beaconGeometry.vertices);
+        activeDevice.queue.writeBuffer(beaconIndexBuffer, 0, beaconGeometry.indices);
 
         let depthTexture: GPUTexture | undefined;
         let sceneColorTexture: GPUTexture | undefined;
@@ -510,18 +604,27 @@ export function SnowveilScene() {
             (keyPulseUntil.get("ArrowDown") ?? 0) > now
               ? 1
               : 0);
-          const inputX = demoMode ? Math.sin(elapsed * 0.72) * 0.64 : manualInputX;
-          const inputForward = demoMode ? 1 : manualInputForward;
+          const demoTargetIndex = demoMode ? beaconActive.findIndex((isActive) => !isActive) : -1;
+          const inputX = demoMode ? (demoTargetIndex >= 0 ? 1 : 0) : manualInputX;
+          const inputForward = demoMode ? 0 : manualInputForward;
           const inputLength = Math.hypot(inputX, inputForward);
           const forwardX = Math.sin(yaw);
           const forwardZ = -Math.cos(yaw);
           const rightX = Math.cos(yaw);
           const rightZ = Math.sin(yaw);
           const rideSpeed = pressedKeys.has("ShiftLeft") || pressedKeys.has("ShiftRight") ? 8.4 : 5.4;
-          const desiredVelocityX =
-            inputLength > 0 ? ((rightX * inputX + forwardX * inputForward) / inputLength) * rideSpeed : 0;
-          const desiredVelocityZ =
-            inputLength > 0 ? ((rightZ * inputX + forwardZ * inputForward) / inputLength) * rideSpeed : 0;
+          const demoTarget = demoTargetIndex >= 0 ? beaconPositions[demoTargetIndex] : null;
+          const demoTargetDistance = demoTarget ? Math.hypot(demoTarget.x - playerX, demoTarget.z - playerZ) : 0;
+          const desiredVelocityX = demoTarget
+            ? ((demoTarget.x - playerX) / Math.max(demoTargetDistance, 0.001)) * rideSpeed
+            : inputLength > 0
+              ? ((rightX * inputX + forwardX * inputForward) / inputLength) * rideSpeed
+              : 0;
+          const desiredVelocityZ = demoTarget
+            ? ((demoTarget.z - playerZ) / Math.max(demoTargetDistance, 0.001)) * rideSpeed
+            : inputLength > 0
+              ? ((rightZ * inputX + forwardZ * inputForward) / inputLength) * rideSpeed
+              : 0;
           const acceleration = 1 - Math.exp(-delta * (inputLength > 0 ? 7.5 : 4.2));
           playerVelocityX += (desiredVelocityX - playerVelocityX) * acceleration;
           playerVelocityZ += (desiredVelocityZ - playerVelocityZ) * acceleration;
@@ -546,6 +649,40 @@ export function SnowveilScene() {
           const playerY = snowHeightAt(playerX, playerZ);
           spellAge += delta;
           const spellPulse = Math.exp(-spellAge * 2.7);
+          completionPulse = Math.max(0, completionPulse - delta * 0.34);
+
+          const spellForwardX = Math.sin(playerHeading);
+          const spellForwardZ = -Math.cos(playerHeading);
+          const spellRightX = Math.cos(playerHeading);
+          const spellRightZ = Math.sin(playerHeading);
+          const previewImpactX = playerX + spellForwardX * 3.2 + spellRightX * 0.9;
+          const previewImpactZ = playerZ + spellForwardZ * 3.2 + spellRightZ * 0.9;
+          let nearestDormantDistance = Number.POSITIVE_INFINITY;
+          for (let index = 0; index < beaconPositions.length; index += 1) {
+            if (beaconActive[index]) continue;
+            const beacon = beaconPositions[index];
+            nearestDormantDistance = Math.min(
+              nearestDormantDistance,
+              Math.hypot(previewImpactX - beacon.x, previewImpactZ - beacon.z),
+            );
+          }
+          if (demoMode && spellAge > 1.1 && nearestDormantDistance < 2.35) {
+            castIcePulse();
+          }
+          if (objectiveRef.current) {
+            objectiveRef.current.textContent =
+              activatedCount === beaconPositions.length
+                ? "Veil stabilized"
+                : `Frost sigils ${activatedCount} / ${beaconPositions.length}`;
+          }
+          if (promptRef.current) {
+            promptRef.current.textContent =
+              activatedCount === beaconPositions.length
+                ? "All sigils resonant"
+                : nearestDormantDistance < 2.6
+                  ? "Space — awaken sigil"
+                  : "Follow the blue light";
+          }
 
           uniforms[0] = canvas.width;
           uniforms[1] = canvas.height;
@@ -563,6 +700,16 @@ export function SnowveilScene() {
           uniforms[13] = playerZ;
           uniforms[14] = playerHeading;
           uniforms[15] = Math.min(playerSpeed / 8.4, 1);
+          for (let index = 0; index < beaconPositions.length; index += 1) {
+            const beacon = beaconPositions[index];
+            const offset = 16 + index * 4;
+            uniforms[offset] = beacon.x;
+            uniforms[offset + 1] = snowHeightAt(beacon.x, beacon.z) - 0.04;
+            uniforms[offset + 2] = beacon.z;
+            uniforms[offset + 3] = beaconActive[index] ? 1 : 0;
+          }
+          uniforms[28] = activatedCount / beaconPositions.length;
+          uniforms[29] = completionPulse;
           activeDevice.queue.writeBuffer(uniformBuffer, 0, uniforms);
 
           if (!depthTexture || !sceneColorTexture || !postBindGroup) {
@@ -602,6 +749,11 @@ export function SnowveilScene() {
           pass.setVertexBuffer(0, terrainVertexBuffer);
           pass.setIndexBuffer(terrainIndexBuffer, "uint32");
           pass.drawIndexed(terrainIndices.length);
+          pass.setPipeline(beaconPipeline);
+          pass.setBindGroup(0, beaconBindGroup);
+          pass.setVertexBuffer(0, beaconVertexBuffer);
+          pass.setIndexBuffer(beaconIndexBuffer, "uint32");
+          pass.drawIndexed(beaconGeometry.indices.length, beaconPositions.length);
           pass.setPipeline(playerPipeline);
           pass.setBindGroup(0, playerBindGroup);
           pass.setVertexBuffer(0, riderVertexBuffer);
@@ -677,17 +829,29 @@ export function SnowveilScene() {
       <header className="snowveil__brand" aria-label="Snowveil">
         <span className="snowveil__mark" aria-hidden="true" />
         <span className="snowveil__wordmark">Snowveil</span>
-        <span className="snowveil__status">Visual study 001</span>
+        <span className="snowveil__status">Frost rite · WebGPU</span>
       </header>
 
       {sceneState === "ready" && (
-        <footer className="snowveil__footer">
-          <span>WASD ride · Space cast</span>
-          <span className="snowveil__rule" aria-hidden="true" />
-          <span ref={speedRef}>0.0 m/s</span>
-          <span className="snowveil__rule" aria-hidden="true" />
-          <span ref={fpsRef}>GPU ready</span>
-        </footer>
+        <>
+          <aside className="snowveil__objective" aria-live="polite">
+            <span className="snowveil__objective-label">Ritual</span>
+            <span ref={objectiveRef} className="snowveil__objective-state">
+              Frost sigils 0 / 3
+            </span>
+            <span ref={promptRef} className="snowveil__objective-prompt">
+              Follow the blue light
+            </span>
+          </aside>
+
+          <footer className="snowveil__footer">
+            <span>WASD ride · Space cast</span>
+            <span className="snowveil__rule" aria-hidden="true" />
+            <span ref={speedRef}>0.0 m/s</span>
+            <span className="snowveil__rule" aria-hidden="true" />
+            <span ref={fpsRef}>GPU ready</span>
+          </footer>
+        </>
       )}
 
       {sceneState === "loading" && (

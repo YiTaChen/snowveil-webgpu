@@ -33,3 +33,10 @@ They are review artefacts, not third-party source material.
   crowned cape, plate rims, cuffs, boot clearance, and snow-surfing blade.
 - `rider-visor-front-1182x749.jpg` — stationary front inspection of the original
   framed visor, nose guard, crossing harness, gloves, and layered stance.
+- `ritual-progress-1182x749.png` — running deterministic route after two of the
+  three real frost sigils have been activated through Ice Pulse.
+- `ritual-complete-1182x749.png` — warmed interactive completion frame showing
+  the active crystal, orbit ring, snow mark, final HUD state, and retained frame
+  metrics.
+- `gate-1-frost-rite-2560x1440.png` — fixed native 1440p material and composition
+  review of the accepted Frost Rite checkpoint.

@@ -132,3 +132,26 @@ This passes the current equipment checkpoint, not final production character
 art. The compact shader-driven part rig still lacks authored state transitions,
 the coat body remains deliberately stylized, and there is no audio, UI objective,
 or broader game loop yet.
+
+### 2026-08-14 — playable Frost Rite checkpoint
+
+Evidence:
+
+- native 1440p completed rite: [`evidence/gate-1-frost-rite-2560x1440.png`](./evidence/gate-1-frost-rite-2560x1440.png)
+- interactive route at 2 / 3: [`evidence/ritual-progress-1182x749.png`](./evidence/ritual-progress-1182x749.png)
+- interactive completed rite: [`evidence/ritual-complete-1182x749.png`](./evidence/ritual-complete-1182x749.png)
+
+The route reaches all three world-space beacons, fires the visible Ice Pulse at
+the same point used for activation, advances the restrained HUD from 0 / 3 to
+`Veil stabilized`, and stops at completion. Activated crystals, rings, support
+fins, and procedural snow sigils remain readable against the existing low-sun
+palette. The completed 1182×749 frame reports 56 FPS, P95 33.3 ms, and 1% low 29;
+browser logs contain no WebGPU warning or validation error.
+
+The first 1440p review found clipped cyan emission and a crushed-black stone
+plinth. Both were rejected before capture: the retained beacon preserves more
+crystal facet variation, lifts cool stone bounce, and lowers the snow-sigil
+intensity. The visual checkpoint passes as an original playable loop, but it is
+not a final production-content claim. Fixed 1440p remains too slow for gameplay,
+the compact rider rig still has no authored transitions, and procedural audio
+and a stronger completion presentation remain open release tasks.

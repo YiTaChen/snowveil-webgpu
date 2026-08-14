@@ -4,6 +4,10 @@ struct Globals {
   camera: vec4<f32>,
   weather: vec4<f32>,
   reserved: vec4<f32>,
+  beaconA: vec4<f32>,
+  beaconB: vec4<f32>,
+  beaconC: vec4<f32>,
+  objective: vec4<f32>,
 };
 
 @group(0) @binding(0) var<uniform> globals: Globals;
@@ -364,6 +368,25 @@ fn aces(color: vec3<f32>) -> vec3<f32> {
   return clamp((color * (a * color + b)) / (color * (c * color + d) + e), vec3<f32>(0.0), vec3<f32>(1.0));
 }
 
+fn ritualSigil(point: vec2<f32>, beacon: vec4<f32>) -> f32 {
+  if (beacon.w < 0.5) {
+    return 0.0;
+  }
+  let local = point - beacon.xz;
+  let radius = length(local);
+  let edge = max(fwidth(radius) * 1.6, 0.018);
+  let outerRing = 1.0 - smoothstep(edge, edge * 3.0, abs(radius - 1.22));
+  let innerRing = 1.0 - smoothstep(edge, edge * 2.7, abs(radius - 0.72));
+  let runeBand = smoothstep(0.78, 0.88, radius) * (1.0 - smoothstep(1.05, 1.17, radius));
+  let rayA = abs(dot(local, normalize(vec2<f32>(1.0, 0.32))));
+  let rayB = abs(dot(local, normalize(vec2<f32>(-0.23, 1.0))));
+  let rayC = abs(dot(local, normalize(vec2<f32>(0.72, -1.0))));
+  let rays = (1.0 - smoothstep(edge, edge * 3.0, min(rayA, min(rayB, rayC)))) * runeBand;
+  let broken = smoothstep(-0.24, 0.18, sin((local.x - local.y) * 11.0));
+  let pulse = 0.86 + sin(globals.viewport.z * 2.1 + beacon.x * 0.37) * 0.14;
+  return max(outerRing, max(innerRing * 0.7, rays * broken)) * pulse;
+}
+
 @fragment
 fn fsTerrain(input: TerrainVertexOut) -> @location(0) vec4<f32> {
   let sunDirection = normalize(vec3<f32>(0.44, 0.205, -0.874));
@@ -439,6 +462,14 @@ fn fsTerrain(input: TerrainVertexOut) -> @location(0) vec4<f32> {
   snow = snow + vec3<f32>(0.76, 0.9, 1.0) * fresnel * 0.15;
   snow = snow + vec3<f32>(1.0, 0.9, 0.7) * glint * 3.4;
   snow = snow + vec3<f32>(0.68, 0.84, 0.95) * fineCrest * 0.035 * wrapped;
+  let ritualMark = max(
+    ritualSigil(input.worldPosition.xz, globals.beaconA),
+    max(
+      ritualSigil(input.worldPosition.xz, globals.beaconB),
+      ritualSigil(input.worldPosition.xz, globals.beaconC)
+    )
+  );
+  snow = snow + vec3<f32>(0.035, 0.5, 1.0) * ritualMark * (0.2 + fresnel * 0.18);
   let rock = vec3<f32>(0.065, 0.105, 0.14) * (0.72 + warmSun * direct * shadow * 0.65) + vec3<f32>(0.12, 0.19, 0.25) * fresnel * 0.22;
   snow = mix(snow, rock, rockReveal * 0.78);
 
@@ -788,6 +819,156 @@ fn fsPlayer(input: PlayerVertexOut) -> @location(0) vec4<f32> {
 
   let fog = smoothstep(18.0, 74.0, input.viewDistance);
   color = mix(color, vec3<f32>(0.48, 0.62, 0.72), fog * 0.82);
+  return vec4<f32>(max(color, vec3<f32>(0.0)), 1.0);
+}
+`;
+
+export const snowveilBeaconShader = /* wgsl */ `
+${sharedUniforms}
+
+struct BeaconVertexIn {
+  @location(0) position: vec3<f32>,
+  @location(1) normal: vec3<f32>,
+  @location(2) part: f32,
+};
+
+struct BeaconVertexOut {
+  @builtin(position) position: vec4<f32>,
+  @location(0) worldPosition: vec3<f32>,
+  @location(1) worldNormal: vec3<f32>,
+  @location(2) viewDirection: vec3<f32>,
+  @location(3) localPosition: vec3<f32>,
+  @location(4) @interpolate(flat) part: u32,
+  @location(5) @interpolate(flat) activation: f32,
+  @location(6) viewDistance: f32,
+};
+
+fn saturate(value: f32) -> f32 {
+  return clamp(value, 0.0, 1.0);
+}
+
+fn rotateY(point: vec3<f32>, angle: f32) -> vec3<f32> {
+  let cosine = cos(angle);
+  let sine = sin(angle);
+  return vec3<f32>(point.x * cosine + point.z * sine, point.y, -point.x * sine + point.z * cosine);
+}
+
+fn beaconData(instance: u32) -> vec4<f32> {
+  if (instance == 0u) {
+    return globals.beaconA;
+  }
+  if (instance == 1u) {
+    return globals.beaconB;
+  }
+  return globals.beaconC;
+}
+
+fn atmosphere(direction: vec3<f32>, sunDirection: vec3<f32>) -> vec3<f32> {
+  let up = saturate(direction.y * 0.5 + 0.5);
+  let horizon = pow(1.0 - abs(direction.y), 4.0);
+  let sunAmount = saturate(dot(direction, sunDirection));
+  var color = mix(vec3<f32>(0.54, 0.67, 0.75), vec3<f32>(0.035, 0.115, 0.19), pow(up, 0.66));
+  color = color + vec3<f32>(0.3, 0.23, 0.16) * horizon * pow(sunAmount, 5.0);
+  color = color + vec3<f32>(1.0, 0.78, 0.51) * pow(sunAmount, 460.0) * 7.0;
+  color = color + vec3<f32>(1.0, 0.62, 0.34) * pow(sunAmount, 38.0) * 0.72;
+  return color;
+}
+
+@vertex
+fn vsBeacon(input: BeaconVertexIn, @builtin(instance_index) instance: u32) -> BeaconVertexOut {
+  var output: BeaconVertexOut;
+  let beacon = beaconData(instance);
+  let activation = beacon.w;
+  let part = u32(round(input.part));
+  let time = globals.viewport.z;
+  var local = input.position;
+  var normal = normalize(input.normal);
+
+  if (part == 2u) {
+    let ringAngle = time * (0.14 + activation * 0.72) + f32(instance) * 1.7;
+    local = rotateY(local, ringAngle);
+    normal = rotateY(normal, ringAngle);
+    local.y = local.y + activation * (0.075 + sin(time * 2.4 + f32(instance)) * 0.028);
+  }
+  if (part == 1u) {
+    let crystalScale = 0.94 + activation * (0.06 + sin(time * 2.9 + f32(instance) * 1.3) * 0.018);
+    local.y = 0.48 + (local.y - 0.48) * crystalScale;
+  }
+
+  let worldPosition = beacon.xyz + local;
+  let cameraTarget = vec3<f32>(globals.reserved.x, globals.weather.y + 1.05, globals.reserved.y);
+  let orbit = vec3<f32>(sin(globals.camera.x) * globals.camera.z, 2.0 + globals.camera.y * 7.0, cos(globals.camera.x) * globals.camera.z);
+  let cameraPosition = cameraTarget + orbit;
+  let forward = normalize(cameraTarget - cameraPosition);
+  let right = normalize(cross(forward, vec3<f32>(0.0, 1.0, 0.0)));
+  let up = normalize(cross(right, forward));
+  let relative = worldPosition - cameraPosition;
+  let viewX = dot(relative, right);
+  let viewY = dot(relative, up);
+  let viewZ = dot(relative, forward);
+  let focal = 1.0 / globals.camera.w;
+  let aspect = globals.viewport.x / max(globals.viewport.y, 1.0);
+  let near = 0.08;
+  let far = 220.0;
+  let clipZ = (far / (far - near)) * viewZ - (near * far / (far - near));
+
+  output.position = vec4<f32>(viewX * focal / aspect, viewY * focal, clipZ, viewZ);
+  output.worldPosition = worldPosition;
+  output.worldNormal = normal;
+  output.viewDirection = cameraPosition - worldPosition;
+  output.localPosition = local;
+  output.part = part;
+  output.activation = activation;
+  output.viewDistance = length(relative);
+  return output;
+}
+
+@fragment
+fn fsBeacon(input: BeaconVertexOut) -> @location(0) vec4<f32> {
+  let normal = normalize(input.worldNormal);
+  let viewDirection = normalize(input.viewDirection);
+  let sunDirection = normalize(vec3<f32>(0.44, 0.205, -0.874));
+  let halfway = normalize(viewDirection + sunDirection);
+  let direct = saturate(dot(normal, sunDirection));
+  let rim = pow(1.0 - saturate(dot(normal, viewDirection)), 3.0);
+  let specular = pow(saturate(dot(normal, halfway)), 72.0);
+
+  var albedo = vec3<f32>(0.09, 0.145, 0.175);
+  var roughness = 0.82;
+  if (input.part == 1u) {
+    albedo = mix(vec3<f32>(0.1, 0.27, 0.35), vec3<f32>(0.075, 0.53, 0.72), input.activation);
+    roughness = 0.2;
+  } else if (input.part == 2u) {
+    albedo = mix(vec3<f32>(0.055, 0.11, 0.14), vec3<f32>(0.1, 0.42, 0.58), input.activation);
+    roughness = 0.27;
+  } else if (input.part == 3u) {
+    albedo = vec3<f32>(0.55, 0.67, 0.73);
+    roughness = 0.9;
+  }
+
+  let ambient = vec3<f32>(0.37, 0.53, 0.68) * (0.7 + saturate(normal.y) * 0.35);
+  let warm = vec3<f32>(1.0, 0.7, 0.43) * (0.1 + direct * 1.15);
+  var color = albedo * (ambient + warm);
+  color = color + vec3<f32>(0.35, 0.65, 0.82) * rim * 0.24;
+  color = color + vec3<f32>(1.0, 0.82, 0.62) * specular * (1.0 - roughness) * 0.52;
+
+  if (input.part == 1u) {
+    let facet = 0.72 + 0.28 * abs(normal.x * 0.63 + normal.z * 0.37);
+    let core = smoothstep(0.52, 1.42, input.localPosition.y);
+    let crystalLight = 0.13 + input.activation * (0.72 + core * 1.15 + rim * 0.52);
+    color = color * facet + vec3<f32>(0.04, 0.56, 1.0) * crystalLight;
+  }
+  if (input.part == 2u) {
+    color = color + vec3<f32>(0.08, 0.62, 1.0) * (0.05 + input.activation * (0.52 + rim * 1.05));
+  }
+  if (input.part == 0u) {
+    let stoneBand = 0.88 + sin(input.localPosition.y * 19.0 + input.localPosition.x * 3.7) * 0.06;
+    color = color * stoneBand + vec3<f32>(0.06, 0.11, 0.15) * (0.72 + rim * 0.28);
+  }
+
+  let rayDirection = -viewDirection;
+  let fog = smoothstep(18.0, 50.0, input.viewDistance);
+  color = mix(color, atmosphere(normalize(vec3<f32>(rayDirection.x, max(rayDirection.y, 0.025), rayDirection.z)), sunDirection), fog);
   return vec4<f32>(max(color, vec3<f32>(0.0)), 1.0);
 }
 `;

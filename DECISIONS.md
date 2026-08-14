@@ -162,3 +162,27 @@ metres retained the artifact and was rejected. The active renderer keeps the
 dense 86-metre grid, reduces and closes the far mountain ring before the mesh
 boundary, and reaches full terrain fog at 50 metres. The defect disappears while
 the 1440p primary view retains three readable terrain layers.
+
+## 2026-08-14 — Frost Rite turns the rendering study into a loop
+
+Three project-authored frost-sigil beacons now form a short playable route. One
+instanced mesh supplies a tapered stone plinth, snow cap, faceted crystal,
+support fins, and floating torus; activation state and world position travel in
+the shared frame uniform. Dormant crystals retain a weak cold core so the HUD's
+direction is visually actionable, while activated crystals raise and accelerate
+their rings without adding a separate animation system.
+
+Manual Space input and deterministic `?demo` both call the same Ice Pulse cast
+function. The projectile's visible offset is also the activation test point, so
+the QA route cannot complete a beacon from an invisible or unrelated trigger.
+Activated positions feed back into terrain shading to draw antialiased broken
+rings and radial strokes in the snow. This supplements the existing deformation
+history and prevents the objective prop from appearing merely placed on top of
+the landscape.
+
+The first activated 1440p frame was rejected because emission erased the crystal
+facets and the unlit plinth collapsed to black. The retained material reduces
+crystal and ring emission, lifts the stone's cool ambient response, and keeps
+the ritual mark subordinate to the landscape. All new geometry, animation,
+symbol design, route logic, and shading are original project code; no external
+game, model, texture, icon, or audio asset is used.

@@ -134,6 +134,47 @@ canvas {
   letter-spacing: 0.17em;
 }
 
+.snowveil__objective {
+  position: absolute;
+  top: clamp(88px, 9vw, 126px);
+  left: clamp(22px, 4vw, 58px);
+  z-index: 2;
+  display: grid;
+  gap: 7px;
+  padding-left: 17px;
+  color: rgba(232, 246, 253, 0.78);
+  text-transform: uppercase;
+  text-shadow: 0 2px 18px rgba(2, 10, 16, 0.55);
+  user-select: none;
+}
+
+.snowveil__objective::before {
+  content: "";
+  position: absolute;
+  inset: 2px auto 2px 0;
+  width: 1px;
+  background: linear-gradient(180deg, rgba(137, 220, 255, 0.84), rgba(137, 220, 255, 0.08));
+  box-shadow: 0 0 16px rgba(83, 194, 247, 0.28);
+}
+
+.snowveil__objective-label {
+  color: rgba(156, 210, 237, 0.58);
+  font-size: 8px;
+  letter-spacing: 0.24em;
+}
+
+.snowveil__objective-state {
+  font-size: 11px;
+  font-weight: 560;
+  letter-spacing: 0.16em;
+}
+
+.snowveil__objective-prompt {
+  color: rgba(220, 239, 248, 0.52);
+  font-size: 8px;
+  letter-spacing: 0.13em;
+}
+
 .snowveil__footer {
   position: absolute;
   right: clamp(22px, 4vw, 58px);
@@ -232,6 +273,11 @@ canvas {
   .snowveil__footer {
     left: 22px;
     right: auto;
+  }
+
+  .snowveil__objective {
+    top: 76px;
+    left: 22px;
   }
 }
 

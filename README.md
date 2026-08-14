@@ -1,9 +1,9 @@
 # Snowveil WebGPU
 
-Snowveil is an original real-time snow-world visual study. Its first milestone is
-a cinematic procedural landscape rendered with native WebGPU and hand-written
-WGSL: wind-shaped dunes, layered snow response, a low winter sun, atmospheric
-haze, stable crystalline glints, and restrained blowing snow.
+Snowveil is an original real-time snow-world game prototype. It renders a
+cinematic procedural landscape with native WebGPU and hand-written WGSL:
+wind-shaped dunes, layered snow response, a low winter sun, atmospheric haze,
+stable crystalline glints, persistent board tracks, and restrained blowing snow.
 
 The product standard is visual quality. A feature is not accepted merely because
 it works; it must also survive a clean 1440p still-frame review.
@@ -26,16 +26,23 @@ Use a desktop browser with WebGPU enabled. Ride with WASD or the arrow keys,
 cast Ice Pulse with Space, drag the scene to orbit, hold Shift for a faster
 traverse, and use the mouse wheel to change camera distance.
 
-Append `?demo` to the local URL for a deterministic curved ride used by visual
-QA. It exercises the same movement, rider shader, and persistent snow path as
-keyboard input; it is not a pre-rendered or separate evidence scene.
+The playable Frost Rite asks the rider to awaken three original sigil beacons.
+Follow the dormant blue cores, aim the visible casting hand toward a beacon,
+and press Space when the HUD prompts. Each successful Ice Pulse activates its
+crystal and rotating ring, records a frost mark in the snow, and advances the
+ritual state.
+
+Append `?demo` to the local URL for a deterministic end-to-end route used by
+visual QA. It steers toward each real beacon and casts through the same Ice Pulse
+and proximity test as keyboard input; it is not a pre-rendered or separate
+evidence scene. Append `&evidence` for the fixed 2560×1440 still-review path.
 
 ## Originality and licensing
 
 No reference-project code or assets are copied into this repository. The current
 scene uses no image, model, HDRI, animation, or audio assets. Terrain, lighting,
-atmosphere, snow particles, and surface detail are produced procedurally by the
-project's own WGSL code.
+atmosphere, snow particles, surface detail, rider, beacons, and sigils are
+produced procedurally by project-owned TypeScript and WGSL code.
 
 See [ORIGINALITY.md](./ORIGINALITY.md) and [ASSETS.md](./ASSETS.md) before adding
 any visual or audio dependency.
@@ -49,6 +56,8 @@ Original project code is released under the [MIT License](./LICENSE).
 3. Persistent GPU deformable snow — interactive baseline established.
 4. Character motion, contact, and snow-surfing — animation/material checkpoint established.
 5. Original spell interactions and performance hardening — Ice Pulse baseline established.
+6. Playable Frost Rite loop — three instanced sigils, shared spell activation,
+   persistent ritual marks, HUD progress, and deterministic completion route established.
 
 The current build is a development milestone, not a claim that the final visual
 gate has passed. See [PERF.md](./PERF.md) and [QUALITY.md](./QUALITY.md).
