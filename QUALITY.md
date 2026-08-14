@@ -38,5 +38,32 @@ lacks readable shoulders, arms, and layered cloth construction.
 
 Work after this capture adds an asymmetrical casting pose, rounded arms and
 hands, shoulder pieces, a belt, a separate back-cape layer, and model-space cloth
-panels. That checkpoint is saved but has not yet received its required second
-2560×1440 comparison capture.
+panels. That intermediate checkpoint was subsequently rejected because its
+ground-length coat and ellipsoid board still formed a pod-like silhouette.
+
+### 2026-08-14 — rider rebuild comparison
+
+Before: [`evidence/gate-1-rider-rebuild-before-2560x1440.jpg`](./evidence/gate-1-rider-rebuild-before-2560x1440.jpg)
+
+After: [`evidence/gate-1-rider-rebuild-after-2560x1440.jpg`](./evidence/gate-1-rider-rebuild-after-2560x1440.jpg)
+
+Inspections:
+
+- close: [`evidence/gate-1-rider-close-2560x1440.jpg`](./evidence/gate-1-rider-close-2560x1440.jpg)
+- middle: [`evidence/gate-1-rider-rebuild-after-2560x1440.jpg`](./evidence/gate-1-rider-rebuild-after-2560x1440.jpg)
+- far: [`evidence/gate-1-rider-far-2560x1440.jpg`](./evidence/gate-1-rider-far-2560x1440.jpg)
+- motion and cast: [`evidence/interaction-ride-track-1182x749.jpg`](./evidence/interaction-ride-track-1182x749.jpg), [`evidence/interaction-ice-pulse-1182x749.jpg`](./evidence/interaction-ice-pulse-1182x749.jpg)
+
+The before frame exposed a black egg-shaped lower body, a thick collar, short
+tube-like limbs, insufficient contact, and a board whose end-on projection read
+as another body part. The retained rebuild exposes bent legs and boots, separates
+the shoulder construction, introduces a readable hood seam and irregular cloth
+hem, strengthens contact occlusion, and replaces the ellipsoid with a thin,
+upturned, layered snow-surfing blade.
+
+The close, middle, and far captures confirm that the new silhouette survives the
+fixed chase camera and that the snow landscape remains the dominant subject.
+The rider rebuild is accepted as an iteration checkpoint, not final character
+art. Gate 1 remains open: dynamic-resolution motion still exposes stair-stepped
+track edges at some slopes, the distant horizon can show a hard raster contour,
+and the rider still needs a higher-detail animation/material pass before release.

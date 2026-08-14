@@ -115,14 +115,58 @@ export function createRiderGeometry() {
     }
   };
 
+  const addSnowBlade = () => {
+    const segments = 40;
+    const halfLength = 0.84;
+    const halfWidth = 0.2;
+    const centerZ = -0.08;
+    const topCenter = addVertex([0, 0.06, centerZ], [0, 1, 0], 14);
+    const topRing: number[] = [];
+    const bottomCenter = addVertex([0, 0.025, centerZ], [0, -1, 0], 15);
+    const bottomRing: number[] = [];
+
+    for (let segment = 0; segment < segments; segment += 1) {
+      const theta = (segment / segments) * Math.PI * 2;
+      const cosine = Math.cos(theta);
+      const sine = Math.sin(theta);
+      const x = cosine * halfLength;
+      const z = centerZ + sine * halfWidth;
+      const tip = Math.pow(Math.abs(cosine), 8);
+      const topY = 0.06 + tip * 0.06;
+      const tipSlope = -Math.sign(cosine) * tip * 0.42;
+      topRing.push(addVertex([x, topY, z], normalize([tipSlope, 1, 0]), 14));
+      bottomRing.push(addVertex([x, topY - 0.035, z], [0, -1, 0], 15));
+    }
+
+    for (let segment = 0; segment < segments; segment += 1) {
+      const next = (segment + 1) % segments;
+      indices.push(topCenter, topRing[next], topRing[segment]);
+      indices.push(bottomCenter, bottomRing[segment], bottomRing[next]);
+
+      const theta = (segment / segments) * Math.PI * 2;
+      const nextTheta = (next / segments) * Math.PI * 2;
+      const sideBase = vertices.length / 7;
+      const sideNormal = normalize([Math.cos(theta), 0.12, Math.sin(theta)]);
+      const nextSideNormal = normalize([Math.cos(nextTheta), 0.12, Math.sin(nextTheta)]);
+      const top = topRing[segment] * 7;
+      const nextTop = topRing[next] * 7;
+      const bottom = bottomRing[segment] * 7;
+      const nextBottom = bottomRing[next] * 7;
+      addVertex([vertices[top], vertices[top + 1], vertices[top + 2]], sideNormal, 15);
+      addVertex([vertices[bottom], vertices[bottom + 1], vertices[bottom + 2]], sideNormal, 15);
+      addVertex([vertices[nextTop], vertices[nextTop + 1], vertices[nextTop + 2]], nextSideNormal, 15);
+      addVertex([vertices[nextBottom], vertices[nextBottom + 1], vertices[nextBottom + 2]], nextSideNormal, 15);
+      indices.push(sideBase, sideBase + 2, sideBase + 1, sideBase + 1, sideBase + 2, sideBase + 3);
+    }
+  };
+
   const cloakRings = [
-    { y: 0.08, x: 0.58, z: 0.41, back: 0.18 },
-    { y: 0.28, x: 0.58, z: 0.41, back: 0.16 },
-    { y: 0.55, x: 0.52, z: 0.38, back: 0.13 },
-    { y: 0.8, x: 0.45, z: 0.35, back: 0.1 },
-    { y: 1.02, x: 0.4, z: 0.33, back: 0.065 },
-    { y: 1.22, x: 0.47, z: 0.36, back: 0.04 },
-    { y: 1.38, x: 0.34, z: 0.28, back: 0.02 },
+    { y: 0.58, x: 0.41, z: 0.3, back: 0.14 },
+    { y: 0.72, x: 0.42, z: 0.31, back: 0.13 },
+    { y: 0.9, x: 0.39, z: 0.29, back: 0.1 },
+    { y: 1.08, x: 0.36, z: 0.27, back: 0.07 },
+    { y: 1.23, x: 0.43, z: 0.29, back: 0.045 },
+    { y: 1.34, x: 0.31, z: 0.24, back: 0.02 },
   ];
   const cloakSegments = 32;
   const cloakBase = vertices.length / 7;
@@ -136,8 +180,9 @@ export function createRiderGeometry() {
       const cosine = Math.cos(theta);
       const sine = Math.sin(theta);
       const backDrape = Math.max(sine, 0) * ring.back;
+      const brokenHem = ringIndex === 0 ? Math.cos(theta * 4 + 0.45) * 0.028 : 0;
       addVertex(
-        [cosine * ring.x, ring.y, sine * ring.z + backDrape],
+        [cosine * ring.x, ring.y + brokenHem, sine * ring.z + backDrape],
         normalize([cosine / ring.x, slope, sine / ring.z]),
         1,
       );
@@ -155,14 +200,15 @@ export function createRiderGeometry() {
   }
 
   const capeBase = vertices.length / 7;
-  const capeSegments = 9;
+  const capeSegments = 12;
   for (let segment = 0; segment <= capeSegments; segment += 1) {
     const t = segment / capeSegments;
-    const y = 1.3 - t * 1.08;
-    const halfWidth = 0.27 + t * 0.15;
-    const z = 0.34 + t * 0.16 - Math.sin(t * Math.PI) * 0.035;
-    addVertex([-halfWidth, y, z], [0, 0.08, 1], 6);
-    addVertex([halfWidth, y, z], [0, 0.08, 1], 6);
+    const y = 1.29 - t * (0.69 + Math.abs(t - 0.55) * 0.04);
+    const halfWidth = 0.27 + Math.sin(t * Math.PI * 0.72) * 0.13;
+    const windOffset = t * 0.055 + Math.sin(t * Math.PI) * 0.035;
+    const z = 0.31 + t * 0.17 - Math.sin(t * Math.PI) * 0.04;
+    addVertex([-halfWidth + windOffset, y + t * 0.035, z], [0, 0.1, 1], 6);
+    addVertex([halfWidth + windOffset, y - t * 0.025, z], [0, 0.1, 1], 6);
   }
   for (let segment = 0; segment < capeSegments; segment += 1) {
     const topLeft = capeBase + segment * 2;
@@ -177,9 +223,9 @@ export function createRiderGeometry() {
   for (let segment = 0; segment <= ribbonSegments; segment += 1) {
     const t = segment / ribbonSegments;
     const center: Vec3 = [
-      0.08 + t * 0.86 + Math.sin(t * Math.PI * 1.4) * 0.1,
-      1.43 - t * 0.24 + Math.sin(t * Math.PI * 2) * 0.035,
-      0.08 + t * 1.52,
+      0.08 + t * 0.72 + Math.sin(t * Math.PI * 1.4) * 0.085,
+      1.42 - t * 0.19 + Math.sin(t * Math.PI * 2) * 0.03,
+      0.08 + t * 1.18,
     ];
     const width = 0.073 * (1 - t * 0.56);
     addVertex([center[0], center[1] - width, center[2]], [0, 0, 1], 5);
@@ -193,18 +239,37 @@ export function createRiderGeometry() {
     indices.push(lowerLeft, lowerRight, upperLeft, upperLeft, lowerRight, upperRight);
   }
 
-  addSphere([0, 0.1, -0.04], [0.59, 0.052, 1.12], 0, 28, 10);
-  addSphere([0, 1.59, -0.015], [0.255, 0.305, 0.27], 3);
-  addSphere([0, 1.57, -0.268], [0.15, 0.13, 0.048], 4, 20, 12);
-  addSphere([0.37, 1.18, -0.25], [0.086, 0.11, 0.086], 9, 18, 12);
-  addSphere([0, 1.39, -0.245], [0.1, 0.065, 0.065], 8, 18, 10);
-  addCapsule([-0.34, 1.24, -0.01], [-0.59, 0.98, -0.24], 0.105, 7);
-  addCapsule([0.34, 1.25, -0.04], [0.72, 1.17, -0.46], 0.105, 7);
-  addSphere([-0.6, 0.97, -0.25], [0.115, 0.105, 0.11], 7, 18, 11);
-  addSphere([0.74, 1.17, -0.48], [0.115, 0.105, 0.11], 7, 18, 11);
-  addSphere([-0.36, 1.28, 0], [0.17, 0.12, 0.18], 8, 18, 11);
-  addSphere([0.36, 1.28, 0], [0.17, 0.12, 0.18], 8, 18, 11);
-  addTorus([0, 0.88, 0], 0.39, 0.028, 8);
+  // A thin, upturned snow-surfing blade stays readable through rider turns.
+  addSnowBlade();
+
+  // Bent legs and boots keep daylight between the coat and the snow surface.
+  addCapsule([-0.17, 0.77, 0.02], [-0.24, 0.38, -0.07], 0.1, 12);
+  addCapsule([0.17, 0.77, 0.02], [0.25, 0.37, -0.01], 0.1, 12);
+  addCapsule([-0.24, 0.39, -0.07], [-0.25, 0.17, -0.08], 0.095, 13);
+  addCapsule([0.25, 0.38, -0.01], [0.25, 0.17, -0.04], 0.095, 13);
+  addSphere([-0.25, 0.14, -0.14], [0.13, 0.065, 0.19], 13, 20, 10);
+  addSphere([0.25, 0.14, -0.08], [0.13, 0.065, 0.19], 13, 20, 10);
+  addSphere([-0.25, 0.095, -0.09], [0.17, 0.022, 0.14], 8, 18, 8);
+  addSphere([0.25, 0.095, -0.05], [0.17, 0.022, 0.14], 8, 18, 8);
+
+  addSphere([0, 1.08, -0.005], [0.32, 0.39, 0.235], 2, 28, 16);
+  addSphere([0, 1.59, -0.015], [0.235, 0.285, 0.245], 3, 28, 18);
+  addSphere([0, 1.57, -0.245], [0.145, 0.125, 0.045], 4, 22, 12);
+  addSphere([0, 1.38, -0.205], [0.09, 0.055, 0.055], 5, 18, 10);
+
+  // Separate shoulder plates and a narrow collar avoid the old doughnut mantle.
+  addSphere([-0.34, 1.29, 0.005], [0.16, 0.105, 0.18], 8, 20, 12);
+  addSphere([0.34, 1.29, 0.005], [0.16, 0.105, 0.18], 8, 20, 12);
+  addTorus([0, 1.36, 0.015], 0.235, 0.026, 2);
+
+  addCapsule([-0.34, 1.25, -0.01], [-0.53, 1.04, -0.06], 0.078, 7);
+  addCapsule([-0.53, 1.04, -0.06], [-0.38, 0.84, -0.27], 0.072, 7);
+  addCapsule([0.34, 1.26, -0.03], [0.53, 1.1, -0.19], 0.082, 7);
+  addCapsule([0.53, 1.1, -0.19], [0.8, 1.37, -0.54], 0.074, 7);
+  addSphere([-0.38, 0.84, -0.27], [0.09, 0.085, 0.09], 7, 18, 11);
+  addSphere([0.81, 1.39, -0.56], [0.09, 0.085, 0.09], 7, 18, 11);
+  addSphere([0.85, 1.43, -0.59], [0.075, 0.075, 0.075], 9, 18, 12);
+  addTorus([0, 0.91, 0], 0.335, 0.021, 10);
   addSphere([0.9, 0.88, -3.2], [0.155, 0.155, 0.155], 11, 24, 14);
 
   return {

@@ -24,3 +24,24 @@ The active HUD now reports rolling FPS, P95 frame time, and 1% low. A warmed
 29 FPS. The fixed 2560×1440 evidence mode intentionally disables dynamic
 resolution and measured 16 FPS, P95 82.4 ms, and 1% low 10 FPS; it is a still
 capture path, not the current interactive performance target.
+
+## 2026-08-14 — rider rebuild review
+
+Environment: Chrome desktop with native WebGPU. Interactive captures used an
+approximately 1182×749 CSS-pixel viewport with dynamic resolution enabled.
+Evidence captures used the fixed 2560×1440 path and full-page capture so the
+browser automation viewport could not crop the right side of the frame.
+
+| Review state | Observed HUD | Result |
+| --- | ---: | --- |
+| warmed idle, interactive viewport | 54 FPS · P95 33.9 ms · 1% 29 | retained baseline |
+| curved ride with persistent track | 42 FPS · P95 33.8 ms · 1% 20 | accepted for iteration; below release target |
+| ride plus Ice Pulse capture | 41 FPS · P95 33.7 ms · 1% 20 | effect remains interactive; below release target |
+| fixed 2560×1440 middle frame | 18 FPS · P95 100.0 ms · 1% 10 | still-evidence path only |
+| fixed 2560×1440 close/far review | 16–19 FPS · P95 about 100 ms · 1% 10 | still-evidence path only |
+
+The rebuilt rider adds only a small number of procedural vertices. The measured
+movement range remains comparable with the previous Ice Pulse baseline; the
+largest frame cost is still the terrain, persistent snow compute, HDR resolve,
+and full-resolution evidence target. The interactive 1% low of 20 is not a
+release pass and remains an optimisation requirement.

@@ -81,3 +81,24 @@ The first energy target overlapped the rider's head in the review still and was
 rejected. The offset target now creates a readable rider–projectile–impact
 composition. Speed-dependent foreground spray also moves behind the rider rather
 than crossing the cloak silhouette.
+
+## 2026-08-14 — Rider rebuild exposes contact and equipment
+
+The first bespoke cloak mesh still collapsed into an egg-shaped silhouette in
+the 2560×1440 defect frame. It also used one long ellipsoid beneath a ground-
+length cloak, so there was no daylight for legs, boots, or a credible riding
+stance. Colour changes could not solve those structural defects.
+
+The rebuilt, still fully project-authored geometry shortens the coat to the
+thigh, adds bent legs, boot shafts, bindings, separated shoulder plates, a
+smaller collar, a broken cloth hem, a back seam, and an asymmetrical casting
+arm. CPU and WGSL terrain hashes now use the same component order, and the rider
+origin is lowered from 20 centimetres above the sampled terrain to a lightly
+embedded contact position.
+
+An intermediate pair of long skis failed the chase-camera review because their
+projection looked like two hanging icicles. A lateral ellipsoid board passed the
+rear view but became an oval when the rider turned. The retained snow-surfing
+blade is therefore an original thin mesh with separate top, underside, sidewall,
+bindings, and procedurally raised tips. This checkpoint improves the silhouette
+without claiming final character art.

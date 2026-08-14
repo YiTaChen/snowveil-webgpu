@@ -416,14 +416,14 @@ fn fsTerrain(input: TerrainVertexOut) -> @location(0) vec4<f32> {
   let compactedSnow = saturate(-deformation * 8.5);
   let pushedSnow = saturate(deformation * 19.0);
   let playerRelative = input.worldPosition.xz - globals.reserved.xy;
-  let contactShadow = exp(-length(playerRelative * vec2<f32>(2.4, 1.2)) * 3.4) * (1.0 - smoothstep(0.0, 2.2, length(playerRelative)));
+  let contactShadow = exp(-length(playerRelative * vec2<f32>(1.85, 1.1)) * 2.0) * (1.0 - smoothstep(0.0, 2.4, length(playerRelative)));
 
   var snow = base * (bounce + warmSun * wrapped * shadow * 1.35 + subsurface);
   snow = snow * surfaceVariation;
   snow = mix(snow, snow * vec3<f32>(0.68, 0.8, 0.93), compactedSnow * 0.46);
   snow = snow + vec3<f32>(0.58, 0.78, 0.94) * pushedSnow * (0.055 + wrapped * 0.1);
   snow = snow + vec3<f32>(0.05, 0.52, 1.0) * spellResidue * (0.22 + fresnel * 0.32);
-  snow = snow * (1.0 - contactShadow * 0.09);
+  snow = snow * (1.0 - contactShadow * 0.22);
   snow = snow + vec3<f32>(1.0, 0.84, 0.62) * roughSpecular * 0.46;
   snow = snow + vec3<f32>(0.76, 0.9, 1.0) * fresnel * 0.15;
   snow = snow + vec3<f32>(1.0, 0.9, 0.7) * glint * 3.4;
@@ -578,12 +578,12 @@ fn vsPlayer(input: PlayerVertexIn) -> PlayerVertexOut {
     local.x = local.x + sin(time * 2.15 + local.z * 3.1) * hem * speed * 0.035;
   }
   let lean = speed * 0.115;
-  if (part != 0u && part != 11u) {
+  if (part != 0u && part != 11u && part != 14u && part != 15u) {
     local = rotateX(local, lean);
     localNormal = rotateX(localNormal, lean);
   }
 
-  let playerOrigin = vec3<f32>(globals.reserved.x, globals.weather.y + 0.2 + bob, globals.reserved.y);
+  let playerOrigin = vec3<f32>(globals.reserved.x, globals.weather.y - 0.015 + bob, globals.reserved.y);
   let worldPosition = playerOrigin + rotateY(local, heading);
   let worldNormal = normalize(rotateY(localNormal, heading));
 
@@ -626,27 +626,39 @@ fn fsPlayer(input: PlayerVertexOut) -> @location(0) vec4<f32> {
   let rim = pow(1.0 - saturate(dot(normal, viewDirection)), 3.0);
   let specular = pow(saturate(dot(normal, halfway)), 56.0);
 
-  var albedo = vec3<f32>(0.065, 0.16, 0.225);
+  var albedo = vec3<f32>(0.105, 0.235, 0.29);
   var roughness = 0.86;
   if (input.part == 0u) {
     albedo = vec3<f32>(0.035, 0.085, 0.105);
     roughness = 0.38;
   } else if (input.part == 3u) {
-    albedo = vec3<f32>(0.052, 0.13, 0.185);
+    albedo = vec3<f32>(0.082, 0.19, 0.245);
   } else if (input.part == 4u) {
     albedo = vec3<f32>(0.78, 0.52, 0.33);
     roughness = 0.72;
   } else if (input.part == 5u) {
-    albedo = vec3<f32>(0.5, 0.105, 0.055);
+    albedo = vec3<f32>(0.39, 0.055, 0.038);
   } else if (input.part == 6u) {
     albedo = vec3<f32>(0.045, 0.13, 0.19);
   } else if (input.part == 7u) {
-    albedo = vec3<f32>(0.055, 0.14, 0.2);
+    albedo = vec3<f32>(0.06, 0.15, 0.205);
   } else if (input.part == 8u) {
     albedo = vec3<f32>(0.16, 0.27, 0.32);
     roughness = 0.34;
   } else if (input.part == 10u) {
     albedo = vec3<f32>(0.018, 0.052, 0.078);
+  } else if (input.part == 12u) {
+    albedo = vec3<f32>(0.035, 0.095, 0.125);
+    roughness = 0.74;
+  } else if (input.part == 13u) {
+    albedo = vec3<f32>(0.018, 0.046, 0.062);
+    roughness = 0.42;
+  } else if (input.part == 14u) {
+    albedo = vec3<f32>(0.07, 0.26, 0.32);
+    roughness = 0.24;
+  } else if (input.part == 15u) {
+    albedo = vec3<f32>(0.012, 0.038, 0.05);
+    roughness = 0.34;
   }
 
   let coolAmbient = vec3<f32>(0.44, 0.62, 0.78) * (0.64 + sky * 0.42);
@@ -660,9 +672,14 @@ fn fsPlayer(input: PlayerVertexOut) -> @location(0) vec4<f32> {
   if (input.part == 1u) {
     let panelAngle = atan2(input.localPosition.z, input.localPosition.x);
     let panelSeam = pow(abs(sin(panelAngle * 4.0)), 46.0);
-    let hem = 1.0 - smoothstep(0.055, 0.13, abs(input.localPosition.y - 0.12));
-    color = color * (1.0 - panelSeam * 0.11);
+    let hem = 1.0 - smoothstep(0.04, 0.12, abs(input.localPosition.y - 0.58));
+    color = color * (1.0 - panelSeam * 0.16);
     color = color + vec3<f32>(0.08, 0.16, 0.21) * hem * 0.22;
+  }
+  if (input.part == 3u) {
+    let hoodBack = smoothstep(0.035, 0.16, input.localPosition.z);
+    let hoodSeam = 1.0 - smoothstep(0.008, 0.026, abs(input.localPosition.x));
+    color = color + vec3<f32>(0.16, 0.3, 0.38) * hoodBack * hoodSeam * 0.18;
   }
   if (input.part == 6u) {
     let capeEdge = smoothstep(0.24, 0.42, abs(input.localPosition.x));
@@ -672,8 +689,8 @@ fn fsPlayer(input: PlayerVertexOut) -> @location(0) vec4<f32> {
   color = color + vec3<f32>(1.0, 0.82, 0.61) * specular * (1.0 - roughness) * 0.6;
 
   var snowCatch = 0.0;
-  if (input.part == 2u || input.part == 10u) {
-    snowCatch = smoothstep(0.58, 0.91, normal.y) * 0.14;
+  if (input.part == 2u || input.part == 8u || input.part == 10u || input.part == 14u) {
+    snowCatch = smoothstep(0.58, 0.91, normal.y) * 0.13;
   }
   color = mix(color, vec3<f32>(0.63, 0.78, 0.88) * (0.7 + direct * 0.7), snowCatch);
 

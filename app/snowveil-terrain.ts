@@ -7,8 +7,8 @@ const smoothstep = (edge0: number, edge1: number, value: number) => {
 
 function hash12(x: number, y: number) {
   const px = fract(x * 0.1031);
-  const py = fract(x * 0.103);
-  const pz = fract(y * 0.0973);
+  const py = fract(y * 0.103);
+  const pz = fract(x * 0.0973);
   const dot = px * (py + 33.33) + py * (pz + 33.33) + pz * (px + 33.33);
   const qx = px + dot;
   const qy = py + dot;
