@@ -25,7 +25,9 @@ export function SnowveilScene() {
     if (!canvas) return;
 
     let disposed = false;
-    const evidenceMode = new URLSearchParams(window.location.search).has("evidence");
+    const query = new URLSearchParams(window.location.search);
+    const evidenceMode = query.has("evidence");
+    const demoMode = query.has("demo");
     if (evidenceMode) {
       document.documentElement.dataset.snowveilEvidence = "true";
     }
@@ -482,7 +484,7 @@ export function SnowveilScene() {
             fpsFrames = 0;
           }
 
-          const inputX =
+          const manualInputX =
             (pressedKeys.has("KeyD") ||
             pressedKeys.has("ArrowRight") ||
             (keyPulseUntil.get("KeyD") ?? 0) > now ||
@@ -495,7 +497,7 @@ export function SnowveilScene() {
             (keyPulseUntil.get("ArrowLeft") ?? 0) > now
               ? 1
               : 0);
-          const inputForward =
+          const manualInputForward =
             (pressedKeys.has("KeyW") ||
             pressedKeys.has("ArrowUp") ||
             (keyPulseUntil.get("KeyW") ?? 0) > now ||
@@ -508,6 +510,8 @@ export function SnowveilScene() {
             (keyPulseUntil.get("ArrowDown") ?? 0) > now
               ? 1
               : 0);
+          const inputX = demoMode ? Math.sin(elapsed * 0.72) * 0.64 : manualInputX;
+          const inputForward = demoMode ? 1 : manualInputForward;
           const inputLength = Math.hypot(inputX, inputForward);
           const forwardX = Math.sin(yaw);
           const forwardZ = -Math.cos(yaw);

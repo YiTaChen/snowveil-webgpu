@@ -26,6 +26,10 @@ Use a desktop browser with WebGPU enabled. Ride with WASD or the arrow keys,
 cast Ice Pulse with Space, drag the scene to orbit, hold Shift for a faster
 traverse, and use the mouse wheel to change camera distance.
 
+Append `?demo` to the local URL for a deterministic curved ride used by visual
+QA. It exercises the same movement, rider shader, and persistent snow path as
+keyboard input; it is not a pre-rendered or separate evidence scene.
+
 ## Originality and licensing
 
 No reference-project code or assets are copied into this repository. The current
@@ -43,7 +47,7 @@ Original project code is released under the [MIT License](./LICENSE).
 1. Cinematic snow visual gate — in progress; HDR raster baseline established.
 2. Temporal stability and measured capture evidence.
 3. Persistent GPU deformable snow — interactive baseline established.
-4. Character motion, contact, and snow-surfing — prototype in progress.
+4. Character motion, contact, and snow-surfing — animation/material checkpoint established.
 5. Original spell interactions and performance hardening — Ice Pulse baseline established.
 
 The current build is a development milestone, not a claim that the final visual

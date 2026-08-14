@@ -23,3 +23,7 @@ They are review artefacts, not third-party source material.
   original Ice Pulse ring, projectile, and deformation residue.
 - `gate-1-stability-after-2560x1440.jpg` — fixed native 1440p evidence after
   derivative-based snow-detail filtering and exact terrain-to-sky fog matching.
+- `interaction-carve-pose-a-1182x749.jpg` — first retained close frame from the
+  deterministic 5.4 m/s ride, showing the loaded edge and compressed stance.
+- `interaction-carve-pose-b-1182x749.jpg` — second frame about 0.4 seconds later,
+  showing stance recovery and independent cape/scarf phase.

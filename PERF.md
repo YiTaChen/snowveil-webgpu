@@ -62,3 +62,19 @@ The 768² compute pass updates 2.25 times as many snow-history texels as 512²,
 but the retained interactive run remains near the warmed idle rate. The fixed
 1440p path still is not a release-performance pass; it deliberately disables
 dynamic resolution so evidence frames can be compared pixel-for-pixel.
+
+## 2026-08-14 — rider motion and material review
+
+Environment: active Chrome desktop tab, native WebGPU, 1182×749 CSS pixels,
+dynamic resolution enabled, `?demo` curved ride at 5.4 m/s, camera distance 4.2.
+
+| Review state | Observed HUD | Result |
+| --- | ---: | --- |
+| close curved ride, frame A | 60 FPS · P95 17.5 ms · 1% 56 | retained |
+| close curved ride, frame B | 59 FPS · P95 17.5 ms · 1% 57 | retained |
+
+The procedural banking, compression, secondary cloth motion, and antialiased
+weave do not introduce a measurable regression in the retained active-tab run.
+An unfocused automation window initially reported 14–16 FPS with 100 ms P95;
+interacting with the same tab immediately restored 59–60 FPS. Those throttled
+figures are recorded here as a measurement caveat, not treated as GPU cost.

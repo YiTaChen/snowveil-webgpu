@@ -490,7 +490,7 @@ fn updateSnow(@builtin(global_invocation_id) invocation: vec3<u32>) {
       smoothstep(0.62, 0.76, abs(lateral)) *
       (1.0 - smoothstep(0.76, 0.98, abs(lateral))) *
       boardLength;
-    let stamped = -0.13 * compressed * boardLength * speed + 0.045 * edgeRidge * speed;
+    let stamped = -0.075 * compressed * boardLength * speed + 0.028 * edgeRidge * speed;
     if (stamped < 0.0) {
       deformation = min(deformation, stamped);
     } else if (deformation > -0.018) {
@@ -564,6 +564,12 @@ fn rotateX(point: vec3<f32>, angle: f32) -> vec3<f32> {
   return vec3<f32>(point.x, point.y * cosine - point.z * sine, point.y * sine + point.z * cosine);
 }
 
+fn rotateZ(point: vec3<f32>, angle: f32) -> vec3<f32> {
+  let cosine = cos(angle);
+  let sine = sin(angle);
+  return vec3<f32>(point.x * cosine - point.y * sine, point.x * sine + point.y * cosine, point.z);
+}
+
 @vertex
 fn vsPlayer(input: PlayerVertexIn) -> PlayerVertexOut {
   var output: PlayerVertexOut;
@@ -571,13 +577,27 @@ fn vsPlayer(input: PlayerVertexIn) -> PlayerVertexOut {
   let speed = globals.reserved.w;
   let heading = globals.reserved.z;
   let part = u32(round(input.part));
-  let bob = abs(sin(time * 8.2)) * speed * 0.022;
+  let motion = saturate(speed * 1.3);
+  let carvePhase = time * (1.75 + motion * 2.15);
+  let carve = sin(carvePhase) * motion;
+  let compression = (0.5 + 0.5 * sin(carvePhase * 2.0 + 0.72)) * motion;
+  let bob = sin(carvePhase * 2.0 + 0.22) * motion * 0.009;
   var local = input.position;
   var localNormal = normalize(input.normal);
+
+  if (part != 11u && part != 13u && part != 14u && part != 15u && !(part == 8u && local.y < 0.28)) {
+    local.y = local.y - compression * 0.032;
+  }
+  if (part == 12u) {
+    let legHeight = saturate((local.y - 0.16) / 0.68);
+    local.y = local.y - compression * legHeight * 0.055;
+    local.z = local.z + carve * (0.5 - legHeight) * sign(local.x) * 0.018;
+  }
   if (part == 5u) {
     let tail = saturate((local.z - 0.08) / 1.52);
-    local.x = local.x + sin(time * 3.25 + tail * 5.7) * (0.025 + tail * 0.1) * (0.45 + speed);
-    local.y = local.y + sin(time * 2.7 + tail * 4.2) * tail * 0.035;
+    local.x = local.x + sin(time * (2.9 + motion * 2.5) + tail * 6.4) * (0.018 + tail * 0.115) * (0.35 + motion);
+    local.y = local.y + sin(time * (2.45 + motion * 1.7) + tail * 4.8) * tail * (0.018 + motion * 0.034);
+    local.z = local.z + motion * tail * (0.04 + 0.045 * sin(time * 2.1 + tail * 3.7));
   }
   if (part == 11u) {
     let spellCenter = vec3<f32>(0.9, 0.88, -3.2);
@@ -586,12 +606,29 @@ fn vsPlayer(input: PlayerVertexIn) -> PlayerVertexOut {
   }
   if (part == 1u) {
     let hem = 1.0 - saturate(local.y / 1.38);
-    local.x = local.x + sin(time * 2.15 + local.z * 3.1) * hem * speed * 0.035;
+    local.x = local.x + (sin(time * 2.15 + local.z * 3.1) * motion * 0.034 + carve * 0.022) * hem;
+    local.z = local.z + sin(time * 2.7 + local.x * 4.6) * hem * motion * 0.018;
   }
-  let lean = speed * 0.115;
+  if (part == 6u) {
+    let capeTail = saturate((1.31 - local.y) / 0.72);
+    local.x = local.x + sin(time * (2.5 + motion * 1.4) + capeTail * 5.2) * capeTail * (0.012 + motion * 0.052);
+    local.y = local.y + cos(time * 2.2 + capeTail * 4.3) * capeTail * motion * 0.022;
+    local.z = local.z + capeTail * motion * (0.025 + 0.035 * sin(time * 1.9 + capeTail * 3.6));
+  }
+
+  let lean = motion * 0.105 + compression * 0.018;
+  let bank = carve * 0.072;
   if (part != 0u && part != 11u && part != 14u && part != 15u) {
-    local = rotateX(local, lean);
+    let stancePivot = vec3<f32>(0.0, 0.12, -0.04);
+    local = stancePivot + rotateX(local - stancePivot, lean);
     localNormal = rotateX(localNormal, lean);
+    local = stancePivot + rotateZ(local - stancePivot, bank);
+    localNormal = rotateZ(localNormal, bank);
+  }
+  if (part == 14u || part == 15u || (part == 8u && local.y < 0.28)) {
+    let boardBank = carve * 0.024;
+    local = rotateZ(local, boardBank);
+    localNormal = rotateZ(localNormal, boardBank);
   }
 
   let playerOrigin = vec3<f32>(globals.reserved.x, globals.weather.y - 0.015 + bob, globals.reserved.y);
@@ -639,18 +676,27 @@ fn fsPlayer(input: PlayerVertexOut) -> @location(0) vec4<f32> {
 
   var albedo = vec3<f32>(0.105, 0.235, 0.29);
   var roughness = 0.86;
-  if (input.part == 0u) {
+  if (input.part == 1u) {
+    let dyeHeight = smoothstep(0.56, 1.34, input.localPosition.y);
+    albedo = mix(vec3<f32>(0.072, 0.175, 0.218), vec3<f32>(0.125, 0.285, 0.335), dyeHeight);
+    roughness = 0.92;
+  } else if (input.part == 0u) {
     albedo = vec3<f32>(0.035, 0.085, 0.105);
     roughness = 0.38;
+  } else if (input.part == 2u) {
+    albedo = vec3<f32>(0.087, 0.205, 0.254);
+    roughness = 0.82;
   } else if (input.part == 3u) {
-    albedo = vec3<f32>(0.082, 0.19, 0.245);
+    albedo = vec3<f32>(0.09, 0.218, 0.278);
+    roughness = 0.88;
   } else if (input.part == 4u) {
     albedo = vec3<f32>(0.78, 0.52, 0.33);
     roughness = 0.72;
   } else if (input.part == 5u) {
     albedo = vec3<f32>(0.39, 0.055, 0.038);
   } else if (input.part == 6u) {
-    albedo = vec3<f32>(0.045, 0.13, 0.19);
+    albedo = vec3<f32>(0.052, 0.148, 0.205);
+    roughness = 0.9;
   } else if (input.part == 7u) {
     albedo = vec3<f32>(0.06, 0.15, 0.205);
   } else if (input.part == 8u) {
@@ -675,11 +721,22 @@ fn fsPlayer(input: PlayerVertexOut) -> @location(0) vec4<f32> {
   let coolAmbient = vec3<f32>(0.44, 0.62, 0.78) * (0.64 + sky * 0.42);
   let warmDirect = vec3<f32>(1.0, 0.73, 0.48) * (0.12 + direct * 1.32);
   var color = albedo * (coolAmbient + warmDirect);
+  let snowBounce = 0.07 + saturate(-normal.y * 0.5 + 0.5) * 0.08;
+  color = color + albedo * vec3<f32>(0.34, 0.5, 0.65) * snowBounce;
   var clothLift = 1.0;
   if (input.part == 1u) {
-    clothLift = 0.95 + 0.05 * sin(input.worldPosition.y * 34.0 + input.worldPosition.x * 19.0);
+    clothLift = 0.965 + 0.035 * sin(input.localPosition.y * 34.0 + input.localPosition.x * 19.0);
   }
   color = color * clothLift;
+
+  let weaveX = input.localPosition.x * 176.0 + input.localPosition.z * 31.0;
+  let weaveY = input.localPosition.y * 194.0 - input.localPosition.z * 23.0;
+  let weaveSampling = 1.0 - smoothstep(0.42, 1.5, max(fwidth(weaveX), fwidth(weaveY)));
+  let weave = sin(weaveX) * sin(weaveY) * weaveSampling;
+  let clothMaterial = input.part == 1u || input.part == 2u || input.part == 3u || input.part == 6u || input.part == 7u || input.part == 12u;
+  if (clothMaterial) {
+    color = color * (0.985 + weave * 0.015);
+  }
   if (input.part == 1u) {
     let panelAngle = atan2(input.localPosition.z, input.localPosition.x);
     let panelSeam = pow(abs(sin(panelAngle * 4.0)), 46.0);
@@ -694,7 +751,8 @@ fn fsPlayer(input: PlayerVertexOut) -> @location(0) vec4<f32> {
   }
   if (input.part == 6u) {
     let capeEdge = smoothstep(0.24, 0.42, abs(input.localPosition.x));
-    color = color * (1.0 - capeEdge * 0.12);
+    let capeFold = 0.95 + 0.05 * cos(input.localPosition.x * 18.0 + input.localPosition.y * 4.0);
+    color = color * capeFold * (1.0 - capeEdge * 0.12);
   }
   color = color + vec3<f32>(0.43, 0.67, 0.82) * rim * 0.34;
   color = color + vec3<f32>(1.0, 0.82, 0.61) * specular * (1.0 - roughness) * 0.6;

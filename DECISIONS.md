@@ -119,3 +119,24 @@ sub-pixel shimmer in motion. The far-terrain fog also uses the same low sky,
 high sky, horizon glow, solar disc, and halo calculation as the sky pass. A fully
 fogged terrain sample therefore converges to the exact sky colour instead of
 leaving a dark raster silhouette at the mesh boundary.
+
+## 2026-08-14 — Rider motion is force-led, not a walk cycle
+
+The snow-surfing rider should read as balancing against a continuous edge force,
+not as a walking character translated over snow. The vertex shader now derives
+a carve phase from normalized speed and applies it around a low stance pivot:
+the torso banks, the knees compress, and the blade follows with a smaller edge
+angle. The coat hem, back cape, and scarf use separate frequencies and amplitudes
+so their motion follows the rider without moving as one rigid shell.
+
+Dark winter cloth receives a restrained height-dependent dye shift, stable local-
+space weave, snow bounce, fold shading, and snow-catching response. Derivatives
+fade the weave when it would become undersampled. All motion and material detail
+remains project-authored WGSL; no rig, animation clip, texture, or model asset is
+imported.
+
+The `?demo` query provides a deterministic curved 5.4 m/s ride for repeatable
+visual QA while using the same input integration, deformation compute, and
+rendering path as manual play. Long-run review also showed that the previous
+13-centimetre snow compression read as a trench, so the retained board stamp is
+7.5 centimetres deep with a 2.8-centimetre displaced edge ridge.

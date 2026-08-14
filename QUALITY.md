@@ -85,3 +85,23 @@ This is accepted as a stability checkpoint, not a final gate pass. The track
 must still survive later oblique-camera and higher-speed tests, fixed 1440p is a
 still-capture path rather than a playable target, and the rider still requires a
 higher-detail animation and material pass.
+
+### 2026-08-14 — rider force and material checkpoint
+
+Consecutive curved-ride frames:
+
+- [`evidence/interaction-carve-pose-a-1182x749.jpg`](./evidence/interaction-carve-pose-a-1182x749.jpg)
+- [`evidence/interaction-carve-pose-b-1182x749.jpg`](./evidence/interaction-carve-pose-b-1182x749.jpg)
+
+The two running-build frames are separated by about 0.4 seconds at 5.4 m/s. They
+show a readable bank-to-recovery change in the torso and blade, knee compression,
+and a different scarf/cape phase; the character is no longer a rigid mesh merely
+translated along the terrain. The brighter dye range, local-space weave, snow
+bounce, and cape folds preserve dark-cloth detail without introducing crawling
+noise. Shallower compression also prevents a sustained ride from cutting an
+implausibly deep trench. Browser logs contain no warnings or WebGPU errors.
+
+The animation/material checkpoint is accepted, but final character art remains
+open. Hands and shoulder armour are still simplified volumes, there is no facial
+performance, and the shader deformation is a compact part-based prototype rather
+than a production skeletal rig with authored clips and transitions.
