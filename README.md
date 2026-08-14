@@ -39,9 +39,9 @@ Original project code is released under the [MIT License](./LICENSE).
 
 ## Milestones
 
-1. Cinematic snow visual gate — in progress; stable raster baseline established.
-2. Geometry terrain and temporal rendering.
-3. Persistent deformable snow.
+1. Cinematic snow visual gate — in progress; HDR raster baseline established.
+2. Temporal stability and measured capture evidence.
+3. Persistent GPU deformable snow.
 4. Character motion, contact, and snow-surfing.
 5. Original spell interactions and performance hardening.
 

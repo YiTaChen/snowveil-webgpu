@@ -25,3 +25,17 @@ The primary renderer therefore moves to a dense native-WebGPU grid displaced in
 the vertex shader. The same original terrain and snow functions remain, while
 real depth, stable silhouettes, and a much smaller fragment cost provide the
 foundation required for later deformation and motion-vector passes.
+
+## 2026-08-13 — HDR before interactive snow
+
+The raster renderer now shades into an `rgba16float` scene target. A separate
+fullscreen resolve performs a restrained bright-pass bloom, ACES-style tone
+mapping, vignette, and sub-visible grain before presenting to the canvas. This
+keeps sun energy and crystalline highlights above display white without clipping
+the snow body to a flat value.
+
+Chrome validation exposed a vertical flip in the first resolve because the
+off-screen render target and the fullscreen triangle used different Y-origin
+conventions. The post vertex shader now explicitly flips the sampled Y
+coordinate. No new WebGPU validation errors were emitted after the corrected
+reload.

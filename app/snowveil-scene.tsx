@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { snowveilSkyShader, snowveilTerrainShader } from "./snowveil-shader";
+import { snowveilPostShader, snowveilSkyShader, snowveilTerrainShader } from "./snowveil-shader";
 
 type SceneState = "loading" | "ready" | "unsupported" | "error";
 
@@ -95,6 +95,7 @@ export function SnowveilScene() {
         if (!context) throw new Error("WebGPU canvas context is unavailable.");
 
         const format = webgpu.getPreferredCanvasFormat();
+        const sceneFormat: GPUTextureFormat = "rgba16float";
         context.configure({ device: activeDevice, format, alphaMode: "opaque" });
 
         const skyShaderModule = activeDevice.createShaderModule({
@@ -105,14 +106,21 @@ export function SnowveilScene() {
           label: "Snowveil original procedural terrain shader",
           code: snowveilTerrainShader,
         });
+        const postShaderModule = activeDevice.createShaderModule({
+          label: "Snowveil HDR post shader",
+          code: snowveilPostShader,
+        });
 
-        const [skyCompilation, terrainCompilation] = await Promise.all([
+        const [skyCompilation, terrainCompilation, postCompilation] = await Promise.all([
           skyShaderModule.getCompilationInfo(),
           terrainShaderModule.getCompilationInfo(),
+          postShaderModule.getCompilationInfo(),
         ]);
-        const shaderErrors = [...skyCompilation.messages, ...terrainCompilation.messages].filter(
-          (entry: { type: string }) => entry.type === "error",
-        );
+        const shaderErrors = [
+          ...skyCompilation.messages,
+          ...terrainCompilation.messages,
+          ...postCompilation.messages,
+        ].filter((entry: { type: string }) => entry.type === "error");
         if (shaderErrors.length) {
           throw new Error(shaderErrors.map((entry: { message: string }) => entry.message).join("\n"));
         }
@@ -121,7 +129,7 @@ export function SnowveilScene() {
           label: "Snowveil atmosphere pipeline",
           layout: "auto",
           vertex: { module: skyShaderModule, entryPoint: "vsMain" },
-          fragment: { module: skyShaderModule, entryPoint: "fsMain", targets: [{ format }] },
+          fragment: { module: skyShaderModule, entryPoint: "fsMain", targets: [{ format: sceneFormat }] },
           primitive: { topology: "triangle-list" },
           depthStencil: {
             format: "depth24plus",
@@ -139,7 +147,7 @@ export function SnowveilScene() {
             entryPoint: "fsSnowOverlay",
             targets: [
               {
-                format,
+                format: sceneFormat,
                 blend: {
                   color: { srcFactor: "src-alpha", dstFactor: "one-minus-src-alpha" },
                   alpha: { srcFactor: "one", dstFactor: "one-minus-src-alpha" },
@@ -171,7 +179,7 @@ export function SnowveilScene() {
           fragment: {
             module: terrainShaderModule,
             entryPoint: "fsTerrain",
-            targets: [{ format }],
+            targets: [{ format: sceneFormat }],
           },
           primitive: { topology: "triangle-list", cullMode: "back" },
           depthStencil: {
@@ -179,6 +187,14 @@ export function SnowveilScene() {
             depthWriteEnabled: true,
             depthCompare: "less",
           },
+        });
+
+        const postPipeline = activeDevice.createRenderPipeline({
+          label: "Snowveil HDR resolve pipeline",
+          layout: "auto",
+          vertex: { module: postShaderModule, entryPoint: "vsPost" },
+          fragment: { module: postShaderModule, entryPoint: "fsPost", targets: [{ format }] },
+          primitive: { topology: "triangle-list" },
         });
 
         const uniformBuffer = activeDevice.createBuffer({
@@ -197,6 +213,11 @@ export function SnowveilScene() {
         const snowOverlayBindGroup = activeDevice.createBindGroup({
           layout: snowOverlayPipeline.getBindGroupLayout(0),
           entries: [{ binding: 0, resource: { buffer: uniformBuffer } }],
+        });
+        const postSampler = activeDevice.createSampler({
+          label: "Snowveil HDR linear sampler",
+          magFilter: "linear",
+          minFilter: "linear",
         });
         const uniforms = new Float32Array(16);
 
@@ -245,6 +266,8 @@ export function SnowveilScene() {
         activeDevice.queue.writeBuffer(terrainIndexBuffer, 0, terrainIndices);
 
         let depthTexture: GPUTexture | undefined;
+        let sceneColorTexture: GPUTexture | undefined;
+        let postBindGroup: GPUBindGroup | undefined;
         let depthWidth = 0;
         let depthHeight = 0;
 
@@ -258,11 +281,26 @@ export function SnowveilScene() {
           }
           if (depthWidth !== width || depthHeight !== height) {
             depthTexture?.destroy?.();
+            sceneColorTexture?.destroy?.();
             depthTexture = activeDevice.createTexture({
               label: "Snowveil depth buffer",
               size: [width, height],
               format: "depth24plus",
               usage: GPUTextureUsage.RENDER_ATTACHMENT,
+            });
+            sceneColorTexture = activeDevice.createTexture({
+              label: "Snowveil HDR scene color",
+              size: [width, height],
+              format: sceneFormat,
+              usage: GPUTextureUsage.RENDER_ATTACHMENT | GPUTextureUsage.TEXTURE_BINDING,
+            });
+            postBindGroup = activeDevice.createBindGroup({
+              layout: postPipeline.getBindGroupLayout(0),
+              entries: [
+                { binding: 0, resource: { buffer: uniformBuffer } },
+                { binding: 1, resource: sceneColorTexture.createView() },
+                { binding: 2, resource: postSampler },
+              ],
             });
             depthWidth = width;
             depthHeight = height;
@@ -306,11 +344,16 @@ export function SnowveilScene() {
           uniforms[11] = 0;
           activeDevice.queue.writeBuffer(uniformBuffer, 0, uniforms);
 
+          if (!depthTexture || !sceneColorTexture || !postBindGroup) {
+            animationFrame = requestAnimationFrame(render);
+            return;
+          }
+
           const encoder = activeDevice.createCommandEncoder({ label: "Snowveil frame" });
           const pass = encoder.beginRenderPass({
             colorAttachments: [
               {
-                view: context.getCurrentTexture().createView(),
+                view: sceneColorTexture.createView(),
                 clearValue: { r: 0.025, g: 0.065, b: 0.1, a: 1 },
                 loadOp: "clear",
                 storeOp: "store",
@@ -335,6 +378,20 @@ export function SnowveilScene() {
           pass.setBindGroup(0, snowOverlayBindGroup);
           pass.draw(3);
           pass.end();
+          const postPass = encoder.beginRenderPass({
+            colorAttachments: [
+              {
+                view: context.getCurrentTexture().createView(),
+                clearValue: { r: 0.01, g: 0.025, b: 0.04, a: 1 },
+                loadOp: "clear",
+                storeOp: "store",
+              },
+            ],
+          });
+          postPass.setPipeline(postPipeline);
+          postPass.setBindGroup(0, postBindGroup);
+          postPass.draw(3);
+          postPass.end();
           activeDevice.queue.submit([encoder.finish()]);
 
           animationFrame = requestAnimationFrame(render);

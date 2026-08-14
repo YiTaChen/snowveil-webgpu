@@ -134,12 +134,7 @@ fn fsMain(input: SkyVertexOut) -> @location(0) vec4<f32> {
   var color = skyColor(rayDirection, sunDirection);
   color = color + vec3<f32>(0.69, 0.83, 0.92) * snowParticles(input.uv, time);
 
-  let vignetteUv = input.uv * (1.0 - input.uv.yx);
-  let vignette = pow(saturate(vignetteUv.x * vignetteUv.y * 18.0), 0.11);
-  color = color * mix(0.77, 1.0, vignette);
-  let grain = hash12(input.uv * resolution + fract(time) * 91.0) - 0.5;
-  color = aces(color * 1.07) + grain * 0.007;
-  return vec4<f32>(pow(max(color, vec3<f32>(0.0)), vec3<f32>(0.95)), 1.0);
+  return vec4<f32>(max(color, vec3<f32>(0.0)), 1.0);
 }
 
 @fragment
@@ -198,6 +193,12 @@ fn fbm(point: vec2<f32>) -> f32 {
   return result;
 }
 
+fn outcropField(point: vec2<f32>) -> f32 {
+  let outcropA = exp(-length((point - vec2<f32>(-12.0, -24.0)) * vec2<f32>(0.34, 0.19)) * 1.7);
+  let outcropB = exp(-length((point - vec2<f32>(19.0, -33.0)) * vec2<f32>(0.29, 0.16)) * 1.8);
+  return max(outcropA, outcropB);
+}
+
 fn terrainHeight(point: vec2<f32>) -> f32 {
   let wind = normalize(vec2<f32>(0.82, 0.57));
   let across = vec2<f32>(-wind.y, wind.x);
@@ -213,8 +214,13 @@ fn terrainHeight(point: vec2<f32>) -> f32 {
   let heroDistance = length((point - vec2<f32>(-1.5, -11.0)) * vec2<f32>(0.65, 0.34));
   let heroDune = exp(-heroDistance * 0.1) * 1.82;
   let foregroundDip = -exp(-length((point - vec2<f32>(2.8, -1.5)) * vec2<f32>(0.32, 0.9))) * 0.48;
-  let farRise = smoothstep(38.0, 82.0, length(point)) * 11.0;
-  return -0.72 + broad + longSwell + drifts + ridges + heroDune + foregroundDip + farRise;
+  let radius = length(point);
+  let angle = atan2(point.y, point.x);
+  let mountainProfile = 8.0 + sin(angle * 3.7 + 0.6) * 2.2 + sin(angle * 8.3 - 1.2) * 1.25 + noise2(point * 0.027 + 31.0) * 4.2;
+  let farRise = smoothstep(38.0, 82.0, radius) * mountainProfile;
+  let outcrop = outcropField(point);
+  let outcropLift = smoothstep(0.12, 0.58, outcrop) * 1.55 + smoothstep(0.46, 0.78, outcrop) * 0.32;
+  return -0.72 + broad + longSwell + drifts + ridges + heroDune + foregroundDip + farRise + outcropLift;
 }
 
 fn terrainNormal(point: vec2<f32>) -> vec3<f32> {
@@ -305,9 +311,15 @@ fn fsTerrain(input: TerrainVertexOut) -> @location(0) vec4<f32> {
   let microB = noise2(input.worldPosition.xz * 57.0 + 19.0) - 0.5;
   let microC = noise2(vec2<f32>(dot(input.worldPosition.xz, across) * 8.7, dot(input.worldPosition.xz, wind) * 0.7)) - 0.5;
   let ripple = sin(dot(input.worldPosition.xz, across) * 3.8 + noise2(input.worldPosition.xz * 0.68) * 2.2);
+  let rippleBreak = smoothstep(0.28, 0.74, noise2(vec2<f32>(
+    dot(input.worldPosition.xz, wind) * 0.21,
+    dot(input.worldPosition.xz, across) * 0.085
+  )));
+  let fineWave = sin(dot(input.worldPosition.xz, across) * 13.5 + noise2(input.worldPosition.xz * 0.38) * 4.2);
+  let fineRipple = fineWave * rippleBreak;
   normal = normalize(
     normal + vec3<f32>(microA * 0.054, 0.0, microB * 0.054) * detailFade +
-    vec3<f32>(across.x, 0.0, across.y) * (ripple * 0.032 + microC * 0.045) * detailFade
+    vec3<f32>(across.x, 0.0, across.y) * (ripple * 0.032 + microC * 0.045 + fineRipple * 0.026) * detailFade
   );
 
   let direct = saturate(dot(normal, sunDirection));
@@ -333,20 +345,109 @@ fn fsTerrain(input: TerrainVertexOut) -> @location(0) vec4<f32> {
   let glintDistance = 1.0 - smoothstep(8.0, 44.0, input.viewDistance);
   let glint = glintMask * pow(saturate(dot(normal, halfway)), 96.0) * shadow * glintDistance;
   let ridgeTone = pow(abs(sin(dot(input.worldPosition.xz, across) * 3.2)), 24.0) * detailFade;
-  let surfaceVariation = 0.95 + 0.05 * noise2(input.worldPosition.xz * 3.1) - ridgeTone * 0.018;
+  let fineCrest = pow(max(fineWave, 0.0), 10.0) * rippleBreak * detailFade;
+  let surfaceVariation = 0.95 + 0.05 * noise2(input.worldPosition.xz * 3.1) - ridgeTone * 0.018 - fineCrest * 0.032;
+  let outcrop = outcropField(input.worldPosition.xz);
+  let rockReveal = smoothstep(0.24, 0.72, outcrop) * smoothstep(0.1, 0.46, 1.0 - normal.y);
 
   var snow = base * (bounce + warmSun * wrapped * shadow * 1.35 + subsurface);
   snow = snow * surfaceVariation;
   snow = snow + vec3<f32>(1.0, 0.84, 0.62) * roughSpecular * 0.46;
   snow = snow + vec3<f32>(0.76, 0.9, 1.0) * fresnel * 0.15;
   snow = snow + vec3<f32>(1.0, 0.9, 0.7) * glint * 3.4;
+  snow = snow + vec3<f32>(0.68, 0.84, 0.95) * fineCrest * 0.035 * wrapped;
+  let rock = vec3<f32>(0.065, 0.105, 0.14) * (0.72 + warmSun * direct * shadow * 0.65) + vec3<f32>(0.12, 0.19, 0.25) * fresnel * 0.22;
+  snow = mix(snow, rock, rockReveal * 0.78);
 
   let rayDirection = -viewDirection;
   let fog = smoothstep(16.0, 82.0, input.viewDistance);
   let groundMist = exp(-max(input.worldPosition.y + 0.4, 0.0) * 0.58) * smoothstep(9.0, 72.0, input.viewDistance);
   let atmospheric = atmosphere(normalize(vec3<f32>(rayDirection.x, max(rayDirection.y, 0.025), rayDirection.z)), sunDirection);
-  var color = mix(snow, atmospheric, saturate(fog * 0.92 + groundMist * 0.13));
-  color = aces(color * 0.96);
-  return vec4<f32>(pow(max(color, vec3<f32>(0.0)), vec3<f32>(0.95)), 1.0);
+  let color = mix(snow, atmospheric, saturate(fog * 0.92 + groundMist * 0.13));
+  return vec4<f32>(max(color, vec3<f32>(0.0)), 1.0);
+}
+`;
+
+export const snowveilPostShader = /* wgsl */ `
+${sharedUniforms}
+
+@group(0) @binding(1) var sceneColor: texture_2d<f32>;
+@group(0) @binding(2) var sceneSampler: sampler;
+
+struct PostVertexOut {
+  @builtin(position) position: vec4<f32>,
+  @location(0) uv: vec2<f32>,
+};
+
+@vertex
+fn vsPost(@builtin(vertex_index) vertexIndex: u32) -> PostVertexOut {
+  var positions = array<vec2<f32>, 3>(
+    vec2<f32>(-1.0, -1.0),
+    vec2<f32>(3.0, -1.0),
+    vec2<f32>(-1.0, 3.0)
+  );
+  var output: PostVertexOut;
+  let position = positions[vertexIndex];
+  output.position = vec4<f32>(position, 0.0, 1.0);
+  // WebGPU render targets use a top-left texture origin, while this
+  // fullscreen triangle is authored in clip space. Flip Y when resolving
+  // the off-screen HDR target so the final canvas keeps its orientation.
+  output.uv = vec2<f32>(position.x * 0.5 + 0.5, 1.0 - (position.y * 0.5 + 0.5));
+  return output;
+}
+
+fn saturate(value: f32) -> f32 {
+  return clamp(value, 0.0, 1.0);
+}
+
+fn hash12(point: vec2<f32>) -> f32 {
+  let p = fract(vec3<f32>(point.xyx) * vec3<f32>(0.1031, 0.1030, 0.0973));
+  let q = p + dot(p, p.yzx + vec3<f32>(33.33));
+  return fract((q.x + q.y) * q.z);
+}
+
+fn bloomSource(color: vec3<f32>) -> vec3<f32> {
+  let luminance = dot(color, vec3<f32>(0.2126, 0.7152, 0.0722));
+  let contribution = smoothstep(0.78, 1.65, luminance);
+  return color * contribution;
+}
+
+fn aces(color: vec3<f32>) -> vec3<f32> {
+  let a = 2.51;
+  let b = 0.03;
+  let c = 2.43;
+  let d = 0.59;
+  let e = 0.14;
+  return clamp((color * (a * color + b)) / (color * (c * color + d) + e), vec3<f32>(0.0), vec3<f32>(1.0));
+}
+
+@fragment
+fn fsPost(input: PostVertexOut) -> @location(0) vec4<f32> {
+  let dimensions = vec2<f32>(textureDimensions(sceneColor));
+  let texel = 1.0 / dimensions;
+  let center = textureSample(sceneColor, sceneSampler, input.uv).rgb;
+
+  var bloom = vec3<f32>(0.0);
+  bloom = bloom + bloomSource(textureSample(sceneColor, sceneSampler, input.uv + texel * vec2<f32>(2.0, 0.0)).rgb);
+  bloom = bloom + bloomSource(textureSample(sceneColor, sceneSampler, input.uv + texel * vec2<f32>(-2.0, 0.0)).rgb);
+  bloom = bloom + bloomSource(textureSample(sceneColor, sceneSampler, input.uv + texel * vec2<f32>(0.0, 2.0)).rgb);
+  bloom = bloom + bloomSource(textureSample(sceneColor, sceneSampler, input.uv + texel * vec2<f32>(0.0, -2.0)).rgb);
+  bloom = bloom + bloomSource(textureSample(sceneColor, sceneSampler, input.uv + texel * vec2<f32>(4.0, 4.0)).rgb) * 0.72;
+  bloom = bloom + bloomSource(textureSample(sceneColor, sceneSampler, input.uv + texel * vec2<f32>(-4.0, 4.0)).rgb) * 0.72;
+  bloom = bloom + bloomSource(textureSample(sceneColor, sceneSampler, input.uv + texel * vec2<f32>(4.0, -4.0)).rgb) * 0.72;
+  bloom = bloom + bloomSource(textureSample(sceneColor, sceneSampler, input.uv + texel * vec2<f32>(-4.0, -4.0)).rgb) * 0.72;
+  bloom = bloom / 6.88;
+
+  var color = aces(center * 0.96 + bloom * 0.19);
+  color = (color - 0.5) * 1.035 + 0.5;
+
+  let vignetteUv = input.uv * (1.0 - input.uv.yx);
+  let vignette = pow(saturate(vignetteUv.x * vignetteUv.y * 18.0), 0.11);
+  color = color * mix(0.79, 1.0, vignette);
+
+  let grain = hash12(input.uv * dimensions + fract(globals.viewport.z) * 91.0) - 0.5;
+  color = color + grain * 0.0065;
+  color = pow(max(color, vec3<f32>(0.0)), vec3<f32>(0.95));
+  return vec4<f32>(color, 1.0);
 }
 `;
