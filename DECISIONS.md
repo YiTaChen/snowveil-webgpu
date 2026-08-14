@@ -227,3 +227,25 @@ gain did not justify the reduced safety margin and was rejected. Reducing the
 HDR resolve from eight bloom taps to four also returned only 24 FPS and was
 fully reverted. The accepted before/after images differ by 0.241% mean absolute
 8-bit channel value, including independently timed snow particles and grain.
+
+## 2026-08-14 — Release audit keeps the active architecture
+
+Unused starter database, authentication, D1 example, Drizzle, Tailwind, and
+PostCSS files were removed after repository-wide search confirmed they were not
+part of Snowveil and `.openai/hosting.json` declared no D1 or R2 binding. React,
+Cloudflare, Vite, Wrangler, and React Server Components were upgraded to current
+compatible patch releases, then the project was rebuilt and server-render tested.
+
+The production-only npm audit is clean. The full development audit retains two
+reports from one `vinext` transitive dependency: `image-size` can loop on crafted
+ICNS, JXL, or HEIF input. Snowveil has no image upload or untrusted image parsing
+path, and the npm forced fix would downgrade vinext to an incompatible pre-1.0
+line. The build therefore retains the active version, records the bounded threat
+surface in `THIRD_PARTY_NOTICES.md`, and will adopt the first compatible patched
+dependency rather than breaking the hosting architecture for an irrelevant
+input path.
+
+The social card is deliberately separate from runtime evidence. It was generated
+once from a Snowveil-owned screenshot with the built-in image generator, checked
+for exact title/subtitle text and unwanted third-party marks, and is never used
+as a texture or proof of in-engine quality.

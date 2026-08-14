@@ -28,7 +28,9 @@ test("server-renders the Snowveil visual shell", async () => {
   assert.match(response.headers.get("content-type") ?? "", /^text\/html\b/i);
 
   const html = await response.text();
-  assert.match(html, /<title>Snowveil — Procedural WebGPU Snow<\/title>/i);
+  assert.match(html, /<title>Snowveil — Frost Rite WebGPU<\/title>/i);
+  assert.match(html, /property="og:image" content="http:\/\/localhost\/og\.png"/i);
+  assert.match(html, /name="twitter:card" content="summary_large_image"/i);
   assert.match(html, /Interactive procedural snow landscape/);
   assert.match(html, /Preparing atmosphere/);
   assert.match(html, /role="status"/);

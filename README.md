@@ -47,14 +47,16 @@ atmosphere, snow particles, surface detail, rider, beacons, sigils, wind, board
 hiss, spell tones, and the completion chord are produced procedurally by
 project-owned TypeScript and WGSL code.
 
-See [ORIGINALITY.md](./ORIGINALITY.md) and [ASSETS.md](./ASSETS.md) before adding
-any visual or audio dependency.
+See [ORIGINALITY.md](./ORIGINALITY.md), [ASSETS.md](./ASSETS.md), and
+[THIRD_PARTY_NOTICES.md](./THIRD_PARTY_NOTICES.md) before adding any visual,
+audio, or code dependency.
 
 Original project code is released under the [MIT License](./LICENSE).
 
 ## Milestones
 
-1. Cinematic snow visual gate — in progress; HDR raster baseline established.
+1. Cinematic snow visual gate — accepted for the current vertical slice; HDR
+   raster landscape and 1440p still-review evidence established.
 2. Temporal stability and measured capture evidence.
 3. Persistent GPU deformable snow — interactive baseline established.
 4. Character motion, contact, and snow-surfing — animation/material checkpoint established.
@@ -65,6 +67,10 @@ Original project code is released under the [MIT License](./LICENSE).
    three-state audio control, completion chord, title, and frost-wave checkpoint established.
 8. Native-resolution performance pass — fog-aligned six-step terrain shadows
    replace the ten-step 38-metre path, with pixel-difference and route evidence recorded.
+9. Release audit — starter-only database and styling scaffolds removed, direct
+   packages upgraded, social metadata verified, production audit at zero, and
+   third-party licence/security records captured.
 
-The current build is a development milestone, not a claim that the final visual
-gate has passed. See [PERF.md](./PERF.md) and [QUALITY.md](./QUALITY.md).
+The current build is a polished playable vertical slice, not a claim of a full
+AAA production or a hundred-million-particle physical simulation. See
+[PERF.md](./PERF.md) and [QUALITY.md](./QUALITY.md) for measured limits.

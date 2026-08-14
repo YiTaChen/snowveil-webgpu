@@ -196,3 +196,12 @@ The more aggressive four-step version and reduced bloom resolve were rejected
 after measured browser review. This checkpoint therefore improves a documented
 bottleneck without weakening the HDR resolve or claiming that 22–26 FPS is a
 release-grade native-1440p target.
+
+## Release evidence boundary
+
+`public/og.png` is a generated link-preview card, not a running-build capture and
+must never be used to pass a visual gate. Only files named in the dated evidence
+sections above document renderer output. The final interactive route at the
+normal 1182×749 review viewport reached 60 FPS, P95 17.4 ms, and 1% low 57 after
+the retained shadow change; the fixed 2560×1440 path remains a still-review mode
+at 22–26 FPS on the test machine.
