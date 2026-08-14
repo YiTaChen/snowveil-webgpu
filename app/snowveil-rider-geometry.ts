@@ -160,6 +160,49 @@ export function createRiderGeometry() {
     }
   };
 
+  const addShoulderShell = (side: -1 | 1) => {
+    const rows = 4;
+    const arcs = 10;
+    const base = vertices.length / 7;
+    for (let row = 0; row <= rows; row += 1) {
+      const across = row / rows;
+      for (let arc = 0; arc <= arcs; arc += 1) {
+        const theta = (arc / arcs - 0.5) * Math.PI;
+        const crown = Math.cos(theta);
+        const z = Math.sin(theta) * (0.125 + across * 0.052);
+        const x = side * (0.215 + across * 0.25 + crown * 0.014);
+        const y = 1.355 - across * 0.13 + crown * (0.04 - across * 0.012);
+        addVertex([x, y, z], normalize([side * (0.32 + across * 0.5), 0.76, Math.sin(theta) * 0.48]), 8);
+      }
+    }
+    const rowSize = arcs + 1;
+    for (let row = 0; row < rows; row += 1) {
+      for (let arc = 0; arc < arcs; arc += 1) {
+        const topLeft = base + row * rowSize + arc;
+        const topRight = topLeft + 1;
+        const bottomLeft = topLeft + rowSize;
+        const bottomRight = bottomLeft + 1;
+        indices.push(topLeft, bottomLeft, topRight, topRight, bottomLeft, bottomRight);
+      }
+    }
+
+    const rimBase = vertices.length / 7;
+    for (let arc = 0; arc <= arcs; arc += 1) {
+      const theta = (arc / arcs - 0.5) * Math.PI;
+      const z = Math.sin(theta) * 0.178;
+      const crown = Math.cos(theta);
+      addVertex([side * (0.465 + crown * 0.014), 1.225 + crown * 0.028, z], normalize([side, 0.18, Math.sin(theta) * 0.3]), 10);
+      addVertex([side * (0.443 + crown * 0.012), 1.249 + crown * 0.03, z * 0.96], normalize([side, 0.18, Math.sin(theta) * 0.3]), 10);
+    }
+    for (let arc = 0; arc < arcs; arc += 1) {
+      const outerLeft = rimBase + arc * 2;
+      const innerLeft = outerLeft + 1;
+      const outerRight = outerLeft + 2;
+      const innerRight = outerLeft + 3;
+      indices.push(outerLeft, outerRight, innerLeft, innerLeft, outerRight, innerRight);
+    }
+  };
+
   const cloakRings = [
     { y: 0.58, x: 0.41, z: 0.3, back: 0.14 },
     { y: 0.72, x: 0.42, z: 0.31, back: 0.13 },
@@ -201,21 +244,54 @@ export function createRiderGeometry() {
 
   const capeBase = vertices.length / 7;
   const capeSegments = 12;
+  const capeColumns = 6;
   for (let segment = 0; segment <= capeSegments; segment += 1) {
     const t = segment / capeSegments;
-    const y = 1.29 - t * (0.69 + Math.abs(t - 0.55) * 0.04);
-    const halfWidth = 0.27 + Math.sin(t * Math.PI * 0.72) * 0.13;
+    const y = 1.29 - t * (0.58 + Math.abs(t - 0.55) * 0.025);
+    const halfWidth = 0.22 + Math.sin(t * Math.PI * 0.9) * 0.095 - t * 0.035;
     const windOffset = t * 0.055 + Math.sin(t * Math.PI) * 0.035;
-    const z = 0.31 + t * 0.17 - Math.sin(t * Math.PI) * 0.04;
-    addVertex([-halfWidth + windOffset, y + t * 0.035, z], [0, 0.1, 1], 6);
-    addVertex([halfWidth + windOffset, y - t * 0.025, z], [0, 0.1, 1], 6);
+    for (let column = 0; column <= capeColumns; column += 1) {
+      const across = (column / capeColumns) * 2 - 1;
+      const crown = 1 - across * across;
+      const brokenHem = Math.pow(t, 8) * Math.cos(across * Math.PI * 2.5 + 0.4) * 0.018;
+      const z = 0.4 + t * 0.14 - Math.sin(t * Math.PI) * 0.018 + crown * 0.032;
+      addVertex(
+        [across * halfWidth + windOffset, y - across * t * 0.022 + crown * 0.012 + brokenHem, z],
+        normalize([-across * 0.2, 0.1, 1]),
+        6,
+      );
+    }
   }
+  const capeRow = capeColumns + 1;
   for (let segment = 0; segment < capeSegments; segment += 1) {
-    const topLeft = capeBase + segment * 2;
-    const topRight = topLeft + 1;
-    const bottomLeft = topLeft + 2;
-    const bottomRight = topLeft + 3;
-    indices.push(topLeft, bottomLeft, topRight, topRight, bottomLeft, bottomRight);
+    for (let column = 0; column < capeColumns; column += 1) {
+      const topLeft = capeBase + segment * capeRow + column;
+      const topRight = topLeft + 1;
+      const bottomLeft = topLeft + capeRow;
+      const bottomRight = bottomLeft + 1;
+      indices.push(topLeft, bottomLeft, topRight, topRight, bottomLeft, bottomRight);
+    }
+  }
+
+  for (const side of [-1, 1] as const) {
+    const trimBase = vertices.length / 7;
+    for (let segment = 0; segment <= capeSegments; segment += 1) {
+      const t = segment / capeSegments;
+      const y = 1.29 - t * (0.58 + Math.abs(t - 0.55) * 0.025);
+      const halfWidth = 0.22 + Math.sin(t * Math.PI * 0.9) * 0.095 - t * 0.035;
+      const windOffset = t * 0.055 + Math.sin(t * Math.PI) * 0.035;
+      const brokenHem = Math.pow(t, 8) * Math.cos(side * Math.PI * 2.5 + 0.4) * 0.018;
+      const edgeZ = 0.4 + t * 0.14 - Math.sin(t * Math.PI) * 0.018;
+      addVertex([side * halfWidth + windOffset, y - side * t * 0.022 + brokenHem, edgeZ + 0.006], [0, 0.1, 1], 10);
+      addVertex([side * (halfWidth - 0.024) + windOffset, y - side * t * 0.022 + 0.008 + brokenHem, edgeZ + 0.012], [0, 0.1, 1], 10);
+    }
+    for (let segment = 0; segment < capeSegments; segment += 1) {
+      const outerTop = trimBase + segment * 2;
+      const innerTop = outerTop + 1;
+      const outerBottom = outerTop + 2;
+      const innerBottom = outerTop + 3;
+      indices.push(outerTop, outerBottom, innerTop, innerTop, outerBottom, innerBottom);
+    }
   }
 
   const ribbonBase = vertices.length / 7;
@@ -255,21 +331,29 @@ export function createRiderGeometry() {
   addSphere([0, 1.08, -0.005], [0.32, 0.39, 0.235], 2, 28, 16);
   addSphere([0, 1.59, -0.015], [0.235, 0.285, 0.245], 3, 28, 18);
   addSphere([0, 1.57, -0.245], [0.145, 0.125, 0.045], 4, 22, 12);
+  addSphere([0, 1.62, -0.278], [0.17, 0.088, 0.026], 8, 24, 12);
+  addSphere([0, 1.62, -0.307], [0.142, 0.061, 0.017], 0, 24, 12);
+  addCapsule([0, 1.675, -0.321], [0, 1.55, -0.321], 0.017, 10, 12);
   addSphere([0, 1.38, -0.205], [0.09, 0.055, 0.055], 5, 18, 10);
 
-  // Separate shoulder plates and a narrow collar avoid the old doughnut mantle.
-  addSphere([-0.34, 1.29, 0.005], [0.16, 0.105, 0.18], 8, 20, 12);
-  addSphere([0.34, 1.29, 0.005], [0.16, 0.105, 0.18], 8, 20, 12);
+  // Layered curved shells replace primitive shoulder ellipsoids.
+  addShoulderShell(-1);
+  addShoulderShell(1);
   addTorus([0, 1.36, 0.015], 0.235, 0.026, 2);
 
   addCapsule([-0.34, 1.25, -0.01], [-0.53, 1.04, -0.06], 0.078, 7);
   addCapsule([-0.53, 1.04, -0.06], [-0.38, 0.84, -0.27], 0.072, 7);
   addCapsule([0.34, 1.26, -0.03], [0.53, 1.1, -0.19], 0.082, 7);
   addCapsule([0.53, 1.1, -0.19], [0.8, 1.37, -0.54], 0.074, 7);
-  addSphere([-0.38, 0.84, -0.27], [0.09, 0.085, 0.09], 7, 18, 11);
-  addSphere([0.81, 1.39, -0.56], [0.09, 0.085, 0.09], 7, 18, 11);
+  addCapsule([-0.43, 0.91, -0.2], [-0.38, 0.84, -0.27], 0.086, 10, 14);
+  addCapsule([0.72, 1.29, -0.44], [0.8, 1.37, -0.54], 0.088, 10, 14);
+  addSphere([-0.37, 0.81, -0.3], [0.082, 0.09, 0.11], 13, 18, 11);
+  addSphere([0.83, 1.4, -0.58], [0.085, 0.09, 0.11], 13, 18, 11);
   addSphere([0.85, 1.43, -0.59], [0.075, 0.075, 0.075], 9, 18, 12);
   addTorus([0, 0.91, 0], 0.335, 0.021, 10);
+  addCapsule([-0.19, 1.27, -0.245], [0.075, 0.94, -0.315], 0.022, 10, 12);
+  addCapsule([0.19, 1.27, -0.245], [-0.075, 0.94, -0.315], 0.022, 10, 12);
+  addSphere([0, 1.08, -0.334], [0.052, 0.052, 0.024], 8, 16, 10);
   addSphere([0.9, 0.88, -3.2], [0.155, 0.155, 0.155], 11, 24, 14);
 
   return {

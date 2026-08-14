@@ -105,3 +105,30 @@ The animation/material checkpoint is accepted, but final character art remains
 open. Hands and shoulder armour are still simplified volumes, there is no facial
 performance, and the shader deformation is a compact part-based prototype rather
 than a production skeletal rig with authored clips and transitions.
+
+### 2026-08-14 — winter-caster equipment checkpoint
+
+Evidence:
+
+- native 1440p landscape and rear silhouette: [`evidence/gate-1-armor-landscape-2560x1440.jpg`](./evidence/gate-1-armor-landscape-2560x1440.jpg)
+- moving cape, shoulder shells, glove cuffs, and blade: [`evidence/interaction-armor-cape-1182x749.jpg`](./evidence/interaction-armor-cape-1182x749.jpg)
+- front visor, guard, harness, and stance: [`evidence/rider-visor-front-1182x749.jpg`](./evidence/rider-visor-front-1182x749.jpg)
+
+The spherical shoulder pads and intersecting two-column cape were rejected in
+the first browser review. The retained geometry replaces them with curved edged
+plates and a crowned, tapered, trimmed cape that remains coherent from the rear
+and during a carve. The visor and chest harness give the previously blank front
+view an intentional winter-caster identity; cuffs and leather gloves keep the
+hands distinct from the sleeves. No image, model, texture, or animation asset is
+used.
+
+The primary 2560×1440 frame retains foreground drift detail, two isolated mid-
+field mounds, a softer third terrain layer, and the shared low-sun atmosphere.
+A separate full-orbit test found and then eliminated a distant tangent ridge by
+closing the far mountain band and reaching full terrain fog at 50 metres. Browser
+logs contain no warnings or WebGPU validation errors.
+
+This passes the current equipment checkpoint, not final production character
+art. The compact shader-driven part rig still lacks authored state transitions,
+the coat body remains deliberately stylized, and there is no audio, UI objective,
+or broader game loop yet.

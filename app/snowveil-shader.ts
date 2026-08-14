@@ -273,7 +273,7 @@ fn terrainBaseHeight(point: vec2<f32>) -> f32 {
   let radius = length(point);
   let angle = atan2(point.y, point.x);
   let mountainProfile = 8.0 + sin(angle * 3.7 + 0.6) * 2.2 + sin(angle * 8.3 - 1.2) * 1.25 + noise2(point * 0.027 + 31.0) * 4.2;
-  let farRise = smoothstep(38.0, 82.0, radius) * mountainProfile;
+  let farRise = smoothstep(38.0, 62.0, radius) * (1.0 - smoothstep(62.0, 78.0, radius)) * mountainProfile * 0.42;
   let outcrop = outcropField(point);
   let outcropLift = smoothstep(0.12, 0.58, outcrop) * 1.55 + smoothstep(0.46, 0.78, outcrop) * 0.32;
   return -0.72 + broad + longSwell + drifts + ridges + heroDune + foregroundDip + farRise + outcropLift;
@@ -443,7 +443,10 @@ fn fsTerrain(input: TerrainVertexOut) -> @location(0) vec4<f32> {
   snow = mix(snow, rock, rockReveal * 0.78);
 
   let rayDirection = -viewDirection;
-  let fog = smoothstep(16.0, 82.0, input.viewDistance);
+  let terrainFromPlayer = abs(input.worldPosition.xz - globals.reserved.xy);
+  let terrainEdge = max(terrainFromPlayer.x, terrainFromPlayer.y);
+  let edgeFog = smoothstep(69.0, 82.0, terrainEdge);
+  let fog = max(smoothstep(16.0, 50.0, input.viewDistance), edgeFog);
   let groundMist = exp(-max(input.worldPosition.y + 0.4, 0.0) * 0.58) * smoothstep(9.0, 72.0, input.viewDistance);
   let atmospheric = atmosphere(normalize(vec3<f32>(rayDirection.x, max(rayDirection.y, 0.025), rayDirection.z)), sunDirection);
   let color = mix(snow, atmospheric, saturate(fog + groundMist * 0.13));
@@ -682,7 +685,7 @@ fn fsPlayer(input: PlayerVertexOut) -> @location(0) vec4<f32> {
     roughness = 0.92;
   } else if (input.part == 0u) {
     albedo = vec3<f32>(0.035, 0.085, 0.105);
-    roughness = 0.38;
+    roughness = 0.22;
   } else if (input.part == 2u) {
     albedo = vec3<f32>(0.087, 0.205, 0.254);
     roughness = 0.82;
@@ -695,7 +698,7 @@ fn fsPlayer(input: PlayerVertexOut) -> @location(0) vec4<f32> {
   } else if (input.part == 5u) {
     albedo = vec3<f32>(0.39, 0.055, 0.038);
   } else if (input.part == 6u) {
-    albedo = vec3<f32>(0.052, 0.148, 0.205);
+    albedo = vec3<f32>(0.072, 0.185, 0.235);
     roughness = 0.9;
   } else if (input.part == 7u) {
     albedo = vec3<f32>(0.06, 0.15, 0.205);
@@ -749,10 +752,18 @@ fn fsPlayer(input: PlayerVertexOut) -> @location(0) vec4<f32> {
     let hoodSeam = 1.0 - smoothstep(0.008, 0.026, abs(input.localPosition.x));
     color = color + vec3<f32>(0.16, 0.3, 0.38) * hoodBack * hoodSeam * 0.18;
   }
+  if (input.part == 0u) {
+    let visorBand = 1.0 - smoothstep(0.018, 0.048, abs(input.localPosition.y - 1.62));
+    color = color + vec3<f32>(0.12, 0.48, 0.68) * visorBand * (0.12 + rim * 0.28);
+  }
   if (input.part == 6u) {
-    let capeEdge = smoothstep(0.24, 0.42, abs(input.localPosition.x));
+    let capeTail = saturate((1.29 - input.localPosition.y) / 0.61);
+    let capeCenter = capeTail * 0.055 + sin(capeTail * 3.14159) * 0.035;
+    let capeEdge = smoothstep(0.19, 0.34, abs(input.localPosition.x - capeCenter));
+    let capeSeam = 1.0 - smoothstep(0.008, 0.024, abs(input.localPosition.x - capeCenter));
     let capeFold = 0.95 + 0.05 * cos(input.localPosition.x * 18.0 + input.localPosition.y * 4.0);
     color = color * capeFold * (1.0 - capeEdge * 0.12);
+    color = color + vec3<f32>(0.12, 0.26, 0.31) * capeSeam * 0.12;
   }
   color = color + vec3<f32>(0.43, 0.67, 0.82) * rim * 0.34;
   color = color + vec3<f32>(1.0, 0.82, 0.61) * specular * (1.0 - roughness) * 0.6;

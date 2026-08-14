@@ -78,3 +78,21 @@ weave do not introduce a measurable regression in the retained active-tab run.
 An unfocused automation window initially reported 14–16 FPS with 100 ms P95;
 interacting with the same tab immediately restored 59–60 FPS. Those throttled
 figures are recorded here as a measurement caveat, not treated as GPU cost.
+
+## 2026-08-14 — rider equipment and full-orbit review
+
+Environment: native WebGPU Chrome. Interactive inspection used 1182×749 CSS
+pixels with dynamic resolution. Evidence inspection used the fixed 2560×1440
+path. Values are HUD observations after the tab was active and warmed.
+
+| Review state | Observed HUD | Result |
+| --- | ---: | --- |
+| sustained 5.4 m/s carve after equipment rebuild | 59 FPS · P95 32.6 ms · 1% 29 | retained |
+| stationary 180° orbit after ridge fix | 53 FPS · P95 33.2 ms · 1% 30 | retained |
+| fixed 2560×1440 final landscape | 17–20 FPS · P95 about 100 ms · 1% 10 | still-evidence path only |
+
+The gridded cape, shoulder shells, visor, cuffs, and harness are a small fraction
+of terrain cost. A rejected 230-metre terrain-warp experiment appeared around
+40 FPS during its short review, but the same session showed 59 FPS after warmup;
+the experiment is not used and the project retains the previously profiled
+86-metre terrain grid. Fixed 1440p remains evidence-only.

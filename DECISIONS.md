@@ -140,3 +140,25 @@ visual QA while using the same input integration, deformation compute, and
 rendering path as manual play. Long-run review also showed that the previous
 13-centimetre snow compression read as a trench, so the retained board stamp is
 7.5 centimetres deep with a 2.8-centimetre displaced edge ridge.
+
+## 2026-08-14 — Deliberate winter gear replaces primitive volumes
+
+The rebuilt moving silhouette still failed close review because two ellipsoids
+read as toy shoulder pads, the two-column back cape intersected the coat and
+collapsed into disconnected bright patches, and the unmarked face read as an
+unfinished sphere. Adding more noise could not solve those geometry defects.
+
+The retained project-authored mesh uses curved gridded shoulder shells with dark
+lower rims, a six-column crowned cape with a broken tapered hem and separate edge
+trim, leather gloves with raised cuffs, and a front harness. A framed dark visor,
+central guard, and restrained blue reflection define the character as a winter
+caster without pretending that a few spheres are a realistic human face. The
+cape is offset from the coat, carries its own centre seam, and remains narrow
+enough to preserve the leg and board silhouette while carving.
+
+A 180-degree orbit exposed a thin high-contrast ridge where terrain beyond about
+50 metres became tangent to the view. Extending the 352² grid from 86 to 230
+metres retained the artifact and was rejected. The active renderer keeps the
+dense 86-metre grid, reduces and closes the far mountain ring before the mesh
+boundary, and reaches full terrain fog at 50 metres. The defect disappears while
+the 1440p primary view retains three readable terrain layers.

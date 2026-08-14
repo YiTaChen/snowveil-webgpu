@@ -27,3 +27,9 @@ They are review artefacts, not third-party source material.
   deterministic 5.4 m/s ride, showing the loaded edge and compressed stance.
 - `interaction-carve-pose-b-1182x749.jpg` — second frame about 0.4 seconds later,
   showing stance recovery and independent cape/scarf phase.
+- `gate-1-armor-landscape-2560x1440.jpg` — fixed native 1440p review after the
+  shoulder, cape, glove, visor, and distant-ridge rebuild.
+- `interaction-armor-cape-1182x749.jpg` — moving rear/side inspection of the
+  crowned cape, plate rims, cuffs, boot clearance, and snow-surfing blade.
+- `rider-visor-front-1182x749.jpg` — stationary front inspection of the original
+  framed visor, nose guard, crossing harness, gloves, and layered stance.
