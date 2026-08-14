@@ -18,3 +18,9 @@ Environment: Chrome desktop, native WebGPU, browser viewport approximately
 The figures are visual-development observations rather than a cross-device
 benchmark. Before a release gate, the overlay will report frame time, median,
 95th percentile, and 1% low instead of only rounded FPS.
+
+The active HUD now reports rolling FPS, P95 frame time, and 1% low. A warmed
+1180×740 Chrome review measured approximately 48 FPS, P95 33.7 ms, and 1% low
+29 FPS. The fixed 2560×1440 evidence mode intentionally disables dynamic
+resolution and measured 16 FPS, P95 82.4 ms, and 1% low 10 FPS; it is a still
+capture path, not the current interactive performance target.

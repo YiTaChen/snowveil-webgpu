@@ -530,6 +530,7 @@ struct PlayerVertexOut {
   @location(2) viewDirection: vec3<f32>,
   @location(3) viewDistance: f32,
   @location(4) @interpolate(flat) part: u32,
+  @location(5) localPosition: vec3<f32>,
 };
 
 fn saturate(value: f32) -> f32 {
@@ -610,6 +611,7 @@ fn vsPlayer(input: PlayerVertexIn) -> PlayerVertexOut {
   output.viewDirection = cameraPosition - worldPosition;
   output.viewDistance = length(relative);
   output.part = part;
+  output.localPosition = local;
   return output;
 }
 
@@ -634,10 +636,15 @@ fn fsPlayer(input: PlayerVertexOut) -> @location(0) vec4<f32> {
   } else if (input.part == 4u) {
     albedo = vec3<f32>(0.78, 0.52, 0.33);
     roughness = 0.72;
-  } else if (input.part == 5u || input.part == 6u) {
+  } else if (input.part == 5u) {
     albedo = vec3<f32>(0.5, 0.105, 0.055);
-  } else if (input.part == 7u || input.part == 8u) {
-    albedo = vec3<f32>(0.12, 0.18, 0.22);
+  } else if (input.part == 6u) {
+    albedo = vec3<f32>(0.045, 0.13, 0.19);
+  } else if (input.part == 7u) {
+    albedo = vec3<f32>(0.055, 0.14, 0.2);
+  } else if (input.part == 8u) {
+    albedo = vec3<f32>(0.16, 0.27, 0.32);
+    roughness = 0.34;
   } else if (input.part == 10u) {
     albedo = vec3<f32>(0.018, 0.052, 0.078);
   }
@@ -650,6 +657,17 @@ fn fsPlayer(input: PlayerVertexOut) -> @location(0) vec4<f32> {
     clothLift = 0.95 + 0.05 * sin(input.worldPosition.y * 34.0 + input.worldPosition.x * 19.0);
   }
   color = color * clothLift;
+  if (input.part == 1u) {
+    let panelAngle = atan2(input.localPosition.z, input.localPosition.x);
+    let panelSeam = pow(abs(sin(panelAngle * 4.0)), 46.0);
+    let hem = 1.0 - smoothstep(0.055, 0.13, abs(input.localPosition.y - 0.12));
+    color = color * (1.0 - panelSeam * 0.11);
+    color = color + vec3<f32>(0.08, 0.16, 0.21) * hem * 0.22;
+  }
+  if (input.part == 6u) {
+    let capeEdge = smoothstep(0.24, 0.42, abs(input.localPosition.x));
+    color = color * (1.0 - capeEdge * 0.12);
+  }
   color = color + vec3<f32>(0.43, 0.67, 0.82) * rim * 0.34;
   color = color + vec3<f32>(1.0, 0.82, 0.61) * specular * (1.0 - roughness) * 0.6;
 

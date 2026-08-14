@@ -21,6 +21,20 @@ body {
     sans-serif;
 }
 
+html[data-snowveil-evidence="true"],
+html[data-snowveil-evidence="true"] body {
+  width: 2560px;
+  height: 1440px;
+  overflow: visible;
+}
+
+html[data-snowveil-evidence="true"] .snowveil {
+  position: absolute;
+  inset: auto;
+  width: 2560px;
+  height: 1440px;
+}
+
 button,
 canvas {
   font: inherit;

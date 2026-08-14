@@ -50,9 +50,10 @@ material response all read the newest history, so the visible track is geometry
 instead of a decal and remains after the rider leaves.
 
 An initially uniform 384×384 terrain grid made a sub-metre track visibly stair
-stepped. The grid now uses a player-centred quadratic density warp: near-field
-spacing is roughly 12–15 centimetres while distant cells become progressively
-larger. This removed the track stair-step without increasing triangle count.
+stepped. The active 352×352 grid uses a player-centred quadratic density warp:
+near-field spacing is roughly 13–14 centimetres while distant cells become
+progressively larger. This removed the track stair-step while reducing triangle
+count from the earlier uniform baseline.
 
 Sampling snow history inside the ten-step terrain shadow loop reduced Chrome to
 approximately 31 FPS. Deformation is now included in the visible surface height

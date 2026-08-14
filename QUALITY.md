@@ -23,3 +23,20 @@ Each major visual milestone must include:
 - a second capture after the defects are addressed.
 
 Passing a build is necessary but does not pass a visual gate.
+
+## Captured review state
+
+### 2026-08-13 — 2560×1440 defect capture
+
+Evidence: [`evidence/gate-1-character-defect-2560x1440.jpg`](./evidence/gate-1-character-defect-2560x1440.jpg)
+
+The native-resolution capture confirms that the snow landscape has coherent
+large dunes, directional drift detail, low-sun atmosphere, and readable shadow
+colour. Gate 1 remains open because the rider in this frame is still a simplified
+cloak-and-hood silhouette: the dark side loses material definition and the pose
+lacks readable shoulders, arms, and layered cloth construction.
+
+Work after this capture adds an asymmetrical casting pose, rounded arms and
+hands, shoulder pieces, a belt, a separate back-cape layer, and model-space cloth
+panels. That checkpoint is saved but has not yet received its required second
+2560×1440 comparison capture.

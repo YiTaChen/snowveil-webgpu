@@ -25,6 +25,10 @@ export function SnowveilScene() {
     if (!canvas) return;
 
     let disposed = false;
+    const evidenceMode = new URLSearchParams(window.location.search).has("evidence");
+    if (evidenceMode) {
+      document.documentElement.dataset.snowveilEvidence = "true";
+    }
     const webgpu = navigator.gpu;
     if (!webgpu) {
       queueMicrotask(() => {
@@ -41,6 +45,7 @@ export function SnowveilScene() {
     let lastFrame = performance.now();
     let fpsStarted = lastFrame;
     let fpsFrames = 0;
+    const frameTimes: number[] = [];
     let yaw = 0;
     let pitch = 0.02;
     let distance = 5.9;
@@ -343,7 +348,7 @@ export function SnowveilScene() {
         let deformationReadIndex = 0;
         const uniforms = new Float32Array(16);
 
-        const terrainSegments = 384;
+        const terrainSegments = 352;
         const terrainVertexCount = (terrainSegments + 1) * (terrainSegments + 1);
         const terrainVertices = new Float32Array(terrainVertexCount * 2);
         let vertexOffset = 0;
@@ -453,15 +458,26 @@ export function SnowveilScene() {
           resize();
 
           const elapsed = (now - started) / 1000;
-          const delta = Math.min((now - lastFrame) / 1000, 0.05);
+          const frameTime = Math.min(now - lastFrame, 100);
+          const delta = Math.min(frameTime / 1000, 0.05);
           lastFrame = now;
           fpsFrames += 1;
+          frameTimes.push(frameTime);
+          if (frameTimes.length > 240) frameTimes.shift();
 
           if (now - fpsStarted > 800) {
             const fps = Math.round((fpsFrames * 1000) / (now - fpsStarted));
-            if (fpsRef.current) fpsRef.current.textContent = `${fps} FPS`;
-            if (fps < 42 && renderScale > 0.78) renderScale -= 0.04;
-            if (fps > 56 && renderScale < 1.0) renderScale += 0.025;
+            const sortedFrameTimes = [...frameTimes].sort((a, b) => a - b);
+            const p95 = sortedFrameTimes[Math.min(sortedFrameTimes.length - 1, Math.floor(sortedFrameTimes.length * 0.95))];
+            const p99 = sortedFrameTimes[Math.min(sortedFrameTimes.length - 1, Math.floor(sortedFrameTimes.length * 0.99))];
+            const lowOnePercent = Math.round(1000 / Math.max(p99, 0.01));
+            if (fpsRef.current) {
+              fpsRef.current.textContent = `${fps} FPS · P95 ${p95.toFixed(1)} ms · 1% ${lowOnePercent}`;
+            }
+            if (!evidenceMode) {
+              if (fps < 42 && renderScale > 0.78) renderScale -= 0.04;
+              if (fps > 56 && renderScale < 1.0) renderScale += 0.025;
+            }
             fpsStarted = now;
             fpsFrames = 0;
           }
@@ -636,6 +652,9 @@ export function SnowveilScene() {
       canvas.removeEventListener("wheel", onWheel);
       window.removeEventListener("keydown", onKeyDown);
       window.removeEventListener("keyup", onKeyUp);
+      if (evidenceMode) {
+        delete document.documentElement.dataset.snowveilEvidence;
+      }
       device?.destroy?.();
     };
   }, []);
