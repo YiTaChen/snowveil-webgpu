@@ -22,8 +22,9 @@ npm run build
 
 This starter does not use `wrangler.jsonc`.
 
-Use a desktop browser with WebGPU enabled. Drag the scene to orbit and use the
-mouse wheel to change camera distance.
+Use a desktop browser with WebGPU enabled. Ride with WASD or the arrow keys,
+drag the scene to orbit, hold Shift for a faster traverse, and use the mouse
+wheel to change camera distance.
 
 ## Originality and licensing
 
@@ -41,8 +42,8 @@ Original project code is released under the [MIT License](./LICENSE).
 
 1. Cinematic snow visual gate — in progress; HDR raster baseline established.
 2. Temporal stability and measured capture evidence.
-3. Persistent GPU deformable snow.
-4. Character motion, contact, and snow-surfing.
+3. Persistent GPU deformable snow — interactive baseline established.
+4. Character motion, contact, and snow-surfing — prototype in progress.
 5. Original spell interactions and performance hardening.
 
 The current build is a development milestone, not a claim that the final visual

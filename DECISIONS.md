@@ -39,3 +39,30 @@ off-screen render target and the fullscreen triangle used different Y-origin
 conventions. The post vertex shader now explicitly flips the sampled Y
 coordinate. No new WebGPU validation errors were emitted after the corrected
 reload.
+
+## 2026-08-13 — Persistent snow uses ping-pong GPU history
+
+Interactive snow state lives in two original 512×512 `rgba16float` textures
+covering the finite 128-metre play field. A compute pass reads the previous
+texture, stamps the board compression and displaced edge ridges, applies a very
+slow recovery rate, and writes the next texture. Terrain vertices, normals, and
+material response all read the newest history, so the visible track is geometry
+instead of a decal and remains after the rider leaves.
+
+An initially uniform 384×384 terrain grid made a sub-metre track visibly stair
+stepped. The grid now uses a player-centred quadratic density warp: near-field
+spacing is roughly 12–15 centimetres while distant cells become progressively
+larger. This removed the track stair-step without increasing triangle count.
+
+Sampling snow history inside the ten-step terrain shadow loop reduced Chrome to
+approximately 31 FPS. Deformation is now included in the visible surface height
+and normal but excluded from the broad terrain shadow query; the same view
+returned to 50–54 FPS when stationary and 44–47 FPS during movement.
+
+## 2026-08-13 — Bespoke procedural rider replaces sphere assembly
+
+The first instanced-ellipsoid rider was rejected after the browser still because
+its separated parts read as a toy. The active prototype is generated as one
+project-owned mesh: a ring-profiled tapered cloak, hood, face inset, curved
+double-sided scarf, board, clasp, and emissive focus. It has a coherent silhouette
+and supports lean and cloth motion, but its final character-art gate remains open.

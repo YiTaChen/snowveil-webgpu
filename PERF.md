@@ -12,6 +12,7 @@ Environment: Chrome desktop, native WebGPU, browser viewport approximately
 | 384×384 raster terrain, atmosphere, terrain shadows | 51–60 FPS | accepted as architecture baseline |
 | raster terrain plus foreground snow and stronger near-field detail | 40–56 FPS | active optimisation target |
 | 16-bit HDR scene, eight-tap bloom resolve, ACES tone map | 47–51 FPS | accepted visual baseline; approximately 49 FPS in the review frame |
+| rider, 512² persistent snow compute, locally dense terrain | 44–54 FPS | accepted interaction baseline; 44 FPS during automated curved-track capture |
 
 The figures are visual-development observations rather than a cross-device
 benchmark. Before a release gate, the overlay will report frame time, median,

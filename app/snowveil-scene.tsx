@@ -1,13 +1,22 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { snowveilPostShader, snowveilSkyShader, snowveilTerrainShader } from "./snowveil-shader";
+import {
+  snowveilDeformationShader,
+  snowveilPlayerShader,
+  snowveilPostShader,
+  snowveilSkyShader,
+  snowveilTerrainShader,
+} from "./snowveil-shader";
+import { snowHeightAt } from "./snowveil-terrain";
+import { createRiderGeometry } from "./snowveil-rider-geometry";
 
 type SceneState = "loading" | "ready" | "unsupported" | "error";
 
 export function SnowveilScene() {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const fpsRef = useRef<HTMLSpanElement>(null);
+  const speedRef = useRef<HTMLSpanElement>(null);
   const [sceneState, setSceneState] = useState<SceneState>("loading");
   const [message, setMessage] = useState("Preparing atmosphere");
 
@@ -34,11 +43,18 @@ export function SnowveilScene() {
     let fpsFrames = 0;
     let yaw = 0;
     let pitch = 0.02;
-    let distance = 6.9;
+    let distance = 5.9;
     let renderScale = 1.0;
     let dragging = false;
     let previousX = 0;
     let previousY = 0;
+    let playerX = 0;
+    let playerZ = -4;
+    let playerHeading = 0;
+    let playerVelocityX = 0;
+    let playerVelocityZ = 0;
+    const pressedKeys = new Set<string>();
+    const keyPulseUntil = new Map<string, number>();
 
     const onPointerDown = (event: PointerEvent) => {
       dragging = true;
@@ -69,11 +85,25 @@ export function SnowveilScene() {
       distance = Math.max(4.2, Math.min(11.5, distance + event.deltaY * 0.006));
     };
 
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (["ArrowUp", "ArrowDown", "ArrowLeft", "ArrowRight", "Space"].includes(event.code)) {
+        event.preventDefault();
+      }
+      pressedKeys.add(event.code);
+      keyPulseUntil.set(event.code, performance.now() + 145);
+    };
+
+    const onKeyUp = (event: KeyboardEvent) => {
+      pressedKeys.delete(event.code);
+    };
+
     canvas.addEventListener("pointerdown", onPointerDown);
     canvas.addEventListener("pointermove", onPointerMove);
     canvas.addEventListener("pointerup", onPointerUp);
     canvas.addEventListener("pointercancel", onPointerUp);
     canvas.addEventListener("wheel", onWheel, { passive: false });
+    window.addEventListener("keydown", onKeyDown);
+    window.addEventListener("keyup", onKeyUp);
 
     async function start() {
       try {
@@ -110,16 +140,29 @@ export function SnowveilScene() {
           label: "Snowveil HDR post shader",
           code: snowveilPostShader,
         });
+        const playerShaderModule = activeDevice.createShaderModule({
+          label: "Snowveil original procedural rider shader",
+          code: snowveilPlayerShader,
+        });
+        const deformationShaderModule = activeDevice.createShaderModule({
+          label: "Snowveil persistent snow deformation shader",
+          code: snowveilDeformationShader,
+        });
 
-        const [skyCompilation, terrainCompilation, postCompilation] = await Promise.all([
-          skyShaderModule.getCompilationInfo(),
-          terrainShaderModule.getCompilationInfo(),
-          postShaderModule.getCompilationInfo(),
-        ]);
+        const [skyCompilation, terrainCompilation, postCompilation, playerCompilation, deformationCompilation] =
+          await Promise.all([
+            skyShaderModule.getCompilationInfo(),
+            terrainShaderModule.getCompilationInfo(),
+            postShaderModule.getCompilationInfo(),
+            playerShaderModule.getCompilationInfo(),
+            deformationShaderModule.getCompilationInfo(),
+          ]);
         const shaderErrors = [
           ...skyCompilation.messages,
           ...terrainCompilation.messages,
           ...postCompilation.messages,
+          ...playerCompilation.messages,
+          ...deformationCompilation.messages,
         ].filter((entry: { type: string }) => entry.type === "error");
         if (shaderErrors.length) {
           throw new Error(shaderErrors.map((entry: { message: string }) => entry.message).join("\n"));
@@ -197,6 +240,38 @@ export function SnowveilScene() {
           primitive: { topology: "triangle-list" },
         });
 
+        const playerPipeline = activeDevice.createRenderPipeline({
+          label: "Snowveil procedural rider pipeline",
+          layout: "auto",
+          vertex: {
+            module: playerShaderModule,
+            entryPoint: "vsPlayer",
+            buffers: [
+              {
+                arrayStride: 28,
+                attributes: [
+                  { shaderLocation: 0, offset: 0, format: "float32x3" },
+                  { shaderLocation: 1, offset: 12, format: "float32x3" },
+                  { shaderLocation: 2, offset: 24, format: "float32" },
+                ],
+              },
+            ],
+          },
+          fragment: { module: playerShaderModule, entryPoint: "fsPlayer", targets: [{ format: sceneFormat }] },
+          primitive: { topology: "triangle-list", cullMode: "none" },
+          depthStencil: {
+            format: "depth24plus",
+            depthWriteEnabled: true,
+            depthCompare: "less",
+          },
+        });
+
+        const deformationPipeline = activeDevice.createComputePipeline({
+          label: "Snowveil persistent snow compute pipeline",
+          layout: "auto",
+          compute: { module: deformationShaderModule, entryPoint: "updateSnow" },
+        });
+
         const uniformBuffer = activeDevice.createBuffer({
           label: "Snowveil frame uniforms",
           size: 64,
@@ -206,12 +281,12 @@ export function SnowveilScene() {
           layout: skyPipeline.getBindGroupLayout(0),
           entries: [{ binding: 0, resource: { buffer: uniformBuffer } }],
         });
-        const terrainBindGroup = activeDevice.createBindGroup({
-          layout: terrainPipeline.getBindGroupLayout(0),
-          entries: [{ binding: 0, resource: { buffer: uniformBuffer } }],
-        });
         const snowOverlayBindGroup = activeDevice.createBindGroup({
           layout: snowOverlayPipeline.getBindGroupLayout(0),
+          entries: [{ binding: 0, resource: { buffer: uniformBuffer } }],
+        });
+        const playerBindGroup = activeDevice.createBindGroup({
+          layout: playerPipeline.getBindGroupLayout(0),
           entries: [{ binding: 0, resource: { buffer: uniformBuffer } }],
         });
         const postSampler = activeDevice.createSampler({
@@ -219,6 +294,49 @@ export function SnowveilScene() {
           magFilter: "linear",
           minFilter: "linear",
         });
+        const deformationSampler = activeDevice.createSampler({
+          label: "Snowveil deformation sampler",
+          magFilter: "linear",
+          minFilter: "linear",
+          addressModeU: "clamp-to-edge",
+          addressModeV: "clamp-to-edge",
+        });
+        activeDevice.pushErrorScope("validation");
+        const deformationResolution = 512;
+        const deformationTextures = [0, 1].map((index) =>
+          activeDevice.createTexture({
+            label: `Snowveil deformation history ${index}`,
+            size: [deformationResolution, deformationResolution],
+            format: "rgba16float",
+            usage: GPUTextureUsage.TEXTURE_BINDING | GPUTextureUsage.STORAGE_BINDING,
+          }),
+        );
+        const deformationViews = deformationTextures.map((texture) => texture.createView());
+        const terrainBindGroups = deformationViews.map((view) =>
+          activeDevice.createBindGroup({
+            layout: terrainPipeline.getBindGroupLayout(0),
+            entries: [
+              { binding: 0, resource: { buffer: uniformBuffer } },
+              { binding: 1, resource: view },
+              { binding: 2, resource: deformationSampler },
+            ],
+          }),
+        );
+        const deformationBindGroups = deformationViews.map((view, readIndex) =>
+          activeDevice.createBindGroup({
+            layout: deformationPipeline.getBindGroupLayout(0),
+            entries: [
+              { binding: 0, resource: { buffer: uniformBuffer } },
+              { binding: 1, resource: view },
+              { binding: 2, resource: deformationViews[1 - readIndex] },
+            ],
+          }),
+        );
+        const deformationSetupError = await activeDevice.popErrorScope();
+        if (deformationSetupError) {
+          throw new Error(`Snow deformation setup failed: ${deformationSetupError.message}`);
+        }
+        let deformationReadIndex = 0;
         const uniforms = new Float32Array(16);
 
         const terrainSegments = 384;
@@ -264,6 +382,20 @@ export function SnowveilScene() {
         });
         activeDevice.queue.writeBuffer(terrainVertexBuffer, 0, terrainVertices);
         activeDevice.queue.writeBuffer(terrainIndexBuffer, 0, terrainIndices);
+
+        const riderGeometry = createRiderGeometry();
+        const riderVertexBuffer = activeDevice.createBuffer({
+          label: "Snowveil bespoke rider vertices",
+          size: riderGeometry.vertices.byteLength,
+          usage: GPUBufferUsage.VERTEX | GPUBufferUsage.COPY_DST,
+        });
+        const riderIndexBuffer = activeDevice.createBuffer({
+          label: "Snowveil bespoke rider indices",
+          size: riderGeometry.indices.byteLength,
+          usage: GPUBufferUsage.INDEX | GPUBufferUsage.COPY_DST,
+        });
+        activeDevice.queue.writeBuffer(riderVertexBuffer, 0, riderGeometry.vertices);
+        activeDevice.queue.writeBuffer(riderIndexBuffer, 0, riderGeometry.indices);
 
         let depthTexture: GPUTexture | undefined;
         let sceneColorTexture: GPUTexture | undefined;
@@ -330,6 +462,65 @@ export function SnowveilScene() {
             fpsFrames = 0;
           }
 
+          const inputX =
+            (pressedKeys.has("KeyD") ||
+            pressedKeys.has("ArrowRight") ||
+            (keyPulseUntil.get("KeyD") ?? 0) > now ||
+            (keyPulseUntil.get("ArrowRight") ?? 0) > now
+              ? 1
+              : 0) -
+            (pressedKeys.has("KeyA") ||
+            pressedKeys.has("ArrowLeft") ||
+            (keyPulseUntil.get("KeyA") ?? 0) > now ||
+            (keyPulseUntil.get("ArrowLeft") ?? 0) > now
+              ? 1
+              : 0);
+          const inputForward =
+            (pressedKeys.has("KeyW") ||
+            pressedKeys.has("ArrowUp") ||
+            (keyPulseUntil.get("KeyW") ?? 0) > now ||
+            (keyPulseUntil.get("ArrowUp") ?? 0) > now
+              ? 1
+              : 0) -
+            (pressedKeys.has("KeyS") ||
+            pressedKeys.has("ArrowDown") ||
+            (keyPulseUntil.get("KeyS") ?? 0) > now ||
+            (keyPulseUntil.get("ArrowDown") ?? 0) > now
+              ? 1
+              : 0);
+          const inputLength = Math.hypot(inputX, inputForward);
+          const forwardX = Math.sin(yaw);
+          const forwardZ = -Math.cos(yaw);
+          const rightX = Math.cos(yaw);
+          const rightZ = Math.sin(yaw);
+          const rideSpeed = pressedKeys.has("ShiftLeft") || pressedKeys.has("ShiftRight") ? 8.4 : 5.4;
+          const desiredVelocityX =
+            inputLength > 0 ? ((rightX * inputX + forwardX * inputForward) / inputLength) * rideSpeed : 0;
+          const desiredVelocityZ =
+            inputLength > 0 ? ((rightZ * inputX + forwardZ * inputForward) / inputLength) * rideSpeed : 0;
+          const acceleration = 1 - Math.exp(-delta * (inputLength > 0 ? 7.5 : 4.2));
+          playerVelocityX += (desiredVelocityX - playerVelocityX) * acceleration;
+          playerVelocityZ += (desiredVelocityZ - playerVelocityZ) * acceleration;
+          playerX += playerVelocityX * delta;
+          playerZ += playerVelocityZ * delta;
+          const playerRadius = Math.hypot(playerX, playerZ);
+          if (playerRadius > 54) {
+            const boundaryScale = 54 / playerRadius;
+            playerX *= boundaryScale;
+            playerZ *= boundaryScale;
+          }
+          const playerSpeed = Math.hypot(playerVelocityX, playerVelocityZ);
+          if (speedRef.current) speedRef.current.textContent = `${playerSpeed.toFixed(1)} m/s`;
+          if (playerSpeed > 0.08) {
+            const desiredHeading = Math.atan2(playerVelocityX, -playerVelocityZ);
+            const headingDelta = Math.atan2(
+              Math.sin(desiredHeading - playerHeading),
+              Math.cos(desiredHeading - playerHeading),
+            );
+            playerHeading += headingDelta * (1 - Math.exp(-delta * 9));
+          }
+          const playerY = snowHeightAt(playerX, playerZ);
+
           uniforms[0] = canvas.width;
           uniforms[1] = canvas.height;
           uniforms[2] = elapsed;
@@ -339,9 +530,13 @@ export function SnowveilScene() {
           uniforms[6] = distance;
           uniforms[7] = 0.72;
           uniforms[8] = dragging ? 1 : 0;
-          uniforms[9] = 0.78;
-          uniforms[10] = 0.24;
+          uniforms[9] = playerY;
+          uniforms[10] = inputLength;
           uniforms[11] = 0;
+          uniforms[12] = playerX;
+          uniforms[13] = playerZ;
+          uniforms[14] = playerHeading;
+          uniforms[15] = Math.min(playerSpeed / 8.4, 1);
           activeDevice.queue.writeBuffer(uniformBuffer, 0, uniforms);
 
           if (!depthTexture || !sceneColorTexture || !postBindGroup) {
@@ -350,6 +545,13 @@ export function SnowveilScene() {
           }
 
           const encoder = activeDevice.createCommandEncoder({ label: "Snowveil frame" });
+          const deformationWriteIndex = 1 - deformationReadIndex;
+          const deformationPass = encoder.beginComputePass({ label: "Snowveil snow memory update" });
+          deformationPass.setPipeline(deformationPipeline);
+          deformationPass.setBindGroup(0, deformationBindGroups[deformationReadIndex]);
+          deformationPass.dispatchWorkgroups(deformationResolution / 8, deformationResolution / 8);
+          deformationPass.end();
+          deformationReadIndex = deformationWriteIndex;
           const pass = encoder.beginRenderPass({
             colorAttachments: [
               {
@@ -370,10 +572,15 @@ export function SnowveilScene() {
           pass.setBindGroup(0, skyBindGroup);
           pass.draw(3);
           pass.setPipeline(terrainPipeline);
-          pass.setBindGroup(0, terrainBindGroup);
+          pass.setBindGroup(0, terrainBindGroups[deformationReadIndex]);
           pass.setVertexBuffer(0, terrainVertexBuffer);
           pass.setIndexBuffer(terrainIndexBuffer, "uint32");
           pass.drawIndexed(terrainIndices.length);
+          pass.setPipeline(playerPipeline);
+          pass.setBindGroup(0, playerBindGroup);
+          pass.setVertexBuffer(0, riderVertexBuffer);
+          pass.setIndexBuffer(riderIndexBuffer, "uint32");
+          pass.drawIndexed(riderGeometry.indices.length);
           pass.setPipeline(snowOverlayPipeline);
           pass.setBindGroup(0, snowOverlayBindGroup);
           pass.draw(3);
@@ -421,6 +628,8 @@ export function SnowveilScene() {
       canvas.removeEventListener("pointerup", onPointerUp);
       canvas.removeEventListener("pointercancel", onPointerUp);
       canvas.removeEventListener("wheel", onWheel);
+      window.removeEventListener("keydown", onKeyDown);
+      window.removeEventListener("keyup", onKeyUp);
       device?.destroy?.();
     };
   }, []);
@@ -444,7 +653,9 @@ export function SnowveilScene() {
 
       {sceneState === "ready" && (
         <footer className="snowveil__footer">
-          <span>Drag to orbit</span>
+          <span>WASD to ride</span>
+          <span className="snowveil__rule" aria-hidden="true" />
+          <span ref={speedRef}>0.0 m/s</span>
           <span className="snowveil__rule" aria-hidden="true" />
           <span ref={fpsRef}>GPU ready</span>
         </footer>

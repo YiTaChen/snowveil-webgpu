@@ -122,7 +122,7 @@ fn fsMain(input: SkyVertexOut) -> @location(0) vec4<f32> {
   let aspect = resolution.x / max(resolution.y, 1.0);
   let screen = (input.uv * 2.0 - 1.0) * vec2<f32>(aspect, 1.0);
 
-  let cameraTarget = vec3<f32>(0.0, 1.1, -5.0);
+  let cameraTarget = vec3<f32>(globals.reserved.x, globals.weather.y + 1.05, globals.reserved.y);
   let orbit = vec3<f32>(sin(yaw) * cameraDistance, 2.0 + pitch * 7.0, cos(yaw) * cameraDistance);
   let cameraPosition = cameraTarget + orbit;
   let forward = normalize(cameraTarget - cameraPosition);
@@ -147,6 +147,9 @@ fn fsSnowOverlay(input: SkyVertexOut) -> @location(0) vec4<f32> {
 
 export const snowveilTerrainShader = /* wgsl */ `
 ${sharedUniforms}
+
+@group(0) @binding(1) var deformationMap: texture_2d<f32>;
+@group(0) @binding(2) var deformationSampler: sampler;
 
 struct TerrainVertexIn {
   @location(0) grid: vec2<f32>,
@@ -199,7 +202,15 @@ fn outcropField(point: vec2<f32>) -> f32 {
   return max(outcropA, outcropB);
 }
 
-fn terrainHeight(point: vec2<f32>) -> f32 {
+fn snowDeformation(point: vec2<f32>) -> f32 {
+  let uv = point / 128.0 + 0.5;
+  if (uv.x <= 0.0 || uv.y <= 0.0 || uv.x >= 1.0 || uv.y >= 1.0) {
+    return 0.0;
+  }
+  return textureSampleLevel(deformationMap, deformationSampler, uv, 0.0).r;
+}
+
+fn terrainBaseHeight(point: vec2<f32>) -> f32 {
   let wind = normalize(vec2<f32>(0.82, 0.57));
   let across = vec2<f32>(-wind.y, wind.x);
   let alongWind = dot(point, wind);
@@ -223,6 +234,10 @@ fn terrainHeight(point: vec2<f32>) -> f32 {
   return -0.72 + broad + longSwell + drifts + ridges + heroDune + foregroundDip + farRise + outcropLift;
 }
 
+fn terrainHeight(point: vec2<f32>) -> f32 {
+  return terrainBaseHeight(point) + snowDeformation(point);
+}
+
 fn terrainNormal(point: vec2<f32>) -> vec3<f32> {
   let epsilon = 0.12;
   let left = terrainHeight(point - vec2<f32>(epsilon, 0.0));
@@ -235,7 +250,8 @@ fn terrainNormal(point: vec2<f32>) -> vec3<f32> {
 @vertex
 fn vsTerrain(input: TerrainVertexIn) -> TerrainVertexOut {
   var output: TerrainVertexOut;
-  let worldXZ = input.grid * 86.0;
+  let warpedGrid = input.grid * (vec2<f32>(0.28) + abs(input.grid) * 0.72);
+  let worldXZ = warpedGrid * 86.0 + globals.reserved.xy;
   let worldPosition = vec3<f32>(worldXZ.x, terrainHeight(worldXZ), worldXZ.y);
 
   let yaw = globals.camera.x;
@@ -243,7 +259,7 @@ fn vsTerrain(input: TerrainVertexIn) -> TerrainVertexOut {
   let cameraDistance = globals.camera.z;
   let fieldOfView = globals.camera.w;
   let aspect = globals.viewport.x / max(globals.viewport.y, 1.0);
-  let cameraTarget = vec3<f32>(0.0, 1.1, -5.0);
+  let cameraTarget = vec3<f32>(globals.reserved.x, globals.weather.y + 1.05, globals.reserved.y);
   let orbit = vec3<f32>(sin(yaw) * cameraDistance, 2.0 + pitch * 7.0, cos(yaw) * cameraDistance);
   let cameraPosition = cameraTarget + orbit;
   let forward = normalize(cameraTarget - cameraPosition);
@@ -271,7 +287,7 @@ fn softShadow(position: vec3<f32>, sunDirection: vec3<f32>) -> f32 {
   var travel = 0.18;
   for (var step = 0; step < 10; step = step + 1) {
     let samplePosition = position + sunDirection * travel;
-    let clearance = samplePosition.y - terrainHeight(samplePosition.xz);
+    let clearance = samplePosition.y - terrainBaseHeight(samplePosition.xz);
     shade = min(shade, 6.0 * clearance / travel);
     if (clearance < 0.002 || travel > 38.0) {
       break;
@@ -349,9 +365,17 @@ fn fsTerrain(input: TerrainVertexOut) -> @location(0) vec4<f32> {
   let surfaceVariation = 0.95 + 0.05 * noise2(input.worldPosition.xz * 3.1) - ridgeTone * 0.018 - fineCrest * 0.032;
   let outcrop = outcropField(input.worldPosition.xz);
   let rockReveal = smoothstep(0.24, 0.72, outcrop) * smoothstep(0.1, 0.46, 1.0 - normal.y);
+  let deformation = snowDeformation(input.worldPosition.xz);
+  let compactedSnow = saturate(-deformation * 8.5);
+  let pushedSnow = saturate(deformation * 19.0);
+  let playerRelative = input.worldPosition.xz - globals.reserved.xy;
+  let contactShadow = exp(-length(playerRelative * vec2<f32>(2.4, 1.2)) * 3.4) * (1.0 - smoothstep(0.0, 2.2, length(playerRelative)));
 
   var snow = base * (bounce + warmSun * wrapped * shadow * 1.35 + subsurface);
   snow = snow * surfaceVariation;
+  snow = mix(snow, snow * vec3<f32>(0.68, 0.8, 0.93), compactedSnow * 0.46);
+  snow = snow + vec3<f32>(0.58, 0.78, 0.94) * pushedSnow * (0.055 + wrapped * 0.1);
+  snow = snow * (1.0 - contactShadow * 0.09);
   snow = snow + vec3<f32>(1.0, 0.84, 0.62) * roughSpecular * 0.46;
   snow = snow + vec3<f32>(0.76, 0.9, 1.0) * fresnel * 0.15;
   snow = snow + vec3<f32>(1.0, 0.9, 0.7) * glint * 3.4;
@@ -364,6 +388,207 @@ fn fsTerrain(input: TerrainVertexOut) -> @location(0) vec4<f32> {
   let groundMist = exp(-max(input.worldPosition.y + 0.4, 0.0) * 0.58) * smoothstep(9.0, 72.0, input.viewDistance);
   let atmospheric = atmosphere(normalize(vec3<f32>(rayDirection.x, max(rayDirection.y, 0.025), rayDirection.z)), sunDirection);
   let color = mix(snow, atmospheric, saturate(fog * 0.92 + groundMist * 0.13));
+  return vec4<f32>(max(color, vec3<f32>(0.0)), 1.0);
+}
+`;
+
+export const snowveilDeformationShader = /* wgsl */ `
+${sharedUniforms}
+
+@group(0) @binding(1) var previousSnow: texture_2d<f32>;
+@group(0) @binding(2) var nextSnow: texture_storage_2d<rgba16float, write>;
+
+fn saturate(value: f32) -> f32 {
+  return clamp(value, 0.0, 1.0);
+}
+
+@compute @workgroup_size(8, 8)
+fn updateSnow(@builtin(global_invocation_id) invocation: vec3<u32>) {
+  let dimensions = textureDimensions(nextSnow);
+  if (invocation.x >= dimensions.x || invocation.y >= dimensions.y) {
+    return;
+  }
+
+  let pixel = vec2<i32>(invocation.xy);
+  let uv = (vec2<f32>(invocation.xy) + 0.5) / vec2<f32>(dimensions);
+  let world = (uv - 0.5) * 128.0;
+  let previous = textureLoad(previousSnow, pixel, 0).r;
+  let delta = min(globals.viewport.w, 0.05);
+  var deformation = previous * exp(-delta * 0.0035);
+
+  let speed = globals.reserved.w;
+  if (speed > 0.035) {
+    let heading = globals.reserved.z;
+    let forward = vec2<f32>(sin(heading), -cos(heading));
+    let right = vec2<f32>(cos(heading), sin(heading));
+    let relative = world - globals.reserved.xy;
+    let longitudinal = dot(relative, forward);
+    let lateral = dot(relative, right);
+    let boardLength = 1.0 - smoothstep(0.82, 1.28, abs(longitudinal + 0.08));
+    let compressed = 1.0 - smoothstep(0.22, 0.48, abs(lateral));
+    let edgeRidge =
+      smoothstep(0.31, 0.43, abs(lateral)) *
+      (1.0 - smoothstep(0.43, 0.68, abs(lateral))) *
+      boardLength;
+    let stamped = -0.13 * compressed * boardLength * speed + 0.045 * edgeRidge * speed;
+    if (stamped < 0.0) {
+      deformation = min(deformation, stamped);
+    } else if (deformation > -0.018) {
+      deformation = max(deformation, stamped);
+    }
+  }
+
+  textureStore(nextSnow, pixel, vec4<f32>(deformation, 0.0, 0.0, 1.0));
+}
+`;
+
+export const snowveilPlayerShader = /* wgsl */ `
+${sharedUniforms}
+
+struct PlayerVertexIn {
+  @location(0) position: vec3<f32>,
+  @location(1) normal: vec3<f32>,
+  @location(2) part: f32,
+};
+
+struct PlayerVertexOut {
+  @builtin(position) position: vec4<f32>,
+  @location(0) worldPosition: vec3<f32>,
+  @location(1) worldNormal: vec3<f32>,
+  @location(2) viewDirection: vec3<f32>,
+  @location(3) viewDistance: f32,
+  @location(4) @interpolate(flat) part: u32,
+};
+
+fn saturate(value: f32) -> f32 {
+  return clamp(value, 0.0, 1.0);
+}
+
+fn rotateY(point: vec3<f32>, angle: f32) -> vec3<f32> {
+  let cosine = cos(angle);
+  let sine = sin(angle);
+  return vec3<f32>(
+    point.x * cosine + point.z * sine,
+    point.y,
+    -point.x * sine + point.z * cosine
+  );
+}
+
+fn rotateX(point: vec3<f32>, angle: f32) -> vec3<f32> {
+  let cosine = cos(angle);
+  let sine = sin(angle);
+  return vec3<f32>(point.x, point.y * cosine - point.z * sine, point.y * sine + point.z * cosine);
+}
+
+@vertex
+fn vsPlayer(input: PlayerVertexIn) -> PlayerVertexOut {
+  var output: PlayerVertexOut;
+  let time = globals.viewport.z;
+  let speed = globals.reserved.w;
+  let heading = globals.reserved.z;
+  let part = u32(round(input.part));
+  let bob = abs(sin(time * 8.2)) * speed * 0.022;
+  var local = input.position;
+  var localNormal = normalize(input.normal);
+  if (part == 5u) {
+    let tail = saturate((local.z - 0.08) / 1.52);
+    local.x = local.x + sin(time * 3.25 + tail * 5.7) * (0.025 + tail * 0.1) * (0.45 + speed);
+    local.y = local.y + sin(time * 2.7 + tail * 4.2) * tail * 0.035;
+  }
+  if (part == 1u) {
+    let hem = 1.0 - saturate(local.y / 1.38);
+    local.x = local.x + sin(time * 2.15 + local.z * 3.1) * hem * speed * 0.035;
+  }
+  let lean = speed * 0.115;
+  if (part != 0u) {
+    local = rotateX(local, lean);
+    localNormal = rotateX(localNormal, lean);
+  }
+
+  let playerOrigin = vec3<f32>(globals.reserved.x, globals.weather.y + 0.2 + bob, globals.reserved.y);
+  let worldPosition = playerOrigin + rotateY(local, heading);
+  let worldNormal = normalize(rotateY(localNormal, heading));
+
+  let cameraDistance = globals.camera.z;
+  let fieldOfView = globals.camera.w;
+  let aspect = globals.viewport.x / max(globals.viewport.y, 1.0);
+  let cameraTarget = vec3<f32>(globals.reserved.x, globals.weather.y + 1.05, globals.reserved.y);
+  let orbit = vec3<f32>(sin(globals.camera.x) * cameraDistance, 2.0 + globals.camera.y * 7.0, cos(globals.camera.x) * cameraDistance);
+  let cameraPosition = cameraTarget + orbit;
+  let forward = normalize(cameraTarget - cameraPosition);
+  let right = normalize(cross(forward, vec3<f32>(0.0, 1.0, 0.0)));
+  let up = normalize(cross(right, forward));
+  let relative = worldPosition - cameraPosition;
+  let viewX = dot(relative, right);
+  let viewY = dot(relative, up);
+  let viewZ = dot(relative, forward);
+  let focal = 1.0 / fieldOfView;
+  let near = 0.08;
+  let far = 220.0;
+  let clipZ = (far / (far - near)) * viewZ - (near * far / (far - near));
+
+  output.position = vec4<f32>(viewX * focal / aspect, viewY * focal, clipZ, viewZ);
+  output.worldPosition = worldPosition;
+  output.worldNormal = worldNormal;
+  output.viewDirection = cameraPosition - worldPosition;
+  output.viewDistance = length(relative);
+  output.part = part;
+  return output;
+}
+
+@fragment
+fn fsPlayer(input: PlayerVertexOut) -> @location(0) vec4<f32> {
+  let normal = normalize(input.worldNormal);
+  let viewDirection = normalize(input.viewDirection);
+  let sunDirection = normalize(vec3<f32>(0.44, 0.205, -0.874));
+  let halfway = normalize(viewDirection + sunDirection);
+  let direct = saturate(dot(normal, sunDirection));
+  let sky = 0.32 + saturate(normal.y) * 0.42;
+  let rim = pow(1.0 - saturate(dot(normal, viewDirection)), 3.0);
+  let specular = pow(saturate(dot(normal, halfway)), 56.0);
+
+  var albedo = vec3<f32>(0.065, 0.16, 0.225);
+  var roughness = 0.86;
+  if (input.part == 0u) {
+    albedo = vec3<f32>(0.035, 0.085, 0.105);
+    roughness = 0.38;
+  } else if (input.part == 3u) {
+    albedo = vec3<f32>(0.052, 0.13, 0.185);
+  } else if (input.part == 4u) {
+    albedo = vec3<f32>(0.78, 0.52, 0.33);
+    roughness = 0.72;
+  } else if (input.part == 5u || input.part == 6u) {
+    albedo = vec3<f32>(0.5, 0.105, 0.055);
+  } else if (input.part == 7u || input.part == 8u) {
+    albedo = vec3<f32>(0.12, 0.18, 0.22);
+  } else if (input.part == 10u) {
+    albedo = vec3<f32>(0.018, 0.052, 0.078);
+  }
+
+  let coolAmbient = vec3<f32>(0.44, 0.62, 0.78) * (0.64 + sky * 0.42);
+  let warmDirect = vec3<f32>(1.0, 0.73, 0.48) * (0.12 + direct * 1.32);
+  var color = albedo * (coolAmbient + warmDirect);
+  var clothLift = 1.0;
+  if (input.part == 1u) {
+    clothLift = 0.95 + 0.05 * sin(input.worldPosition.y * 34.0 + input.worldPosition.x * 19.0);
+  }
+  color = color * clothLift;
+  color = color + vec3<f32>(0.43, 0.67, 0.82) * rim * 0.34;
+  color = color + vec3<f32>(1.0, 0.82, 0.61) * specular * (1.0 - roughness) * 0.6;
+
+  var snowCatch = 0.0;
+  if (input.part == 0u || input.part == 2u || input.part == 10u) {
+    snowCatch = smoothstep(0.58, 0.91, normal.y) * 0.14;
+  }
+  color = mix(color, vec3<f32>(0.63, 0.78, 0.88) * (0.7 + direct * 0.7), snowCatch);
+
+  if (input.part == 9u) {
+    let pulse = 0.88 + sin(globals.viewport.z * 3.2) * 0.12;
+    color = vec3<f32>(0.22, 0.72, 1.0) * 4.6 * pulse;
+  }
+
+  let fog = smoothstep(18.0, 74.0, input.viewDistance);
+  color = mix(color, vec3<f32>(0.48, 0.62, 0.72), fog * 0.82);
   return vec4<f32>(max(color, vec3<f32>(0.0)), 1.0);
 }
 `;
