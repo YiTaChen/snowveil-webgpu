@@ -1,0 +1,232 @@
+:root {
+  color-scheme: dark;
+  --ice-white: #edf7ff;
+  --frost-blue: #91b6cf;
+  --night-blue: #071522;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  width: 100%;
+  min-height: 100%;
+  margin: 0;
+  overflow: hidden;
+  background: var(--night-blue);
+  color: var(--ice-white);
+  font-family: Inter, ui-sans-serif, -apple-system, BlinkMacSystemFont, "Segoe UI",
+    sans-serif;
+}
+
+button,
+canvas {
+  font: inherit;
+}
+
+.snowveil {
+  position: fixed;
+  inset: 0;
+  isolation: isolate;
+  background:
+    radial-gradient(circle at 70% 34%, rgba(219, 235, 244, 0.24), transparent 28%),
+    linear-gradient(180deg, #183044 0%, #7d9bae 55%, #dce7ec 100%);
+}
+
+.snowveil__canvas {
+  width: 100%;
+  height: 100%;
+  display: block;
+  cursor: grab;
+  touch-action: none;
+  opacity: 0;
+  transition: opacity 1.2s ease;
+}
+
+.snowveil__canvas[data-ready="true"] {
+  opacity: 1;
+}
+
+.snowveil__canvas:active {
+  cursor: grabbing;
+}
+
+.snowveil__veil {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background:
+    linear-gradient(180deg, rgba(2, 9, 16, 0.32), transparent 24%),
+    radial-gradient(circle at center, transparent 46%, rgba(3, 11, 18, 0.35) 125%);
+  mix-blend-mode: multiply;
+}
+
+.snowveil__brand {
+  position: absolute;
+  top: clamp(22px, 4vw, 52px);
+  left: clamp(22px, 4vw, 58px);
+  z-index: 2;
+  display: flex;
+  align-items: center;
+  gap: 15px;
+  letter-spacing: 0.21em;
+  text-transform: uppercase;
+  text-shadow: 0 2px 18px rgba(2, 10, 16, 0.45);
+  user-select: none;
+}
+
+.snowveil__mark {
+  width: 32px;
+  height: 32px;
+  border: 1px solid rgba(231, 246, 255, 0.72);
+  border-radius: 50%;
+  position: relative;
+  box-shadow:
+    inset 0 0 18px rgba(208, 239, 255, 0.13),
+    0 0 30px rgba(195, 231, 249, 0.1);
+}
+
+.snowveil__mark::before,
+.snowveil__mark::after {
+  content: "";
+  position: absolute;
+  left: 7px;
+  right: 7px;
+  height: 1px;
+  background: rgba(232, 247, 255, 0.8);
+  transform: rotate(-35deg);
+}
+
+.snowveil__mark::before {
+  top: 11px;
+}
+
+.snowveil__mark::after {
+  top: 18px;
+  left: 11px;
+  right: 4px;
+}
+
+.snowveil__wordmark {
+  font-size: 12px;
+  font-weight: 620;
+}
+
+.snowveil__status {
+  color: rgba(220, 238, 248, 0.62);
+  font-size: 9px;
+  letter-spacing: 0.17em;
+}
+
+.snowveil__footer {
+  position: absolute;
+  right: clamp(22px, 4vw, 58px);
+  bottom: clamp(22px, 4vw, 48px);
+  z-index: 2;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  color: rgba(232, 245, 252, 0.7);
+  font-size: 9px;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  text-shadow: 0 2px 16px rgba(2, 10, 16, 0.55);
+  user-select: none;
+}
+
+.snowveil__rule {
+  width: 38px;
+  height: 1px;
+  background: rgba(229, 244, 252, 0.42);
+}
+
+.snowveil__loader,
+.snowveil__fallback {
+  position: absolute;
+  inset: 0;
+  z-index: 3;
+  display: grid;
+  place-items: center;
+  padding: 28px;
+  background:
+    radial-gradient(circle at 65% 38%, rgba(216, 235, 246, 0.2), transparent 24%),
+    linear-gradient(155deg, #071522, #173249 58%, #829aaa);
+  text-align: center;
+}
+
+.snowveil__loader-copy {
+  display: grid;
+  gap: 14px;
+  justify-items: center;
+  color: rgba(232, 246, 255, 0.76);
+  font-size: 10px;
+  letter-spacing: 0.23em;
+  text-transform: uppercase;
+}
+
+.snowveil__loader-line {
+  width: 86px;
+  height: 1px;
+  overflow: hidden;
+  background: rgba(235, 248, 255, 0.18);
+}
+
+.snowveil__loader-line::after {
+  content: "";
+  display: block;
+  width: 45%;
+  height: 100%;
+  background: rgba(238, 249, 255, 0.85);
+  animation: snowveil-load 1.5s ease-in-out infinite;
+}
+
+.snowveil__fallback strong {
+  display: block;
+  margin-bottom: 12px;
+  font-size: 14px;
+  font-weight: 550;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+}
+
+.snowveil__fallback span {
+  display: block;
+  max-width: 420px;
+  color: rgba(221, 238, 247, 0.65);
+  font-size: 12px;
+  line-height: 1.65;
+}
+
+@keyframes snowveil-load {
+  0% {
+    transform: translateX(-110%);
+  }
+  50%,
+  100% {
+    transform: translateX(230%);
+  }
+}
+
+@media (max-width: 640px) {
+  .snowveil__status,
+  .snowveil__rule {
+    display: none;
+  }
+
+  .snowveil__footer {
+    left: 22px;
+    right: auto;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .snowveil__canvas {
+    transition: none;
+  }
+
+  .snowveil__loader-line::after {
+    animation-duration: 3s;
+  }
+}
