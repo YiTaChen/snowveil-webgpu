@@ -295,7 +295,7 @@ fn terrainNormal(point: vec2<f32>) -> vec3<f32> {
 @vertex
 fn vsTerrain(input: TerrainVertexIn) -> TerrainVertexOut {
   var output: TerrainVertexOut;
-  let warpedGrid = input.grid * (vec2<f32>(0.28) + abs(input.grid) * 0.72);
+  let warpedGrid = input.grid * (vec2<f32>(0.12) + abs(input.grid) * 0.88);
   let worldXZ = warpedGrid * 86.0 + globals.reserved.xy;
   let worldPosition = vec3<f32>(worldXZ.x, terrainHeight(worldXZ), worldXZ.y);
 
@@ -344,9 +344,14 @@ fn softShadow(position: vec3<f32>, sunDirection: vec3<f32>) -> f32 {
 
 fn atmosphere(direction: vec3<f32>, sunDirection: vec3<f32>) -> vec3<f32> {
   let up = saturate(direction.y * 0.5 + 0.5);
+  let horizon = pow(1.0 - abs(direction.y), 4.0);
   let sunAmount = saturate(dot(direction, sunDirection));
-  var color = mix(vec3<f32>(0.55, 0.68, 0.76), vec3<f32>(0.035, 0.115, 0.19), pow(up, 0.66));
-  color = color + vec3<f32>(0.5, 0.34, 0.21) * pow(sunAmount, 18.0) * 0.25;
+  let lowSky = vec3<f32>(0.54, 0.67, 0.75);
+  let highSky = vec3<f32>(0.035, 0.115, 0.19);
+  var color = mix(lowSky, highSky, pow(up, 0.66));
+  color = color + vec3<f32>(0.3, 0.23, 0.16) * horizon * pow(sunAmount, 5.0);
+  color = color + vec3<f32>(1.0, 0.78, 0.51) * pow(sunAmount, 460.0) * 7.0;
+  color = color + vec3<f32>(1.0, 0.62, 0.34) * pow(sunAmount, 38.0) * 0.72;
   return color;
 }
 
@@ -371,13 +376,17 @@ fn fsTerrain(input: TerrainVertexOut) -> @location(0) vec4<f32> {
   let microA = noise2(input.worldPosition.xz * 31.0) - 0.5;
   let microB = noise2(input.worldPosition.xz * 57.0 + 19.0) - 0.5;
   let microC = noise2(vec2<f32>(dot(input.worldPosition.xz, across) * 8.7, dot(input.worldPosition.xz, wind) * 0.7)) - 0.5;
-  let ripple = sin(dot(input.worldPosition.xz, across) * 3.8 + noise2(input.worldPosition.xz * 0.68) * 2.2);
+  let ripplePhase = dot(input.worldPosition.xz, across) * 3.8 + noise2(input.worldPosition.xz * 0.68) * 2.2;
+  let rippleSampling = 1.0 - smoothstep(0.48, 1.7, fwidth(ripplePhase));
+  let ripple = sin(ripplePhase) * rippleSampling;
   let rippleBreak = smoothstep(0.28, 0.74, noise2(vec2<f32>(
     dot(input.worldPosition.xz, wind) * 0.21,
     dot(input.worldPosition.xz, across) * 0.085
   )));
-  let fineWave = sin(dot(input.worldPosition.xz, across) * 13.5 + noise2(input.worldPosition.xz * 0.38) * 4.2);
-  let fineRipple = fineWave * rippleBreak;
+  let finePhase = dot(input.worldPosition.xz, across) * 13.5 + noise2(input.worldPosition.xz * 0.38) * 4.2;
+  let fineSampling = 1.0 - smoothstep(0.4, 1.45, fwidth(finePhase));
+  let fineWave = sin(finePhase);
+  let fineRipple = fineWave * rippleBreak * fineSampling;
   normal = normalize(
     normal + vec3<f32>(microA * 0.054, 0.0, microB * 0.054) * detailFade +
     vec3<f32>(across.x, 0.0, across.y) * (ripple * 0.032 + microC * 0.045 + fineRipple * 0.026) * detailFade
@@ -405,7 +414,9 @@ fn fsTerrain(input: TerrainVertexOut) -> @location(0) vec4<f32> {
   let glintMask = smoothstep(0.996, 1.0, glintSeed);
   let glintDistance = 1.0 - smoothstep(8.0, 44.0, input.viewDistance);
   let glint = glintMask * pow(saturate(dot(normal, halfway)), 96.0) * shadow * glintDistance;
-  let ridgeTone = pow(abs(sin(dot(input.worldPosition.xz, across) * 3.2)), 24.0) * detailFade;
+  let ridgePhase = dot(input.worldPosition.xz, across) * 3.2;
+  let ridgeSampling = 1.0 - smoothstep(0.42, 1.55, fwidth(ridgePhase));
+  let ridgeTone = pow(abs(sin(ridgePhase)), 24.0) * ridgeSampling * detailFade;
   let fineCrest = pow(max(fineWave, 0.0), 10.0) * rippleBreak * detailFade;
   let surfaceVariation = 0.95 + 0.05 * noise2(input.worldPosition.xz * 3.1) - ridgeTone * 0.018 - fineCrest * 0.032;
   let outcrop = outcropField(input.worldPosition.xz);
@@ -435,7 +446,7 @@ fn fsTerrain(input: TerrainVertexOut) -> @location(0) vec4<f32> {
   let fog = smoothstep(16.0, 82.0, input.viewDistance);
   let groundMist = exp(-max(input.worldPosition.y + 0.4, 0.0) * 0.58) * smoothstep(9.0, 72.0, input.viewDistance);
   let atmospheric = atmosphere(normalize(vec3<f32>(rayDirection.x, max(rayDirection.y, 0.025), rayDirection.z)), sunDirection);
-  let color = mix(snow, atmospheric, saturate(fog * 0.92 + groundMist * 0.13));
+  let color = mix(snow, atmospheric, saturate(fog + groundMist * 0.13));
   return vec4<f32>(max(color, vec3<f32>(0.0)), 1.0);
 }
 `;
@@ -474,10 +485,10 @@ fn updateSnow(@builtin(global_invocation_id) invocation: vec3<u32>) {
     let longitudinal = dot(relative, forward);
     let lateral = dot(relative, right);
     let boardLength = 1.0 - smoothstep(0.82, 1.28, abs(longitudinal + 0.08));
-    let compressed = 1.0 - smoothstep(0.22, 0.48, abs(lateral));
+    let compressed = 1.0 - smoothstep(0.34, 0.78, abs(lateral));
     let edgeRidge =
-      smoothstep(0.31, 0.43, abs(lateral)) *
-      (1.0 - smoothstep(0.43, 0.68, abs(lateral))) *
+      smoothstep(0.62, 0.76, abs(lateral)) *
+      (1.0 - smoothstep(0.76, 0.98, abs(lateral))) *
       boardLength;
     let stamped = -0.13 * compressed * boardLength * speed + 0.045 * edgeRidge * speed;
     if (stamped < 0.0) {

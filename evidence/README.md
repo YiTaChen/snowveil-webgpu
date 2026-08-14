@@ -16,5 +16,10 @@ They are review artefacts, not third-party source material.
   terrain layers, and winter atmosphere remain dominant in the composition.
 - `interaction-ride-track-1182x749.jpg` — native interactive capture of rider
   motion and persistent snow deformation.
+- `interaction-ride-track-aa-1182x749.jpg` — retained interactive capture after
+  higher-resolution snow history, wider board stamping, and near-field terrain
+  concentration reduced the track-edge staircase.
 - `interaction-ice-pulse-1182x749.jpg` — native interactive capture of the
   original Ice Pulse ring, projectile, and deformation residue.
+- `gate-1-stability-after-2560x1440.jpg` — fixed native 1440p evidence after
+  derivative-based snow-detail filtering and exact terrain-to-sky fog matching.

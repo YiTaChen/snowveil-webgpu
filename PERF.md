@@ -45,3 +45,20 @@ movement range remains comparable with the previous Ice Pulse baseline; the
 largest frame cost is still the terrain, persistent snow compute, HDR resolve,
 and full-resolution evidence target. The interactive 1% low of 20 is not a
 release pass and remains an optimisation requirement.
+
+## 2026-08-14 — track-stability review
+
+This pass raises snow history to 768², concentrates the unchanged 352² terrain
+grid around the rider, and adds derivative-based material antialiasing. Values
+below are HUD observations from warmed native-WebGPU Chrome runs.
+
+| Review state | Observed HUD | Result |
+| --- | ---: | --- |
+| warmed idle, 1182×749 interactive viewport | 53 FPS · P95 33.4 ms · 1% 29 | retained |
+| ride with widened persistent track | 52 FPS · P95 33.8 ms · 1% 29 | retained; no rider-checkpoint regression |
+| fixed 2560×1440 horizon evidence | 16–19 FPS · P95 about 100 ms · 1% 10 | still-evidence path only |
+
+The 768² compute pass updates 2.25 times as many snow-history texels as 512²,
+but the retained interactive run remains near the warmed idle rate. The fixed
+1440p path still is not a release-performance pass; it deliberately disables
+dynamic resolution so evidence frames can be compared pixel-for-pixel.

@@ -42,7 +42,7 @@ reload.
 
 ## 2026-08-13 — Persistent snow uses ping-pong GPU history
 
-Interactive snow state lives in two original 512×512 `rgba16float` textures
+Interactive snow state lives in two original 768×768 `rgba16float` textures
 covering the finite 128-metre play field. A compute pass reads the previous
 texture, stamps the board compression and displaced edge ridges, applies a very
 slow recovery rate, and writes the next texture. Terrain vertices, normals, and
@@ -51,9 +51,10 @@ instead of a decal and remains after the rider leaves.
 
 An initially uniform 384×384 terrain grid made a sub-metre track visibly stair
 stepped. The active 352×352 grid uses a player-centred quadratic density warp:
-near-field spacing is roughly 13–14 centimetres while distant cells become
-progressively larger. This removed the track stair-step while reducing triangle
-count from the earlier uniform baseline.
+spacing is about 5.9 centimetres at the rider and remains below roughly 11
+centimetres across the immediate board footprint, while distant cells become
+progressively larger. This substantially reduces track stair-step without
+raising the triangle count above the earlier uniform baseline.
 
 Sampling snow history inside the ten-step terrain shadow loop reduced Chrome to
 approximately 31 FPS. Deformation is now included in the visible surface height
@@ -102,3 +103,19 @@ rear view but became an oval when the rider turned. The retained snow-surfing
 blade is therefore an original thin mesh with separate top, underside, sidewall,
 bindings, and procedurally raised tips. This checkpoint improves the silhouette
 without claiming final character art.
+
+## 2026-08-14 — Track stability and horizon continuity
+
+The deformation history increases from 512² to 768², giving the 128-metre field
+about 16.7-centimetre simulation texels instead of 25-centimetre texels. The
+board stamp now covers its full visible width and raises two separated edge
+ridges. Concentrating the existing 352² terrain grid around the rider makes the
+geometry denser where that history is inspected without paying for uniformly
+dense distant terrain.
+
+High-frequency wind ridges now use fragment derivatives to fade only when their
+phase becomes undersampled. This keeps foreground relief while suppressing
+sub-pixel shimmer in motion. The far-terrain fog also uses the same low sky,
+high sky, horizon glow, solar disc, and halo calculation as the sky pass. A fully
+fogged terrain sample therefore converges to the exact sky colour instead of
+leaving a dark raster silhouette at the mesh boundary.

@@ -67,3 +67,21 @@ The rider rebuild is accepted as an iteration checkpoint, not final character
 art. Gate 1 remains open: dynamic-resolution motion still exposes stair-stepped
 track edges at some slopes, the distant horizon can show a hard raster contour,
 and the rider still needs a higher-detail animation/material pass before release.
+
+### 2026-08-14 — track and horizon stability checkpoint
+
+Interactive track: [`evidence/interaction-ride-track-aa-1182x749.jpg`](./evidence/interaction-ride-track-aa-1182x749.jpg)
+
+Fixed 1440p horizon: [`evidence/gate-1-stability-after-2560x1440.jpg`](./evidence/gate-1-stability-after-2560x1440.jpg)
+
+The denser deformation history, wider board stamp, and more concentrated terrain
+warp reduce the earlier track staircase to a smaller, irregular broken-snow edge.
+Derivative fades remove undersampled fine ridges without flattening the near
+surface. Matching terrain fog to the exact sky calculation removes the dark
+raster contour from the far mesh boundary in the new 2560×1440 capture. Browser
+logs contain no WebGPU warnings or validation errors.
+
+This is accepted as a stability checkpoint, not a final gate pass. The track
+must still survive later oblique-camera and higher-speed tests, fixed 1440p is a
+still-capture path rather than a playable target, and the rider still requires a
+higher-detail animation and material pass.

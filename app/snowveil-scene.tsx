@@ -311,7 +311,7 @@ export function SnowveilScene() {
           addressModeV: "clamp-to-edge",
         });
         activeDevice.pushErrorScope("validation");
-        const deformationResolution = 512;
+        const deformationResolution = 768;
         const deformationTextures = [0, 1].map((index) =>
           activeDevice.createTexture({
             label: `Snowveil deformation history ${index}`,
