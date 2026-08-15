@@ -158,3 +158,13 @@ They are review artefacts, not third-party source material.
   capture: 1280×720 CSS presentation, true 2560×1440 WebGPU target, 48 FPS.
 - `rider-articulation-native-complete-2560x1440.png` — calibrated complete-frame
   three-sigil result at a true 2560×1440 target, 46 FPS and 100% RES.
+- `rider-transition-ride-1182x749.png` — real forward input at 5.3 m/s with the
+  board nose, hips, and gaze carried into the travel direction.
+- `rider-transition-brake-1182x749.png` — real moving Brake/S input at 1.9 m/s
+  with a crosswise edged board, deeper knee load, and stabilising arms.
+- `rider-transition-air-1182x749.png` — real Space input at 5.5 m/s with a clear
+  snow gap, tucked knees, opened arms, and contact stamping disabled.
+- `rider-transition-land-1182x749.png` — first grounded frame at 4.6 m/s with
+  authored landing absorption layered over the physical compression response.
+- `rider-transition-native-2560x1440.png` — calibrated complete-frame moving
+  capture at a true 2560×1440 WebGPU target, 45 FPS and 100% RES.

@@ -484,3 +484,27 @@ page and an explicitly doubled 2560×1440 WebGPU target, producing a complete
 draw topology. `?evidence` remains the 2560×1440 CSS performance path. No model,
 skeleton, animation clip, image, texture, video frame, or third-party code is
 introduced.
+
+## 2026-08-14 — Authored pose envelopes preserve physical causality
+
+The articulated geometry still read as one continuous procedural deformation:
+speed, skid, jump height, and impact all contributed at once, but there was no
+explicit transition contract between idle, riding, braking, airborne, and
+landing poses. Adding animation states directly to velocity or snow contact was
+rejected because it would recreate the earlier input-magic problem.
+
+The retained controller selects one pose target with strict physical priority:
+airborne height, then grounded landing compression, then visible skid, then
+speed, then idle. Four non-idle weights approach that one-hot target with the
+same exponential rate, so their sum cannot overshoot during a transition. Air
+enters fastest at 14 s⁻¹, followed by land at 12, brake at 9, ride at 5.5, and
+idle recovery at 4.5. Tests assert state priority, bounded interpolation, and
+negative-delta stability.
+
+The additional 16-byte uniform drives only the existing part hierarchy. Ride
+settles into edge-loaded flex; brake deepens both knees and stabilizes the arms;
+air tucks the legs and opens the shoulders; land adds a short absorption pose;
+idle restores restrained breathing. Velocity, heading, board yaw, ballistic
+height, gravity, deformation, and contact activation still come exclusively
+from their existing physical paths. No pass, texture, draw call, model,
+skeleton, animation clip, motion sample, image, or third-party code is added.

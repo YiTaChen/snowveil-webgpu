@@ -451,3 +451,31 @@ new `?capture` path fixes the CSS page at 1280×720 and allocates a true
 100% RES, consistent with the documented fixed-native boundary. Production
 facial performance, authored clip transitions, and a conventional deforming
 skin skeleton remain outside this checkpoint.
+
+### 2026-08-14 — authored rider state-transition checkpoint
+
+Evidence:
+
+- forward ride: [`evidence/rider-transition-ride-1182x749.png`](./evidence/rider-transition-ride-1182x749.png)
+- moving edge brake: [`evidence/rider-transition-brake-1182x749.png`](./evidence/rider-transition-brake-1182x749.png)
+- real Space jump: [`evidence/rider-transition-air-1182x749.png`](./evidence/rider-transition-air-1182x749.png)
+- first landing absorption: [`evidence/rider-transition-land-1182x749.png`](./evidence/rider-transition-land-1182x749.png)
+- complete-frame native target: [`evidence/rider-transition-native-2560x1440.png`](./evidence/rider-transition-native-2560x1440.png)
+
+The retained motion controller classifies each physical frame with the strict
+priority `air > land > brake > ride > idle`. One-hot targets pass through
+exponential envelopes at state-specific rates, so the shader receives authored
+transitions rather than abrupt pose switches. These weights only drive the
+existing procedural hip, knee, shoulder, and elbow hierarchy: they do not alter
+velocity, board heading, contact stamps, jump height, or collision state.
+
+Actual shared keyboard input records the ride at 5.3 m/s, the moving brake at
+1.9 m/s, the airborne pose at 5.5 m/s, and the first landing response at 4.6
+m/s. All four 1182×749 frames report 60 FPS, 100% render scale, and clean
+browser diagnostics. The calibrated 2560×1440 target records 7.1 m/s at 45 FPS,
+P95 34.3 ms, 1% low 12, and 100% RES; it is retained as a truthful fixed-native
+limit rather than presented as a 60 FPS result.
+
+This closes the earlier lack of authored pose transitions for the compact
+procedural rider. A conventional skinned production skeleton and facial
+performance remain outside the current art boundary.

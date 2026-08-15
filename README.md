@@ -114,6 +114,10 @@ Original project code is released under the [MIT License](./LICENSE).
     and guard groups add edge-dependent weight transfer and impact compression;
     the capture route separates full-frame 1440p visual proof from performance
     telemetry after a host-pixel screenshot audit.
+19. Authored pose-transition pass — mutually prioritized idle, ride, brake,
+    air, and land targets feed a tested exponential envelope; the same physical
+    controller now produces distinct ride, crosswise-brake, tuck, and absorption
+    silhouettes without state-driven speed or contact shortcuts.
 
 The current build is a polished playable vertical slice, not a claim of a full
 AAA production or a hundred-million-particle physical simulation. See

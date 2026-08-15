@@ -6,6 +6,9 @@ import {
   downhillSpeedHeadroom,
   landingImpactForVelocity,
   nextRenderScale,
+  riderAnimationState,
+  riderPoseBlend,
+  riderTransitionRate,
   snowHistoryRegionOffset,
   slopeAlongHeading,
   snowboardBrakeDrag,
@@ -99,4 +102,19 @@ test("dynamic render scale responds inside a quality floor with hysteresis", () 
   assert.equal(nextRenderScale(0.86, 60, 17.5), 0.88);
   assert.equal(nextRenderScale(0.88, 58, 17.5), 0.88);
   assert.equal(nextRenderScale(0.88, 60, 20), 0.88);
+});
+
+test("rider pose states prioritize contact causality and blend without overshoot", () => {
+  assert.equal(riderAnimationState(0, 0, 0, 0), "idle");
+  assert.equal(riderAnimationState(4, 0.2, 0, 0), "ride");
+  assert.equal(riderAnimationState(1.2, 0.8, 0, 0), "brake");
+  assert.equal(riderAnimationState(5, 1, 0.4, 0.8), "air");
+  assert.equal(riderAnimationState(2, 0.8, 0, 0.7), "land");
+
+  const airBlend = riderPoseBlend(0, 1, 1 / 60, riderTransitionRate("air"));
+  const nextAirBlend = riderPoseBlend(airBlend, 1, 1 / 60, riderTransitionRate("air"));
+  assert.ok(airBlend > 0 && airBlend < 1);
+  assert.ok(nextAirBlend > airBlend && nextAirBlend < 1);
+  assert.equal(riderPoseBlend(0.7, 0, -1, 12), 0.7);
+  assert.equal(riderPoseBlend(2, -1, 0, 12), 1);
 });

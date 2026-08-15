@@ -18,6 +18,9 @@ import {
   downhillSpeedHeadroom,
   landingImpactForVelocity,
   nextRenderScale,
+  riderAnimationState,
+  riderPoseBlend,
+  riderTransitionRate,
   snowHistoryRegionOffset,
   slopeAlongHeading,
   snowboardBrakeDrag,
@@ -117,6 +120,10 @@ export function SnowveilScene() {
     let jumpHeight = 0;
     let jumpVelocity = 0;
     let landingCompression = 0;
+    let ridePose = 0;
+    let brakePose = 0;
+    let airPose = 0;
+    let landPose = 0;
     let spellAge = 100;
     let completionAge = 100;
     let activatedCount = 0;
@@ -475,7 +482,7 @@ export function SnowveilScene() {
 
         const uniformBuffer = activeDevice.createBuffer({
           label: "Snowveil frame uniforms",
-          size: 160,
+          size: 176,
           usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST,
         });
         const skyBindGroup = activeDevice.createBindGroup({
@@ -550,7 +557,7 @@ export function SnowveilScene() {
         const deformationRegionSize = 64;
         let deformationAccumulator = deformationInterval;
         let snowHistoryTouched = false;
-        const uniforms = new Float32Array(40);
+        const uniforms = new Float32Array(44);
 
         const terrainSegments = 288;
         const terrainVertexCount = (terrainSegments + 1) * (terrainSegments + 1);
@@ -787,6 +794,18 @@ export function SnowveilScene() {
             }
           }
 
+          const animationState = riderAnimationState(
+            playerSpeed,
+            boardSkid,
+            jumpHeight,
+            landingCompression,
+          );
+          const poseRate = riderTransitionRate(animationState);
+          ridePose = riderPoseBlend(ridePose, animationState === "ride" ? 1 : 0, delta, poseRate);
+          brakePose = riderPoseBlend(brakePose, animationState === "brake" ? 1 : 0, delta, poseRate);
+          airPose = riderPoseBlend(airPose, animationState === "air" ? 1 : 0, delta, poseRate);
+          landPose = riderPoseBlend(landPose, animationState === "land" ? 1 : 0, delta, poseRate);
+
           audio.setMotion(playerSpeed, jumpHeight <= 0.018);
           if (speedRef.current) speedRef.current.textContent = `${playerSpeed.toFixed(1)} m/s`;
           playerSurface = snowSurfaceAt(playerX, playerZ);
@@ -901,6 +920,10 @@ export function SnowveilScene() {
           uniforms[37] = jumpVelocity;
           uniforms[38] = partialSnowUpdate ? deformationRegion.x : 0;
           uniforms[39] = partialSnowUpdate ? deformationRegion.y : 0;
+          uniforms[40] = ridePose;
+          uniforms[41] = brakePose;
+          uniforms[42] = airPose;
+          uniforms[43] = landPose;
           activeDevice.queue.writeBuffer(uniformBuffer, 0, uniforms);
           if (!groundedForSnow || shouldUpdateSnowHistory) {
             previousStampX = playerX;

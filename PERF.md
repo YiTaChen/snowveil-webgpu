@@ -361,3 +361,23 @@ This path is for visual evidence, not a faster renderer: it still shades all
 46–47 FPS fixed-native boundary. Normal gameplay continues to use the disclosed
 84–100% adaptive controller. The articulated limb hierarchy adds no pass,
 texture, buffer, draw call, or imported animation runtime.
+
+## 2026-08-14 — rider pose-transition cost
+
+Four smoothed pose weights extend the shared scene uniform from 160 to 176
+bytes. The change adds no texture, storage buffer, render pass, compute pass,
+draw call, or external animation runtime. State selection and exponential
+envelopes run once per frame on the CPU; the existing player vertex stage reads
+the weights while evaluating its established part hierarchy.
+
+| Active state | Observed HUD | Result |
+| --- | ---: | --- |
+| forward ride, 1182×749 | 60 FPS · P95 17.6 ms · 1% 56 · 100% | retained |
+| moving edge brake, 1182×749 | 60 FPS · P95 17.5 ms · 1% 56 · 100% | retained |
+| airborne, 1182×749 | 60 FPS · P95 17.3 ms · 1% 57 · 100% | retained |
+| first landing, 1182×749 | 60 FPS · P95 17.3 ms · 1% 57 · 100% | retained |
+| moving native target, 2560×1440 | 45 FPS · P95 34.3 ms · 1% 12 · 100% | documented fixed-native limit |
+
+The interactive viewport remains frame-capped at 60 FPS through every new
+state. The short active native capture remains consistent with the documented
+fixed-native pixel-shading limit and is not used to claim native 60 FPS.

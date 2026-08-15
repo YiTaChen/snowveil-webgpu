@@ -71,3 +71,33 @@ export function landingImpactForVelocity(verticalVelocity: number) {
 export function decayLandingCompression(compression: number, delta: number) {
   return compression * Math.exp(-Math.max(delta, 0) * 9.5);
 }
+
+export type RiderAnimationState = "idle" | "ride" | "brake" | "air" | "land";
+
+export function riderAnimationState(
+  speed: number,
+  skidAmount: number,
+  jumpHeight: number,
+  landingCompression: number,
+): RiderAnimationState {
+  if (jumpHeight > 0.015) return "air";
+  if (landingCompression > 0.06) return "land";
+  if (speed > 0.2 && skidAmount > 0.55) return "brake";
+  if (speed > 0.25) return "ride";
+  return "idle";
+}
+
+export function riderTransitionRate(state: RiderAnimationState) {
+  if (state === "air") return 14;
+  if (state === "land") return 12;
+  if (state === "brake") return 9;
+  if (state === "ride") return 5.5;
+  return 4.5;
+}
+
+export function riderPoseBlend(current: number, target: number, delta: number, rate: number) {
+  const boundedCurrent = Math.max(0, Math.min(current, 1));
+  const boundedTarget = Math.max(0, Math.min(target, 1));
+  const blend = 1 - Math.exp(-Math.max(delta, 0) * Math.max(rate, 0));
+  return boundedCurrent + (boundedTarget - boundedCurrent) * blend;
+}

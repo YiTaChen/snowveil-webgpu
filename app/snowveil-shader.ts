@@ -10,6 +10,7 @@ struct Globals {
   objective: vec4<f32>,
   terrain: vec4<f32>,
   motion: vec4<f32>,
+  pose: vec4<f32>,
 };
 
 @group(0) @binding(0) var<uniform> globals: Globals;
@@ -718,13 +719,25 @@ fn vsPlayer(input: PlayerVertexIn) -> PlayerVertexOut {
   let takeoff = saturate(globals.motion.y / 3.85) * airborne;
   let descent = saturate(-globals.motion.y / 4.4) * airborne;
   let landing = globals.motion.x;
+  let ridePose = saturate(globals.pose.x);
+  let brakePose = saturate(globals.pose.y);
+  let airPose = saturate(globals.pose.z);
+  let landPose = saturate(globals.pose.w);
+  let idlePose = saturate(1.0 - ridePose - brakePose - airPose - landPose);
   let compression =
-    motion * (0.12 + abs(carve) * 0.28 + skid * 0.22) +
-    airborne * (0.18 + descent * 0.14) +
-    landing * 0.82;
-  let bob = sin(time * (4.2 + motion * 1.8)) * motion * (1.0 - airborne) * 0.006;
+    motion * (0.07 + ridePose * 0.07 + abs(carve) * 0.28 + skid * 0.16) +
+    brakePose * 0.1 + airPose * (0.04 + descent * 0.08) +
+    landing * 0.62 + landPose * 0.18;
+  let bob = sin(time * (4.2 + motion * 1.8)) * ridePose * (1.0 - airborne) * 0.006;
+  let breath = sin(time * 1.7) * idlePose * 0.006;
   var local = input.position;
   var localNormal = normalize(input.normal);
+
+  if (part != 11u && part != 13u && part != 14u && part != 15u && part != 17u) {
+    let upperBody = smoothstep(0.72, 1.55, local.y);
+    local.y = local.y + breath * upperBody;
+    local.x = local.x + cos(time * 1.15) * idlePose * upperBody * 0.003;
+  }
 
   if (
     part != 11u && part != 13u && part != 14u && part != 15u && part != 17u && part != 21u &&
@@ -736,8 +749,8 @@ fn vsPlayer(input: PlayerVertexIn) -> PlayerVertexOut {
   let legSide = select(-1.0, 1.0, local.x >= 0.0);
   let edgeLoad = saturate(0.5 + carve * legSide * 0.38 + skid * 0.12);
   let kneeFlex =
-    motion * 0.07 + compression * 0.22 + landing * 0.1 + skid * 0.055 +
-    airborne * (0.035 + descent * 0.055);
+    ridePose * 0.055 + brakePose * 0.17 + compression * 0.2 + landing * 0.07 +
+    skid * 0.035 + airPose * (0.16 + descent * 0.08) + landPose * 0.16;
   if (part == 12u) {
     let hipPivot = vec3<f32>(legSide * 0.17, 0.77, 0.02);
     let upperLegAngle = kneeFlex * (0.78 + edgeLoad * 0.4);
@@ -786,10 +799,11 @@ fn vsPlayer(input: PlayerVertexIn) -> PlayerVertexOut {
   );
   let shoulderBalance =
     -carve * armSide * (0.075 + motion * 0.045) + skid * armSide * 0.035 +
-    takeoff * 0.045 - landing * 0.035;
+    brakePose * armSide * 0.065 - airPose * armSide * 0.09 +
+    takeoff * 0.045 + landPose * armSide * 0.04;
   let elbowBalance =
     carve * armSide * 0.055 + motion * (0.018 + 0.012 * sin(time * 3.1 + armSide)) +
-    skid * 0.04 + landing * 0.035;
+    skid * 0.025 + brakePose * 0.055 - airPose * 0.055 + landPose * 0.06;
   if (part == 19u || part == 20u || part == 16u || part == 9u) {
     local = elbowPivot + rotateZ(local - elbowPivot, elbowBalance);
     localNormal = rotateZ(localNormal, elbowBalance);
@@ -821,7 +835,7 @@ fn vsPlayer(input: PlayerVertexIn) -> PlayerVertexOut {
     localNormal = rotateY(localNormal, headLook);
   }
 
-  let lean = carve * 0.12 + skid * 0.045 + compression * 0.012;
+  let lean = carve * (0.08 + ridePose * 0.04) + skid * 0.03 + brakePose * 0.025 + compression * 0.012;
   let bank = carve * 0.026;
   if (part != 0u && part != 11u && part != 14u && part != 15u && part != 17u) {
     let stancePivot = vec3<f32>(0.0, 0.12, -0.04);
