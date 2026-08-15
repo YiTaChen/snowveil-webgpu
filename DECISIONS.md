@@ -418,7 +418,41 @@ stamp applies the inverse phase factor at write time so it appears at full
 strength regardless of when within the interval it lands. This preserves the
 same exponential decay law without creating visible one-second brightness steps.
 
-The retained native active capture improves from 47 to 60 FPS. The native
+The retained fixed-canvas active capture improves from 47 to 60 FPS. Its
 completion capture remains 46 FPS, so the decision closes a dominant active
-compute cost but does not support a universal fixed-1440p 60 FPS claim. No
-external code, image, model, texture, animation, sound, or other asset is added.
+compute cost but does not support a universal visible-native 1440p 60 FPS claim.
+No external code, image, model, texture, animation, sound, or other asset is
+added.
+
+## 2026-08-14 — Visible viewport evidence and disclosed adaptive resolution
+
+A 2560×1440 canvas attribute and PNG do not prove that Chromium is presenting a
+2560×1440 visible viewport. Repeating the test with `innerWidth`, `innerHeight`,
+CSS size, canvas size, and DPR all recorded exposed a 44 FPS full-display idle
+baseline. Earlier fixed-canvas results remain useful A/B evidence, but are no
+longer described as complete visible-native measurements.
+
+Profiling identified five full-screen procedural snowfall layers as the idle
+limit. The retained shader uses two atmospheric layers and one stronger
+foreground layer. Near/far size separation, motion, rider spray, landing burst,
+and Ice Pulse remain separate code paths. The exact visible-native idle reading
+rises from 44 to 51 FPS without removing snowfall from the frame.
+
+The terrain grid moves from 352² to 288². Its existing player-centred warp keeps
+near-contact spacing at about 7.2 centimetres, still less than half of one
+16.7-centimetre snow-history texel. A 224², more strongly concentrated candidate
+did not improve the route further and was rejected. The retained 1182×749 track
+shows no scalloped or detached contact edge.
+
+Full-native completion remains 47 FPS. Normal play therefore uses a tested
+84–100% dynamic canvas scale: below 54 FPS it steps down by four points, and only
+raises scale when FPS exceeds 59 and P95 is below 18.2 ms. The HUD exposes the
+active percentage. A fixed `renderScale` query is retained for deterministic QA,
+while `?evidence` without it remains 100%. The automatic 2560×1440 CSS route
+settles at a 2150×1209 canvas and 60 FPS; this is an explicit adaptive-resolution
+release path, not a universal native-1440p claim.
+
+Four-neighbour bloom, bounded ritual marks, vertex-carried material fields,
+hashed micro-normal candidates, and suppressed snow-history compute were all
+measured and reverted because their gains were insufficient or zero. No external
+asset or third-party code is introduced by the retained pass.

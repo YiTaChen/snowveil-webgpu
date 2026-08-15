@@ -17,6 +17,7 @@ import {
   decayLandingCompression,
   downhillSpeedHeadroom,
   landingImpactForVelocity,
+  nextRenderScale,
   snowHistoryRegionOffset,
   slopeAlongHeading,
   snowboardBrakeDrag,
@@ -47,6 +48,11 @@ export function SnowveilScene() {
     const query = new URLSearchParams(window.location.search);
     const evidenceMode = query.has("evidence");
     const demoMode = query.has("demo");
+    const requestedRenderScale = Number(query.get("renderScale"));
+    const fixedRenderScale =
+      Number.isFinite(requestedRenderScale) && requestedRenderScale > 0
+        ? Math.max(0.84, Math.min(requestedRenderScale, 1))
+        : undefined;
     const slopeProbe = query.get("slope");
     const hasSlopeProbe = slopeProbe === "downhill" || slopeProbe === "uphill";
     if (evidenceMode) {
@@ -77,7 +83,7 @@ export function SnowveilScene() {
     let yaw = -0.72;
     let pitch = 0.065;
     let distance = 5.9;
-    let renderScale = 1.0;
+    let renderScale = fixedRenderScale ?? 1.0;
     let dragging = false;
     let previousX = 0;
     let previousY = 0;
@@ -542,7 +548,7 @@ export function SnowveilScene() {
         let snowHistoryTouched = false;
         const uniforms = new Float32Array(40);
 
-        const terrainSegments = 352;
+        const terrainSegments = 288;
         const terrainVertexCount = (terrainSegments + 1) * (terrainSegments + 1);
         const terrainVertices = new Float32Array(terrainVertexCount * 2);
         let vertexOffset = 0;
@@ -681,11 +687,10 @@ export function SnowveilScene() {
             const p99 = sortedFrameTimes[Math.min(sortedFrameTimes.length - 1, Math.floor(sortedFrameTimes.length * 0.99))];
             const lowOnePercent = Math.round(1000 / Math.max(p99, 0.01));
             if (fpsRef.current) {
-              fpsRef.current.textContent = `${fps} FPS · P95 ${p95.toFixed(1)} ms · 1% ${lowOnePercent}`;
+              fpsRef.current.textContent = `${fps} FPS · P95 ${p95.toFixed(1)} ms · 1% ${lowOnePercent} · ${Math.round(renderScale * 100)}% RES`;
             }
-            if (!evidenceMode) {
-              if (fps < 42 && renderScale > 0.78) renderScale -= 0.04;
-              if (fps > 56 && renderScale < 1.0) renderScale += 0.025;
+            if (!evidenceMode && fixedRenderScale === undefined) {
+              renderScale = nextRenderScale(renderScale, fps, p95);
             }
             fpsStarted = now;
             fpsFrames = 0;

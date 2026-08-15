@@ -278,18 +278,20 @@ readings, not a claim that refresh-rate sampling can sustain above 60 FPS.
 
 ## 2026-08-14 — regional snow-history write review
 
-Environment: one active native-WebGPU Chromium tab. Native evidence used a
-verified 2560×1440 canvas; the PNG dimensions were checked after capture. The
-same deterministic `?demo` route exercised rider contact, Ice Pulse residue,
-three sigils, particles, terrain, HDR resolve, and the completion state.
+Environment: one active native-WebGPU Chromium tab. These captures verified a
+2560×1440 canvas and PNG, but later inspection proved that the browser's visible
+viewport was smaller. They remain valid same-session comparisons for the snow-
+history implementation, but they are superseded below for full visible-1440p
+claims. The deterministic `?demo` route exercised rider contact, Ice Pulse
+residue, three sigils, particles, terrain, HDR resolve, and completion.
 
 | Review state | Observed HUD | Result |
 | --- | ---: | --- |
-| fresh native idle | 60 FPS · P95 17.5 ms · 1% 56 | unchanged no-contact baseline |
-| native active route before, 1/3 at 7.1 m/s | 47 FPS · P95 34.2 ms · 1% 10 | full 768² update per active frame |
-| native completed route before | 45 FPS · P95 33.3 ms · 1% 29 | full-history baseline |
-| native active route retained, 1/3 at 6.8 m/s | 60 FPS · P95 33.2 ms · 1% 20 | regional active write retained |
-| native completed route retained | 46 FPS · P95 33.7 ms · 1% 29 | no all-state 60 FPS claim |
+| fresh fixed-canvas idle | 60 FPS · P95 17.5 ms · 1% 56 | smaller visible viewport; not a full-native claim |
+| fixed-canvas active route before, 1/3 at 7.1 m/s | 47 FPS · P95 34.2 ms · 1% 10 | full 768² update per active frame |
+| fixed-canvas completed route before | 45 FPS · P95 33.3 ms · 1% 29 | full-history baseline |
+| fixed-canvas active route retained, 1/3 at 6.8 m/s | 60 FPS · P95 33.2 ms · 1% 20 | regional active write retained |
+| fixed-canvas completed route retained | 46 FPS · P95 33.7 ms · 1% 29 | no visible-native claim |
 | 1182×749 active track | 60 FPS · P95 17.7 ms · 1% 29 | continuous-contact inspection |
 | 1182×749 completed route | 60 FPS · P95 17.5 ms · 1% 56 | retained functional regression |
 
@@ -301,6 +303,39 @@ spell stamp compensates for the current phase so it never enters already faded.
 
 Full-history sweeps at 30 Hz and 15 Hz improved the native active reading by only
 about 2 FPS and were rejected. The retained result improves the comparable
-active native reading from 47 to 60 FPS, but the completed fixed-native capture
-remains 46 FPS and still has P95 frame-time spikes. Fixed 1440p therefore remains
-a measured quality mode, not a universal locked-60 release claim.
+active fixed-canvas reading from 47 to 60 FPS. Because the visible viewport was
+not also 2560×1440, these values do not establish full-display native speed.
+
+## 2026-08-14 — visible-viewport 1440p release review
+
+Environment: one active native-WebGPU Chromium tab with both `window.innerWidth`
+and canvas CSS size fixed to 2560×1440 at DPR 1. The HUD now records render scale
+alongside FPS, P95, and 1% low. `?evidence` holds 100%; normal play uses the same
+renderer and can step between 84% and 100% with tested hysteresis.
+
+| Review state | Observed HUD | Result |
+| --- | ---: | --- |
+| original visible-native idle | 44 FPS · P95 33.6 ms · 1% 29 · 100% | authoritative display-chain baseline |
+| retained visible-native idle | 51 FPS · P95 33.5 ms · 1% 29 · 100% | two atmospheric plus one foreground snow layer |
+| original full-native completed route | 44 FPS · P95 33.7 ms · 1% 29 · 100% | five snow layers and 352² terrain |
+| retained full-native completed route | 47 FPS · P95 33.5 ms · 1% 30 · 100% | fixed quality/evidence mode |
+| fixed 84% completed route | 60 FPS · P95 17.5 ms · 1% 30 · 84% | deterministic release-floor probe |
+| automatic completed route, warmed | 60 FPS · P95 32.7 ms · 1% 30 · 84% | default path; P95 window includes scale transition |
+| 1182×749 active track | 60 FPS · P95 17.4 ms · 1% 56 · 100% | no downscale required |
+
+The retained snowfall evaluates two atmospheric depth layers and one weighted
+foreground layer instead of five full-screen procedural layers. Flake size,
+motion, near/far separation, rider spray, landing powder, and spell particles
+remain; the native idle capture still shows flakes across sky and terrain. This
+raises the exact full-display idle reading from 44 to 51 FPS. The 288² terrain
+grid retains about 7.2-centimetre spacing at the rider, below half
+the 16.7-centimetre snow-history texel and sufficient for the accepted joined
+contact track.
+
+Reducing bloom from eight neighbours to four recovered only 2 FPS and was
+rejected. Localising ritual marks, moving material fields to vertices, replacing
+micro-noise, suppressing snow-history compute, and reducing the grid below 288²
+each recovered 0–4 FPS or stopped scaling; all were reverted. The remaining
+100%-native completion cost is therefore documented rather than hidden. Normal
+play reaches 60 FPS by lowering the canvas to 2150×1209 inside the 2560×1440 CSS
+viewport, with the exact 84% value visible in the HUD.

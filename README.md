@@ -103,6 +103,10 @@ Original project code is released under the [MIT License](./LICENSE).
 16. Regional snow-history pass — active board and spell contact retain per-frame
     stamps while the compute shader writes a local 64² region; a one-second
     full sweep handles global decay with phase-correct continuous presentation.
+17. Visible-1440p release pass — redundant full-screen snowfall layers are
+    consolidated, the near-focused terrain grid is reduced to 288², and a
+    tested 84–100% dynamic-resolution controller exposes its live scale in the
+    HUD while retaining a fixed 100% evidence mode.
 
 The current build is a polished playable vertical slice, not a claim of a full
 AAA production or a hundred-million-particle physical simulation. See

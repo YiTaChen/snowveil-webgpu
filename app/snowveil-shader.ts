@@ -68,7 +68,7 @@ fn snowParticles(uv: vec2<f32>, time: f32) -> f32 {
   var result = 0.0;
   let aspect = globals.viewport.x / max(globals.viewport.y, 1.0);
   let point = (uv - 0.5) * vec2<f32>(aspect, 1.0);
-  for (var layer = 0; layer < 3; layer = layer + 1) {
+  for (var layer = 0; layer < 2; layer = layer + 1) {
     let depth = f32(layer) + 1.0;
     let scale = 12.0 + depth * 8.0;
     let samplePoint = point * scale + vec2<f32>(
@@ -91,7 +91,7 @@ fn foregroundSnow(uv: vec2<f32>, time: f32) -> f32 {
   let aspect = globals.viewport.x / max(globals.viewport.y, 1.0);
   let point = (uv - 0.5) * vec2<f32>(aspect, 1.0);
   var result = 0.0;
-  for (var layer = 0; layer < 2; layer = layer + 1) {
+  for (var layer = 0; layer < 1; layer = layer + 1) {
     let depth = f32(layer) + 1.0;
     let scale = 8.5 + depth * 6.0;
     let samplePoint = point * scale + vec2<f32>(time * 0.17, time * 1.45 + time * 0.22 * depth);
@@ -224,7 +224,7 @@ fn fsSnowOverlay(input: SkyVertexOut) -> @location(0) vec4<f32> {
   let spray = riderSpray(input.uv, globals.viewport.z, globals.reserved.w * grounded);
   let landing = landingBurst(input.uv, globals.motion.x);
   let spell = spellBurst(input.uv, globals.weather.z);
-  let alpha = saturate(flake * 0.42 + spray * 0.48 + landing * 0.62 + spell * 0.68);
+  let alpha = saturate(flake * 0.56 + spray * 0.48 + landing * 0.62 + spell * 0.68);
   let color = mix(vec3<f32>(0.78, 0.89, 0.96), vec3<f32>(0.18, 0.76, 1.0) * 2.4, saturate(spell * 1.8));
   return vec4<f32>(color, alpha);
 }

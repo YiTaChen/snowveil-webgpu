@@ -44,6 +44,17 @@ export function snowHistoryRegionOffset(
   };
 }
 
+export function nextRenderScale(current: number, fps: number, p95Milliseconds: number) {
+  const scale = Math.max(0.84, Math.min(current, 1));
+  if (fps < 54 && scale > 0.84) {
+    return Math.max(0.84, scale - 0.04);
+  }
+  if (fps > 59 && p95Milliseconds < 18.2 && scale < 1) {
+    return Math.min(1, scale + 0.02);
+  }
+  return scale;
+}
+
 export function snowGravityAcceleration(slopeAlongTravel: number) {
   const acceleration = (-9.81 * slopeAlongTravel) / Math.sqrt(1 + slopeAlongTravel * slopeAlongTravel);
   return Math.max(-3.2, Math.min(3.2, acceleration));

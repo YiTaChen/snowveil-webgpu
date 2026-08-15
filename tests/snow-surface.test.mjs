@@ -5,6 +5,7 @@ import {
   decayLandingCompression,
   downhillSpeedHeadroom,
   landingImpactForVelocity,
+  nextRenderScale,
   snowHistoryRegionOffset,
   slopeAlongHeading,
   snowboardBrakeDrag,
@@ -89,4 +90,13 @@ test("snow history update regions remain centered and inside texture bounds", ()
   const movingRegion = snowHistoryRegionOffset(12.5, -25.5);
   assert.ok(movingRegion.x >= 0 && movingRegion.x <= 704);
   assert.ok(movingRegion.y >= 0 && movingRegion.y <= 704);
+});
+
+test("dynamic render scale responds inside a quality floor with hysteresis", () => {
+  assert.equal(nextRenderScale(1, 45, 33.4), 0.96);
+  assert.equal(nextRenderScale(0.86, 50, 33.4), 0.84);
+  assert.equal(nextRenderScale(0.84, 40, 50), 0.84);
+  assert.equal(nextRenderScale(0.86, 60, 17.5), 0.88);
+  assert.equal(nextRenderScale(0.88, 58, 17.5), 0.88);
+  assert.equal(nextRenderScale(0.88, 60, 20), 0.88);
 });

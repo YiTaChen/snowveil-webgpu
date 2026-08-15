@@ -114,8 +114,9 @@ They are review artefacts, not third-party source material.
   at 1.2 m/s after the blade has moved across the trajectory and onto its edge.
 - `snowboard-causality-v2-jump-720x850.png` — real shared Jump/Space input at
   6.5 m/s with a clear board-to-snow gap and no airborne contact stamp.
-- `performance-native-baseline-2560x1440.png` — fresh fixed-native idle at
-  60 FPS before the regional-history comparison.
+- `performance-native-baseline-2560x1440.png` — fresh 2560×1440 fixed-canvas
+  idle at 60 FPS before the regional-history comparison; later visible-viewport
+  audit means this is not a complete full-display native claim.
 - `performance-native-active-before-2560x1440.png` — full 768² active-history
   baseline at 1/3 route progress, 7.1 m/s, and 47 FPS.
 - `performance-native-active-after-2560x1440.png` — retained 64² regional-write
@@ -128,3 +129,16 @@ They are review artefacts, not third-party source material.
   inspection showing a joined board wake after regionalisation.
 - `performance-regional-history-rite-1182x749.png` — 60 FPS completed route with
   all three sigils, snow deformation, and spell residue preserved.
+- `performance-visible-native-idle-before-2560x1440.png` — authoritative exact
+  2560×1440 visible-viewport idle baseline at 44 FPS with the original five
+  procedural snowfall layers and 352² terrain.
+- `performance-visible-native-idle-after-2560x1440.png` — retained 100%-scale
+  visible-native idle at 51 FPS with atmospheric depth still visible.
+- `performance-visible-native-route-before-2560x1440.png` — exact 352², five-
+  layer completed-route baseline at 44 FPS.
+- `performance-visible-native-route-full-2560x1440.png` — retained 288² route at
+  47 FPS and 100% render scale.
+- `performance-visible-release-route-2560x1440.png` — default automatic route
+  settled at the same disclosed 84% scale and 60 FPS.
+- `performance-adaptive-track-1182x749.png` — 6.6 m/s close route frame at
+  100% scale and 60 FPS, retaining the joined pointed board wake.

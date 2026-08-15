@@ -366,14 +366,16 @@ biomechanical motion capture or a rigid-body snow solver.
 
 Evidence:
 
-- native idle baseline: [`evidence/performance-native-baseline-2560x1440.png`](./evidence/performance-native-baseline-2560x1440.png)
+- fixed-canvas idle baseline: [`evidence/performance-native-baseline-2560x1440.png`](./evidence/performance-native-baseline-2560x1440.png)
 - native active before/after: [`evidence/performance-native-active-before-2560x1440.png`](./evidence/performance-native-active-before-2560x1440.png) and [`evidence/performance-native-active-after-2560x1440.png`](./evidence/performance-native-active-after-2560x1440.png)
 - native completion before/after: [`evidence/performance-native-complete-before-2560x1440.png`](./evidence/performance-native-complete-before-2560x1440.png) and [`evidence/performance-native-complete-after-2560x1440.png`](./evidence/performance-native-complete-after-2560x1440.png)
 - interactive continuous track: [`evidence/performance-regional-history-track-1182x749.png`](./evidence/performance-regional-history-track-1182x749.png)
 - interactive completed rite: [`evidence/performance-regional-history-rite-1182x749.png`](./evidence/performance-regional-history-rite-1182x749.png)
 
 The active before/after pair is an actual 2560×1440 canvas and retains the same
-terrain, lighting, rider, sigils, particles, and HDR path. The visible board wake
+terrain, lighting, rider, sigils, particles, and HDR path. A later audit found
+that its browser viewport was smaller, so it proves the relative snow-history
+change but not a complete visible-native display chain. The visible board wake
 remains narrow and joined rather than breaking into the scalloped ovals seen in
 the rejected low-frequency experiment. Ice Pulse craters and blue residue remain
 present through the complete three-sigil route; decay is visually continuous
@@ -385,3 +387,31 @@ completion frame is still 46 FPS with P95 spikes, and the character remains a
 compact procedural part rig rather than a production skeletal animation system.
 Those limits remain explicit rather than being hidden behind the 60 FPS active
 route capture.
+
+### 2026-08-14 — visible-1440p adaptive release checkpoint
+
+Evidence:
+
+- authoritative visible-native idle baseline: [`evidence/performance-visible-native-idle-before-2560x1440.png`](./evidence/performance-visible-native-idle-before-2560x1440.png)
+- retained full-native idle: [`evidence/performance-visible-native-idle-after-2560x1440.png`](./evidence/performance-visible-native-idle-after-2560x1440.png)
+- original full-native route: [`evidence/performance-visible-native-route-before-2560x1440.png`](./evidence/performance-visible-native-route-before-2560x1440.png)
+- retained 288² full-native route: [`evidence/performance-visible-native-route-full-2560x1440.png`](./evidence/performance-visible-native-route-full-2560x1440.png)
+- automatic release route: [`evidence/performance-visible-release-route-2560x1440.png`](./evidence/performance-visible-release-route-2560x1440.png)
+- full-resolution interactive track: [`evidence/performance-adaptive-track-1182x749.png`](./evidence/performance-adaptive-track-1182x749.png)
+
+For this checkpoint both browser viewport and CSS canvas are explicitly
+2560×1440, and each native file is an exact 2560×1440 clip rather than a scaled
+browser screenshot. Full-native idle improves from 44 to 51 FPS after removing
+two redundant procedural snowfall layers while retaining three visually
+separated depth scales. The completed route improves from 44 to 47 FPS at 100%;
+the default controller
+therefore settles at a disclosed 84% canvas scale and returns to 60 FPS. The
+native DOM/HUD stays sharp and reports the scale rather than presenting an
+upscaled frame as native rendering.
+
+At 1182×749 the route remains at 100% and the close 6.6 m/s frame preserves the
+asymmetric board, narrow continuous wake, wind ridges, particle depth, and rider
+silhouette at 60 FPS. Browser diagnostics contain no WGSL compilation, WebGPU
+validation, audio, or uncaptured-device error. Production skeletal animation is
+still an open art boundary; the display-performance boundary is now both usable
+and honestly measurable.
