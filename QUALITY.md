@@ -238,3 +238,29 @@ the board nose, crosswise brake, and upper-body counter-rotation legible. The
 four interaction captures above are unmodified viewport screenshots from the
 running WebGPU build; the complete route ended at `Veil stabilized` with no
 browser warning, AudioContext error, or WebGPU validation error.
+
+### 2026-08-14 — terrain-coupled ride and airborne attachment correction
+
+Evidence:
+
+- no-input downhill coast at 1.2 m/s: [`evidence/slope-natural-coast-1182x749.png`](./evidence/slope-natural-coast-1182x749.png)
+- ten-input uphill result at 3.1 m/s: [`evidence/slope-uphill-1182x749.png`](./evidence/slope-uphill-1182x749.png)
+- identical ten-input downhill result at 5.1 m/s: [`evidence/slope-downhill-1182x749.png`](./evidence/slope-downhill-1182x749.png)
+- rejected detached-glove frame: [`evidence/slope-jump-glove-defect-1182x749.png`](./evidence/slope-jump-glove-defect-1182x749.png)
+- retained slope takeoff at 5.3 m/s: [`evidence/slope-jump-1182x749.png`](./evidence/slope-jump-1182x749.png)
+- full route after terrain coupling: [`evidence/slope-rite-complete-1182x749.png`](./evidence/slope-rite-complete-1182x749.png)
+
+The paired uphill/downhill captures start from the same authored point and use
+the same ten W pulses. Their 3.1 versus 5.1 m/s result proves that direction on
+the snow grade now changes acceleration rather than merely changing pose. The
+no-input frame records 1.2 m/s natural coast. The board and rider follow the
+smoothed rendered grade, while the airborne frame retains its takeoff grade and
+preserves a visible board-to-snow gap.
+
+The first jump frame exposed a detached black glove next to the helmet. That
+frame is deliberately retained as rejected evidence. In the accepted frame the
+glove, cuff, arm, and glowing focus remain connected after the glove receives an
+independent transform part. The deterministic route still reaches `Veil
+stabilized`; browser logs contain no warning, AudioContext error, or WebGPU
+validation error. This is a terrain-coupling checkpoint, not a claim of a full
+rigid-body or avalanche simulation.

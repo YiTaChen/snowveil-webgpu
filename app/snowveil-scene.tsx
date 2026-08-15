@@ -9,10 +9,11 @@ import {
   snowveilSkyShader,
   snowveilTerrainShader,
 } from "./snowveil-shader";
-import { snowHeightAt } from "./snowveil-terrain";
+import { snowHeightAt, snowSurfaceAt } from "./snowveil-terrain";
 import { createRiderGeometry } from "./snowveil-rider-geometry";
 import { createBeaconGeometry } from "./snowveil-beacon-geometry";
 import { createSnowveilAudio, type SnowveilAudio } from "./snowveil-audio";
+import { downhillSpeedHeadroom, slopeAlongHeading, snowGravityAcceleration } from "./snowveil-motion";
 
 type SceneState = "loading" | "ready" | "unsupported" | "error";
 
@@ -37,6 +38,8 @@ export function SnowveilScene() {
     const query = new URLSearchParams(window.location.search);
     const evidenceMode = query.has("evidence");
     const demoMode = query.has("demo");
+    const slopeProbe = query.get("slope");
+    const hasSlopeProbe = slopeProbe === "downhill" || slopeProbe === "uphill";
     if (evidenceMode) {
       document.documentElement.dataset.snowveilEvidence = "true";
     }
@@ -70,10 +73,24 @@ export function SnowveilScene() {
     let previousX = 0;
     let previousY = 0;
     let playerX = 0;
-    let playerZ = -4;
+    let playerZ = hasSlopeProbe ? 0 : -4;
     let playerHeading = 0;
     let playerBoardYaw = -Math.PI / 2;
     let playerSpeed = 0;
+    let playerSurface = snowSurfaceAt(playerX, playerZ);
+    let playerSlopeX = playerSurface.slopeX;
+    let playerSlopeZ = playerSurface.slopeZ;
+    let visualSlopeX = playerSlopeX;
+    let visualSlopeZ = playerSlopeZ;
+    let takeoffSlopeX = playerSlopeX;
+    let takeoffSlopeZ = playerSlopeZ;
+    if (slopeProbe === "downhill") {
+      playerHeading = Math.atan2(-playerSlopeX, playerSlopeZ);
+      playerBoardYaw = playerHeading - Math.PI / 2;
+    } else if (slopeProbe === "uphill") {
+      playerHeading = Math.atan2(playerSlopeX, -playerSlopeZ);
+      playerBoardYaw = playerHeading - Math.PI / 2;
+    }
     let boardSkid = 0;
     let steerVisual = 0;
     let jumpHeight = 0;
@@ -169,6 +186,8 @@ export function SnowveilScene() {
       pressedKeys.add(event.code);
       keyPulseUntil.set(event.code, performance.now() + 145);
       if (event.code === "Space" && !event.repeat && jumpHeight <= 0.001) {
+        takeoffSlopeX = playerSlopeX;
+        takeoffSlopeZ = playerSlopeZ;
         jumpVelocity = 3.85;
         audio.jump();
       }
@@ -396,7 +415,7 @@ export function SnowveilScene() {
 
         const uniformBuffer = activeDevice.createBuffer({
           label: "Snowveil frame uniforms",
-          size: 128,
+          size: 144,
           usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST,
         });
         const skyBindGroup = activeDevice.createBindGroup({
@@ -463,7 +482,7 @@ export function SnowveilScene() {
           throw new Error(`Snow deformation setup failed: ${deformationSetupError.message}`);
         }
         let deformationReadIndex = 0;
-        const uniforms = new Float32Array(32);
+        const uniforms = new Float32Array(36);
 
         const terrainSegments = 352;
         const terrainVertexCount = (terrainSegments + 1) * (terrainSegments + 1);
@@ -657,12 +676,22 @@ export function SnowveilScene() {
               : 5.4;
           const turnAuthority = 0.28 + Math.min(playerSpeed / 3.2, 1) * 0.72;
           playerHeading += steerInput * delta * (0.72 + playerSpeed * 0.13) * turnAuthority;
-          playerSpeed += throttleInput * (demoMode ? 7.2 : 5.8) * delta;
-          const drag = 0.24 + (throttleInput > 0 ? 0 : 0.52) + brakeInput * 5.8;
-          playerSpeed = Math.min(speedLimit, Math.max(0, playerSpeed * Math.exp(-drag * delta)));
-
           const forwardX = Math.sin(playerHeading);
           const forwardZ = -Math.cos(playerHeading);
+          const groundedBeforeMotion = jumpHeight <= 0.018;
+          const slopeAlongTravel = slopeAlongHeading(playerSlopeX, playerSlopeZ, playerHeading);
+          const slopeGravity = groundedBeforeMotion ? snowGravityAcceleration(slopeAlongTravel) : 0;
+          const driveAcceleration = throttleInput * (demoMode ? 7.2 : 5.8) * (groundedBeforeMotion ? 1 : 0.12);
+          playerSpeed += (driveAcceleration + slopeGravity) * delta;
+          const drag = groundedBeforeMotion
+            ? 0.24 + (throttleInput > 0 ? 0 : 0.52) + brakeInput * 5.8
+            : 0.08;
+          const downhillHeadroom = groundedBeforeMotion ? downhillSpeedHeadroom(slopeAlongTravel) : 0;
+          const speedCeiling = groundedBeforeMotion
+            ? speedLimit + downhillHeadroom
+            : Math.max(speedLimit, playerSpeed);
+          playerSpeed = Math.min(speedCeiling, Math.max(0, playerSpeed * Math.exp(-drag * delta)));
+
           playerX += forwardX * playerSpeed * delta;
           playerZ += forwardZ * playerSpeed * delta;
           const playerRadius = Math.hypot(playerX, playerZ);
@@ -692,7 +721,18 @@ export function SnowveilScene() {
 
           audio.setMotion(playerSpeed, jumpHeight <= 0.018);
           if (speedRef.current) speedRef.current.textContent = `${playerSpeed.toFixed(1)} m/s`;
-          const playerY = snowHeightAt(playerX, playerZ);
+          playerSurface = snowSurfaceAt(playerX, playerZ);
+          const slopeBlend = 1 - Math.exp(-delta * 7.5);
+          playerSlopeX += (playerSurface.slopeX - playerSlopeX) * slopeBlend;
+          playerSlopeZ += (playerSurface.slopeZ - playerSlopeZ) * slopeBlend;
+          if (jumpHeight > 0.018) {
+            visualSlopeX = takeoffSlopeX;
+            visualSlopeZ = takeoffSlopeZ;
+          } else {
+            visualSlopeX += (playerSlopeX - visualSlopeX) * slopeBlend;
+            visualSlopeZ += (playerSlopeZ - visualSlopeZ) * slopeBlend;
+          }
+          const playerY = playerSurface.height;
           spellAge += delta;
           const spellPulse = Math.exp(-spellAge * 2.7);
           completionAge += delta;
@@ -758,6 +798,10 @@ export function SnowveilScene() {
           uniforms[29] = steerVisual;
           uniforms[30] = completionAge;
           uniforms[31] = jumpHeight;
+          uniforms[32] = visualSlopeX;
+          uniforms[33] = visualSlopeZ;
+          uniforms[34] = slopeAlongTravel;
+          uniforms[35] = slopeGravity;
           activeDevice.queue.writeBuffer(uniformBuffer, 0, uniforms);
 
           if (!depthTexture || !sceneColorTexture || !postBindGroup) {

@@ -347,8 +347,10 @@ export function createRiderGeometry() {
   addCapsule([0.53, 1.1, -0.19], [0.8, 1.37, -0.54], 0.074, 7);
   addCapsule([-0.43, 0.91, -0.2], [-0.38, 0.84, -0.27], 0.086, 10, 14);
   addCapsule([0.72, 1.29, -0.44], [0.8, 1.37, -0.54], 0.088, 10, 14);
-  addSphere([-0.37, 0.81, -0.3], [0.082, 0.09, 0.11], 13, 18, 11);
-  addSphere([0.83, 1.4, -0.58], [0.085, 0.09, 0.11], 13, 18, 11);
+  // Gloves need their own transform part: lower legs share part 13 and must
+  // stay aligned with the board while the hands follow the turning torso.
+  addSphere([-0.37, 0.81, -0.3], [0.082, 0.09, 0.11], 16, 18, 11);
+  addSphere([0.83, 1.4, -0.58], [0.085, 0.09, 0.11], 16, 18, 11);
   addSphere([0.85, 1.43, -0.59], [0.075, 0.075, 0.075], 9, 18, 12);
   addTorus([0, 0.91, 0], 0.335, 0.021, 10);
   addCapsule([-0.19, 1.27, -0.245], [0.075, 0.94, -0.315], 0.022, 10, 12);

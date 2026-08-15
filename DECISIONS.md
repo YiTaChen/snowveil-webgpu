@@ -279,3 +279,27 @@ silhouette when the chase camera sat exactly on the travel axis. The retained
 0.45-radian three-quarter chase angle does not change movement physics; it makes
 the board axis, lower-body stance, and upper-body counter-rotation readable in
 one default view while preserving manual orbit control.
+
+## 2026-08-14 — Snow grade drives one shared ride state
+
+The motion-causality review still left one contradiction: the board changed
+speed identically uphill and downhill, and the procedural rider remained level
+while the visible snow inclined beneath it. Before adding gravity, the CPU
+terrain sampler was corrected to use the exact same finite mountain-band rise
+and fade as the WGSL terrain. This prevents slope physics from amplifying a
+pre-existing contact-height mismatch near the route boundary.
+
+The CPU now samples a smoothed central-difference gradient at the rider. Its
+projection onto travel direction feeds a bounded gravity component and a small
+downhill speed allowance. Uphill grade resists drive; downhill grade adds speed;
+airborne drive and drag are reduced so a jump preserves horizontal momentum.
+The same smoothed x/z grade travels in the frame uniform and tilts the rider and
+blade to the rendered snow normal. Takeoff grade is frozen during flight, then
+blended back to the local surface after landing so terrain underneath a jump
+cannot rotate the rider in mid-air.
+
+The first airborne capture was rejected because the glove stayed at the lower-
+leg transform while its arm and focus turned with the torso. Both had shared one
+part number. The retained geometry assigns gloves their own transform part so
+hands, cuffs, focus, and arms remain connected without making the lower legs
+leave the board. All geometry, physics, and tests remain project-authored code.

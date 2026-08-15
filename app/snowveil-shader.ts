@@ -8,6 +8,7 @@ struct Globals {
   beaconB: vec4<f32>,
   beaconC: vec4<f32>,
   objective: vec4<f32>,
+  terrain: vec4<f32>,
 };
 
 @group(0) @binding(0) var<uniform> globals: Globals;
@@ -712,8 +713,16 @@ fn vsPlayer(input: PlayerVertexIn) -> PlayerVertexOut {
 
   let modelYaw = select(boardYaw, travelHeading, part == 11u);
   let playerOrigin = vec3<f32>(globals.reserved.x, globals.weather.y - 0.015 + bob + jumpHeight, globals.reserved.y);
-  let worldPosition = playerOrigin + rotateY(local, modelYaw);
-  let worldNormal = normalize(rotateY(localNormal, modelYaw));
+  var worldOffset = rotateY(local, modelYaw);
+  var worldNormal = rotateY(localNormal, modelYaw);
+  if (part != 11u) {
+    let terrainPitch = -atan(clamp(globals.terrain.y, -0.5, 0.5));
+    let terrainRoll = atan(clamp(globals.terrain.x, -0.5, 0.5));
+    worldOffset = rotateZ(rotateX(worldOffset, terrainPitch), terrainRoll);
+    worldNormal = rotateZ(rotateX(worldNormal, terrainPitch), terrainRoll);
+  }
+  let worldPosition = playerOrigin + worldOffset;
+  worldNormal = normalize(worldNormal);
 
   let cameraDistance = globals.camera.z;
   let fieldOfView = globals.camera.w;
@@ -787,7 +796,7 @@ fn fsPlayer(input: PlayerVertexOut) -> @location(0) vec4<f32> {
   } else if (input.part == 12u) {
     albedo = vec3<f32>(0.035, 0.095, 0.125);
     roughness = 0.74;
-  } else if (input.part == 13u) {
+  } else if (input.part == 13u || input.part == 16u) {
     albedo = vec3<f32>(0.018, 0.046, 0.062);
     roughness = 0.42;
   } else if (input.part == 14u) {

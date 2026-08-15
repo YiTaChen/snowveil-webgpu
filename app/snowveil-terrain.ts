@@ -72,10 +72,35 @@ export function snowHeightAt(x: number, z: number) {
     Math.sin(angle * 3.7 + 0.6) * 2.2 +
     Math.sin(angle * 8.3 - 1.2) * 1.25 +
     noise2(x * 0.027 + 31, z * 0.027 + 31) * 4.2;
-  const farRise = smoothstep(38, 82, radius) * mountainProfile;
+  const farRise =
+    smoothstep(38, 62, radius) *
+    (1 - smoothstep(62, 78, radius)) *
+    mountainProfile *
+    0.42;
   const outcropA = Math.exp(-Math.hypot((x + 12) * 0.34, (z + 24) * 0.19) * 1.7);
   const outcropB = Math.exp(-Math.hypot((x - 19) * 0.29, (z + 33) * 0.16) * 1.8);
   const outcrop = Math.max(outcropA, outcropB);
   const outcropLift = smoothstep(0.12, 0.58, outcrop) * 1.55 + smoothstep(0.46, 0.78, outcrop) * 0.32;
   return -0.72 + broad + longSwell + drifts + ridges + heroDune + foregroundDip + farRise + outcropLift;
+}
+
+export type SnowSurface = {
+  height: number;
+  slopeX: number;
+  slopeZ: number;
+};
+
+export function snowSurfaceAt(x: number, z: number, sampleRadius = 0.36): SnowSurface {
+  const height = snowHeightAt(x, z);
+  const left = snowHeightAt(x - sampleRadius, z);
+  const right = snowHeightAt(x + sampleRadius, z);
+  const back = snowHeightAt(x, z - sampleRadius);
+  const front = snowHeightAt(x, z + sampleRadius);
+  const diameter = sampleRadius * 2;
+
+  return {
+    height,
+    slopeX: (right - left) / diameter,
+    slopeZ: (front - back) / diameter,
+  };
 }

@@ -170,3 +170,26 @@ The lower figures occurred while browser automation was actively taking PNG
 captures and remain inside the earlier interaction range; they are not presented
 as a 60 FPS release pass. The full route completed all three sigils and the
 browser log contained no warning or WebGPU error.
+
+## 2026-08-14 — terrain-coupled motion review
+
+Environment: active in-app Chromium tab with native WebGPU, 1182×749 CSS pixels,
+dynamic resolution enabled. Fixed review used the existing 2560×1440 evidence
+path. The CPU performs one smoothed five-height surface sample per frame; the GPU
+adds two vertex rotations and one terrain uniform vector without changing any
+fragment path or texture allocation.
+
+| Review state | Observed HUD | Result |
+| --- | ---: | --- |
+| no-input downhill coast at 1.2 m/s | 40 FPS · P95 50.4 ms · 1% 11 | retained causal proof during capture |
+| ten-input uphill pass at 3.1 m/s | 45 FPS · P95 34.2 ms · 1% 20 | retained |
+| identical downhill pass at 5.1 m/s | 37 FPS · P95 49.8 ms · 1% 15 | retained causal proof during capture |
+| retained downhill jump at 5.3 m/s | 42 FPS · P95 34.3 ms · 1% 10 | retained; capture overhead present |
+| completed three-sigil route | 45 FPS · P95 34.0 ms · 1% 29 | retained functional regression |
+| fixed 2560×1440 idle | 24 FPS · P95 83.7 ms · 1% 10 | inside prior 22–26 FPS range |
+
+The capture session includes navigation, audio startup, PNG readback, and an
+actively sampled browser tab; its individual lows are not a release benchmark.
+The fixed 1440p path remains inside its established range, so terrain coupling
+does not create a measured native-resolution regression. Release-grade fixed
+1440p performance remains open.

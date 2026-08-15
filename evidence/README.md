@@ -62,3 +62,15 @@ They are review artefacts, not third-party source material.
   visible board-to-snow gap and no airborne stamp.
 - `motion-rite-complete-1182x749.png` — end-to-end `?demo` regression after the
   motion correction, ending at `Veil stabilized` without browser warnings.
+- `slope-natural-coast-1182x749.png` — same-controller no-input downhill probe
+  recording 1.2 m/s natural coast and slope-aligned board contact.
+- `slope-uphill-1182x749.png` — ten W pulses on the shared test grade facing
+  uphill, reaching 3.1 m/s.
+- `slope-downhill-1182x749.png` — the identical ten W pulses facing downhill,
+  reaching 5.1 m/s.
+- `slope-jump-glove-defect-1182x749.png` — rejected jump frame that exposed a
+  glove detached from the torso-turned arm because it shared a leg part number.
+- `slope-jump-1182x749.png` — accepted 5.3 m/s slope takeoff after the glove
+  transform split, with connected hand equipment and a visible airborne gap.
+- `slope-rite-complete-1182x749.png` — complete deterministic route after CPU/GPU
+  terrain-height parity and slope physics, with no browser warnings.

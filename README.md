@@ -27,7 +27,9 @@ or Left/Right to carve, and hold S or Down to rotate the board across the travel
 direction and brake. Space jumps; E casts Ice Pulse. Drag the scene to orbit,
 hold Shift for a faster traverse, and use the mouse wheel to change camera
 distance. Audio begins only after a key, canvas, or explicit audio-button gesture
-and can be muted from the top-right control.
+and can be muted from the top-right control. Snow grade contributes real forward
+or resisting acceleration: a downhill board can coast without W, while the same
+input climbs more slowly in the opposite direction.
 
 The playable Frost Rite asks the rider to awaken three original sigil beacons.
 Follow the dormant blue cores, aim the visible casting hand toward a beacon,
@@ -40,6 +42,9 @@ visual QA. It steers toward each real beacon and casts through the same Ice Puls
 and proximity test as keyboard input while exercising the same heading, speed,
 board-yaw, and snow-contact state; it is not a pre-rendered or separate evidence
 scene. Append `&evidence` for the fixed 2560×1440 still-review path.
+For repeatable physics review, `?slope=downhill` and `?slope=uphill` place the
+rider on the same local grade with opposite headings; they use the normal
+controller and renderer rather than a separate animation.
 
 ## Originality and licensing
 
@@ -75,6 +80,9 @@ Original project code is released under the [MIT License](./LICENSE).
 10. Snowboard causality pass — nose-first glide, direction-aware torso twist,
     edge-loaded elliptical snow contact, crosswise braking, and Space jump are
     verified from the running build.
+11. Terrain-coupled ride pass — CPU/GPU snow height parity, natural downhill
+    coast, uphill resistance, slope-aligned stance, and takeoff-angle retention
+    are verified from the running build.
 
 The current build is a polished playable vertical slice, not a claim of a full
 AAA production or a hundred-million-particle physical simulation. See
