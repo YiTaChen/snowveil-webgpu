@@ -208,6 +208,7 @@ struct TerrainVertexOut {
   @location(1) worldNormal: vec3<f32>,
   @location(2) viewDirection: vec3<f32>,
   @location(3) viewDistance: f32,
+  @location(4) terrainShadow: f32,
 };
 
 fn saturate(value: f32) -> f32 {
@@ -298,6 +299,21 @@ fn terrainNormal(point: vec2<f32>) -> vec3<f32> {
   return normalize(vec3<f32>(left - right, epsilon * 2.0, back - front));
 }
 
+fn softShadow(position: vec3<f32>, sunDirection: vec3<f32>) -> f32 {
+  var shade = 1.0;
+  var travel = 0.18;
+  for (var step = 0; step < 6; step = step + 1) {
+    let samplePosition = position + sunDirection * travel;
+    let clearance = samplePosition.y - terrainBaseHeight(samplePosition.xz);
+    shade = min(shade, 6.0 * clearance / travel);
+    if (clearance < 0.002 || travel > 28.0) {
+      break;
+    }
+    travel = travel + clamp(clearance * 0.88, 0.16, 4.2);
+  }
+  return saturate(shade * 0.55 + 0.4);
+}
+
 @vertex
 fn vsTerrain(input: TerrainVertexIn) -> TerrainVertexOut {
   var output: TerrainVertexOut;
@@ -325,27 +341,22 @@ fn vsTerrain(input: TerrainVertexIn) -> TerrainVertexOut {
   let far = 220.0;
   let clipZ = (far / (far - near)) * viewZ - (near * far / (far - near));
 
+  let worldNormal = terrainNormal(worldXZ);
+  let viewDistance = length(relative);
+  let sunDirection = normalize(vec3<f32>(0.44, 0.205, -0.874));
+  var terrainShadow = 1.0;
+  if (viewDistance < 24.0 && dot(worldNormal, sunDirection) > 0.01) {
+    terrainShadow = softShadow(worldPosition + worldNormal * 0.04, sunDirection);
+    terrainShadow = mix(terrainShadow, 1.0, smoothstep(19.0, 24.0, viewDistance));
+  }
+
   output.position = vec4<f32>(viewX * focal / aspect, viewY * focal, clipZ, viewZ);
   output.worldPosition = worldPosition;
-  output.worldNormal = terrainNormal(worldXZ);
+  output.worldNormal = worldNormal;
   output.viewDirection = cameraPosition - worldPosition;
-  output.viewDistance = length(relative);
+  output.viewDistance = viewDistance;
+  output.terrainShadow = terrainShadow;
   return output;
-}
-
-fn softShadow(position: vec3<f32>, sunDirection: vec3<f32>) -> f32 {
-  var shade = 1.0;
-  var travel = 0.18;
-  for (var step = 0; step < 6; step = step + 1) {
-    let samplePosition = position + sunDirection * travel;
-    let clearance = samplePosition.y - terrainBaseHeight(samplePosition.xz);
-    shade = min(shade, 6.0 * clearance / travel);
-    if (clearance < 0.002 || travel > 28.0) {
-      break;
-    }
-    travel = travel + clamp(clearance * 0.88, 0.16, 4.2);
-  }
-  return saturate(shade * 0.55 + 0.4);
 }
 
 fn atmosphere(direction: vec3<f32>, sunDirection: vec3<f32>) -> vec3<f32> {
@@ -418,11 +429,7 @@ fn fsTerrain(input: TerrainVertexOut) -> @location(0) vec4<f32> {
   );
 
   let direct = saturate(dot(normal, sunDirection));
-  var shadow = 1.0;
-  if (input.viewDistance < 24.0 && direct > 0.01) {
-    shadow = softShadow(input.worldPosition + normal * 0.04, sunDirection);
-    shadow = mix(shadow, 1.0, smoothstep(19.0, 24.0, input.viewDistance));
-  }
+  let shadow = input.terrainShadow;
 
   let wrapped = saturate((dot(normal, sunDirection) + 0.3) / 1.3);
   let halfway = normalize(sunDirection + viewDirection);
@@ -520,7 +527,7 @@ fn updateSnow(@builtin(global_invocation_id) invocation: vec3<u32>) {
   let uv = (vec2<f32>(invocation.xy) + 0.5) / vec2<f32>(dimensions);
   let world = (uv - 0.5) * 128.0;
   let previous = textureLoad(previousSnow, pixel, 0);
-  let delta = min(globals.viewport.w, 0.05);
+  let delta = min(globals.viewport.w, 0.1);
   var deformation = previous.r * exp(-delta * 0.0035);
   var magicResidue = previous.g * exp(-delta * 0.22);
 
@@ -530,7 +537,17 @@ fn updateSnow(@builtin(global_invocation_id) invocation: vec3<u32>) {
     let boardYaw = globals.objective.x;
     let forward = vec2<f32>(cos(boardYaw), sin(boardYaw));
     let right = vec2<f32>(-sin(boardYaw), cos(boardYaw));
-    let relative = world - globals.reserved.xy;
+    let currentCenter = globals.reserved.xy;
+    let previousCenter = globals.terrain.zw;
+    let travelSegment = currentCenter - previousCenter;
+    let travelLengthSquared = dot(travelSegment, travelSegment);
+    let travelBlend = select(
+      1.0,
+      clamp(dot(world - previousCenter, travelSegment) / max(travelLengthSquared, 0.000001), 0.0, 1.0),
+      travelLengthSquared > 0.000001
+    );
+    let sweptCenter = mix(previousCenter, currentCenter, travelBlend);
+    let relative = world - sweptCenter;
     let longitudinal = dot(relative, forward);
     let lateral = dot(relative, right);
     let alignedBoardYaw = globals.reserved.z - 1.570796;

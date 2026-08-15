@@ -264,3 +264,27 @@ independent transform part. The deterministic route still reaches `Veil
 stabilized`; browser logs contain no warning, AudioContext error, or WebGPU
 validation error. This is a terrain-coupling checkpoint, not a claim of a full
 rigid-body or avalanche simulation.
+
+### 2026-08-14 — continuous contact-history and native-shadow checkpoint
+
+Evidence:
+
+- same-session 1440p baseline: [`evidence/performance-snow-history-before-2560x1440.png`](./evidence/performance-snow-history-before-2560x1440.png)
+- scheduling-only 1440p intermediate: [`evidence/performance-snow-history-after-2560x1440.png`](./evidence/performance-snow-history-after-2560x1440.png)
+- retained vertex-shadow 1440p frame: [`evidence/performance-vertex-shadow-after-2560x1440.png`](./evidence/performance-vertex-shadow-after-2560x1440.png)
+- rejected low-frequency active track: [`evidence/performance-vertex-shadow-motion-1182x749.png`](./evidence/performance-vertex-shadow-motion-1182x749.png)
+- retained swept-contact track: [`evidence/performance-snow-history-motion-1182x749.png`](./evidence/performance-snow-history-motion-1182x749.png)
+- complete post-change route: [`evidence/performance-vertex-shadow-rite-1182x749.png`](./evidence/performance-vertex-shadow-rite-1182x749.png)
+
+The low-frequency experiment is deliberately retained as a failed visual test:
+individual elongated stamps remain recognizable along a fast curve. The accepted
+compute path instead sweeps the pointed contact ellipse between consecutive
+grounded positions. It keeps the narrow engaged-edge groove, displaced ridge,
+and curved travel history continuous without restoring the earlier broad trench.
+
+The terrain-shadow move retains the existing six height samples and near-field
+fade, but evaluates them on the already dense terrain mesh. Pixel comparison is
+well below one percent and the default composition retains its snow relief,
+low-sun modelling, atmospheric depth, and character contact. The complete route
+still reaches `Veil stabilized`; browser logs contain no warning, AudioContext
+error, WGSL compile error, or WebGPU validation error.

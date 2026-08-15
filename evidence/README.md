@@ -74,3 +74,21 @@ They are review artefacts, not third-party source material.
   transform split, with connected hand equipment and a visible airborne gap.
 - `slope-rite-complete-1182x749.png` — complete deterministic route after CPU/GPU
   terrain-height parity and slope physics, with no browser warnings.
+- `performance-snow-history-before-2560x1440.png` — same-session fixed-1440p
+  baseline before deformation scheduling and vertex-shadow changes, at 21 FPS.
+- `performance-snow-history-after-2560x1440.png` — scheduling-only intermediate
+  at 22 FPS; retained to isolate the small idle-compute gain.
+- `performance-vertex-shadow-candidate-2560x1440.png` — exploratory 30 FPS frame
+  from moving the unchanged six-sample terrain shadow to the dense vertex grid.
+- `performance-vertex-shadow-after-2560x1440.png` — retained steady 28 FPS
+  fixed-1440p frame after the complete snow-history and vertex-shadow pass.
+- `performance-vertex-shadow-motion-1182x749.png` — rejected low-frequency
+  history experiment whose fast curved track exposed scalloped stamp spacing.
+- `performance-snow-history-motion-1182x749.png` — accepted swept-contact curve
+  at 4.3 m/s, with the pointed edge-loaded footprint joined between frames.
+- `performance-snow-history-jump-gap-1182x749.png` and
+  `performance-snow-history-jump-gap-orbit-1182x749.png` — airborne inspections
+  confirming that the rider can separate from the snow while contact stamping is
+  disabled; the orbit frame is diagnostic rather than a composition gate.
+- `performance-vertex-shadow-rite-1182x749.png` — completed three-sigil route
+  after both retained optimisations, ending at `Veil stabilized` without errors.

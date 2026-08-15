@@ -83,6 +83,10 @@ Original project code is released under the [MIT License](./LICENSE).
 11. Terrain-coupled ride pass — CPU/GPU snow height parity, natural downhill
     coast, uphill resistance, slope-aligned stance, and takeoff-angle retention
     are verified from the running build.
+12. Continuous-contact performance pass — active snow stamps sweep between
+    grounded frames, airborne travel leaves no false groove, untouched history
+    decays at 30 Hz, and the unchanged six-sample terrain shadow runs on the
+    dense terrain vertices for a measured native-1440p gain.
 
 The current build is a polished playable vertical slice, not a claim of a full
 AAA production or a hundred-million-particle physical simulation. See

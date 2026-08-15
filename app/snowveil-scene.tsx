@@ -74,6 +74,8 @@ export function SnowveilScene() {
     let previousY = 0;
     let playerX = 0;
     let playerZ = hasSlopeProbe ? 0 : -4;
+    let previousStampX = playerX;
+    let previousStampZ = playerZ;
     let playerHeading = 0;
     let playerBoardYaw = -Math.PI / 2;
     let playerSpeed = 0;
@@ -482,6 +484,9 @@ export function SnowveilScene() {
           throw new Error(`Snow deformation setup failed: ${deformationSetupError.message}`);
         }
         let deformationReadIndex = 0;
+        const deformationInterval = 1 / 30;
+        let deformationAccumulator = deformationInterval;
+        let snowHistoryTouched = false;
         const uniforms = new Float32Array(36);
 
         const terrainSegments = 352;
@@ -773,7 +778,17 @@ export function SnowveilScene() {
           uniforms[0] = canvas.width;
           uniforms[1] = canvas.height;
           uniforms[2] = elapsed;
-          uniforms[3] = delta;
+          const groundedForSnow = jumpHeight <= 0.085;
+          const snowInteractionActive =
+            (playerSpeed > 0.035 && groundedForSnow) || spellPulse > 0.01;
+          snowHistoryTouched ||= snowInteractionActive;
+          deformationAccumulator = Math.min(deformationAccumulator + delta, 0.1);
+          const shouldUpdateSnowHistory =
+            snowInteractionActive ||
+            (snowHistoryTouched && deformationAccumulator >= deformationInterval);
+          const deformationDelta = shouldUpdateSnowHistory ? deformationAccumulator : 0;
+          if (shouldUpdateSnowHistory) deformationAccumulator = 0;
+          uniforms[3] = deformationDelta;
           uniforms[4] = yaw;
           uniforms[5] = pitch;
           uniforms[6] = distance;
@@ -800,9 +815,13 @@ export function SnowveilScene() {
           uniforms[31] = jumpHeight;
           uniforms[32] = visualSlopeX;
           uniforms[33] = visualSlopeZ;
-          uniforms[34] = slopeAlongTravel;
-          uniforms[35] = slopeGravity;
+          uniforms[34] = previousStampX;
+          uniforms[35] = previousStampZ;
           activeDevice.queue.writeBuffer(uniformBuffer, 0, uniforms);
+          if (!groundedForSnow || shouldUpdateSnowHistory) {
+            previousStampX = playerX;
+            previousStampZ = playerZ;
+          }
 
           if (!depthTexture || !sceneColorTexture || !postBindGroup) {
             animationFrame = requestAnimationFrame(render);
@@ -810,13 +829,15 @@ export function SnowveilScene() {
           }
 
           const encoder = activeDevice.createCommandEncoder({ label: "Snowveil frame" });
-          const deformationWriteIndex = 1 - deformationReadIndex;
-          const deformationPass = encoder.beginComputePass({ label: "Snowveil snow memory update" });
-          deformationPass.setPipeline(deformationPipeline);
-          deformationPass.setBindGroup(0, deformationBindGroups[deformationReadIndex]);
-          deformationPass.dispatchWorkgroups(deformationResolution / 8, deformationResolution / 8);
-          deformationPass.end();
-          deformationReadIndex = deformationWriteIndex;
+          if (shouldUpdateSnowHistory) {
+            const deformationWriteIndex = 1 - deformationReadIndex;
+            const deformationPass = encoder.beginComputePass({ label: "Snowveil snow memory update" });
+            deformationPass.setPipeline(deformationPipeline);
+            deformationPass.setBindGroup(0, deformationBindGroups[deformationReadIndex]);
+            deformationPass.dispatchWorkgroups(deformationResolution / 8, deformationResolution / 8);
+            deformationPass.end();
+            deformationReadIndex = deformationWriteIndex;
+          }
           const pass = encoder.beginRenderPass({
             colorAttachments: [
               {

@@ -193,3 +193,29 @@ actively sampled browser tab; its individual lows are not a release benchmark.
 The fixed 1440p path remains inside its established range, so terrain coupling
 does not create a measured native-resolution regression. Release-grade fixed
 1440p performance remains open.
+
+## 2026-08-14 — snow-history scheduling and vertex-shadow review
+
+Environment: one active in-app Chromium tab with native WebGPU. Fixed captures
+use the same 2560×1440 evidence camera and unchanged HDR/post-process path.
+
+| Review state | Observed HUD | Result |
+| --- | ---: | --- |
+| per-frame history plus fragment terrain shadow, idle | 21 FPS · P95 66.3 ms · 1% 10 | same-session baseline |
+| fresh-idle history skip only | 22 FPS · P95 65.7 ms · 1% 10 | retained, but not the main gain |
+| six-sample shadow moved to dense terrain vertices | 28 FPS · P95 65.5 ms · 1% 15 | retained steady capture; exploratory capture reached 30 FPS |
+| swept active track, 1182×749 | 54 FPS · P95 33.7 ms · 1% 29 | retained during PNG capture |
+| airborne no-stamp check, 1182×749 | 60 FPS · P95 17.4 ms · 1% 56 | retained |
+| completed three-sigil route, 1182×749 | 60 FPS · P95 33.3 ms · 1% 29 | retained functional capture |
+
+The scheduler does not trade track continuity for idle speed: active board and
+spell contact still update every rendered frame. A 15 Hz and then 30 Hz active
+update experiment produced visibly scalloped curves and was rejected. Untouched
+history alone decays at 30 Hz, while a fresh idle scene dispatches no deformation
+compute work.
+
+The fixed baseline-to-retained comparison improves displayed steady FPS by about
+33%. Raw-image comparison against the scheduling-only frame reports 0.163% mean
+absolute 8-bit-channel difference and 0.154% of channels differing by more than
+eight levels. Independently timed particles and post-process grain are included.
+Fixed 1440p remains a still-review target rather than a 60 FPS release claim.

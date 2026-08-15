@@ -303,3 +303,27 @@ leg transform while its arm and focus turned with the torso. Both had shared one
 part number. The retained geometry assigns gloves their own transform part so
 hands, cuffs, focus, and arms remain connected without making the lower legs
 leave the board. All geometry, physics, and tests remain project-authored code.
+
+## 2026-08-14 — Swept snow contact and vertex-evaluated terrain shadows
+
+Reducing the 768² deformation history to 15 or 30 updates per second lowered
+compute cost, but fast curves exposed separate oval stamps as scalloped track
+edges. That version is rejected. The retained scheduler skips the compute pass
+before the first snow interaction, updates every rendered frame while the board
+or Ice Pulse is active, and drops to 30 Hz only while untouched history decays.
+
+Each active board stamp now covers the segment between the previous and current
+contact centres instead of pressing only at the latest frame position. The
+segment is still evaluated through the same pointed, edge-loaded ellipse, so it
+closes sampling gaps without widening contact into a rectangular trench. While
+airborne the previous centre follows the rider without stamping; landing cannot
+draw a false groove across the jump gap.
+
+Native 1440p profiling also showed that the retained six-sample terrain shadow
+was still repeated for every near-field fragment. The exact six-sample function
+now runs on the dense 352² terrain vertices and its scalar result is perspective-
+interpolated for the fragment material. The shadow radius, fog fade, HDR resolve,
+terrain geometry, and material response are unchanged. The fixed-camera image
+difference is 0.163% mean absolute 8-bit channel value, including independently
+timed particles and grain, while the same-session idle result rises from 21 FPS
+to a 28 FPS steady capture. No third-party asset or code was introduced.
