@@ -268,7 +268,7 @@ Instructors Association and U.S. Ski & Snowboard; their pages were observation
 references only and no footage, imagery, geometry, or animation was copied.
 
 The snow compute and the terrain contact shadow now consume that exact board yaw.
-Their footprint is a pointed 1.88-by-0.44-metre ellipse when flat, narrows and
+Their footprint is a pointed 1.64-by-0.36-metre ellipse when flat, narrows and
 shifts toward the engaged edge while carving or braking, and disappears while
 airborne. Space therefore becomes a real ballistic jump with takeoff/landing
 sound and a gap in persistent snow history; Ice Pulse moves to E.
@@ -369,3 +369,30 @@ without covering the rider or main horizon.
 
 No icon, font, UI library, image, or external asset was added. The glyphs, markup,
 CSS, input routing, and captured evidence are project-authored.
+
+## 2026-08-14 — Board-readable snowboard causality replaces input magic
+
+A second user review correctly rejected the first causality pass as visually
+ambiguous. Although its long axis was numerically aligned to velocity, the
+symmetrical blade gave no nose cue, the camera orbit used world space after a
+turn, the upper-body cue was too weak, and braking drag was applied directly by
+the S key before the visible board had completed its skid. A value being correct
+inside a uniform is not an acceptable substitute for a readable result.
+
+The retained controller now derives both board yaw and braking resistance from
+one clamped skid state. Normal riding aligns the board's long axis with velocity;
+S rotates it through 90 degrees and its squared visible skid amount produces the
+additional drag. The default orbit follows travel heading with the correct sign,
+so a three-quarter chase view remains three-quarter after steering. The upper
+coat rotates toward travel, with a smaller additional head/visor look. An
+asymmetric longer, wider, higher nose and a subtle procedural nose inlay make the
+leading end distinguishable without applying a logo or external texture.
+
+The snow shadow and persistent compute stamp use the same explicit ellipse:
+1.64 by 0.36 metres flat, narrowing to a 0.104-metre edge strip while retaining
+its length. Both disappear in the airborne state. Space still enters the shared
+ballistic path and produces a tested snow-history gap. The implementation was
+calibrated against the broad movement principles in the official AASI guide,
+Burton's edge-control tutorial, and JSBA's emphasis on positioning, grip, and
+speed control. Only written technique observations were used; no video frame,
+image, mesh, animation, logo, or protected design was copied.

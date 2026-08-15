@@ -259,3 +259,19 @@ The control layer adds no render target, GPU buffer, shader branch, draw, or
 compute dispatch. Its pointer map and DOM state are idle outside actual input.
 The temporary 44 FPS figure occurred during rapid automated pointer dispatch and
 PNG capture; the same mobile run returned to 60 FPS for Jump and Pulse evidence.
+
+## 2026-08-14 — board-readable causality v2 review
+
+Environment: native WebGPU Chromium at 720×850 CSS pixels with the responsive
+controls active. Screenshots were read back from the running build.
+
+| Review state | Observed HUD | Result |
+| --- | ---: | --- |
+| clean nose-first route ride at 6.5 m/s | 57 FPS · P95 17.7 ms · 1% 19 | retained |
+| visible crosswise brake at 1.2 m/s | 60 FPS · P95 17.6 ms · 1% 56 | retained |
+| real Jump/Space airborne frame at 6.5 m/s | 66 FPS · P95 17.8 ms · 1% 18 | retained; short sampling-window overshoot |
+
+The camera-follow, asymmetric board nose, torso/head rotation, and changed
+ellipse math add no render pass, texture, buffer, or draw call. Braking uses one
+small CPU helper over the existing skid state. The above captures are visual QA
+readings, not a claim that refresh-rate sampling can sustain above 60 FPS.

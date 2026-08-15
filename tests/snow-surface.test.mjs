@@ -6,6 +6,10 @@ import {
   downhillSpeedHeadroom,
   landingImpactForVelocity,
   slopeAlongHeading,
+  snowboardBrakeDrag,
+  snowboardContactAxes,
+  snowboardLongAxis,
+  snowboardTargetYaw,
   snowGravityAcceleration,
 } from "../app/snowveil-motion.ts";
 import { snowHeightAt, snowSurfaceAt } from "../app/snowveil-terrain.ts";
@@ -45,4 +49,33 @@ test("landing response follows downward impact and decays without overshoot", ()
   assert.ok(firstFrame < 1 && firstFrame > 0);
   assert.ok(laterFrame < firstFrame && laterFrame > 0);
   assert.equal(decayLandingCompression(0.7, -1), 0.7);
+});
+
+test("snowboard points along travel until braking turns it across the velocity", () => {
+  const heading = 0.73;
+  const travel = { x: Math.sin(heading), z: -Math.cos(heading) };
+  const ridingAxis = snowboardLongAxis(snowboardTargetYaw(heading, 0, 0));
+  const brakingAxis = snowboardLongAxis(snowboardTargetYaw(heading, 1, 0));
+
+  assert.ok(ridingAxis.x * travel.x + ridingAxis.z * travel.z > 0.999);
+  assert.ok(Math.abs(brakingAxis.x * travel.x + brakingAxis.z * travel.z) < 0.001);
+});
+
+test("edge pressure turns the flat long ellipse into a narrow contact strip", () => {
+  const flat = snowboardContactAxes(0);
+  const edged = snowboardContactAxes(1);
+  const flatArea = Math.PI * flat.halfLength * flat.halfWidth;
+  const edgedArea = Math.PI * edged.halfLength * edged.halfWidth;
+
+  assert.ok(flat.halfLength / flat.halfWidth > 4.5);
+  assert.equal(edged.halfLength, flat.halfLength);
+  assert.ok(edged.halfWidth < flat.halfWidth * 0.3);
+  assert.ok(edgedArea < flatArea * 0.3);
+});
+
+test("braking drag is caused by the visible crosswise skid", () => {
+  assert.equal(snowboardBrakeDrag(0), 0);
+  assert.ok(snowboardBrakeDrag(0.5) > 1);
+  assert.equal(snowboardBrakeDrag(1), 5.2);
+  assert.ok(snowboardBrakeDrag(0.8) > snowboardBrakeDrag(0.4));
 });

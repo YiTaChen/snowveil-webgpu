@@ -18,6 +18,8 @@ import {
   downhillSpeedHeadroom,
   landingImpactForVelocity,
   slopeAlongHeading,
+  snowboardBrakeDrag,
+  snowboardTargetYaw,
   snowGravityAcceleration,
 } from "./snowveil-motion";
 
@@ -71,8 +73,8 @@ export function SnowveilScene() {
     const frameTimes: number[] = [];
     // A three-quarter chase view keeps the nose-first board axis and the
     // rider's counter-rotated upper body legible at the same time.
-    let yaw = 0.45;
-    let pitch = 0.02;
+    let yaw = -0.72;
+    let pitch = 0.065;
     let distance = 5.9;
     let renderScale = 1.0;
     let dragging = false;
@@ -83,7 +85,7 @@ export function SnowveilScene() {
     let previousStampX = playerX;
     let previousStampZ = playerZ;
     let playerHeading = 0;
-    let playerBoardYaw = -Math.PI / 2;
+    let playerBoardYaw = snowboardTargetYaw(playerHeading, 0, 0);
     let playerSpeed = 0;
     let playerSurface = snowSurfaceAt(playerX, playerZ);
     let playerSlopeX = playerSurface.slopeX;
@@ -94,10 +96,10 @@ export function SnowveilScene() {
     let takeoffSlopeZ = playerSlopeZ;
     if (slopeProbe === "downhill") {
       playerHeading = Math.atan2(-playerSlopeX, playerSlopeZ);
-      playerBoardYaw = playerHeading - Math.PI / 2;
+      playerBoardYaw = snowboardTargetYaw(playerHeading, 0, 0);
     } else if (slopeProbe === "uphill") {
       playerHeading = Math.atan2(playerSlopeX, -playerSlopeZ);
-      playerBoardYaw = playerHeading - Math.PI / 2;
+      playerBoardYaw = snowboardTargetYaw(playerHeading, 0, 0);
     }
     let boardSkid = 0;
     let steerVisual = 0;
@@ -725,6 +727,8 @@ export function SnowveilScene() {
             : pressedKeys.has("ShiftLeft") || pressedKeys.has("ShiftRight")
               ? 8.4
               : 5.4;
+          boardSkid += (brakeInput - boardSkid) * (1 - Math.exp(-delta * (brakeInput > 0 ? 11 : 6.5)));
+          steerVisual += (steerInput - steerVisual) * (1 - Math.exp(-delta * 8.5));
           const turnAuthority = 0.28 + Math.min(playerSpeed / 3.2, 1) * 0.72;
           playerHeading += steerInput * delta * (0.72 + playerSpeed * 0.13) * turnAuthority;
           const forwardX = Math.sin(playerHeading);
@@ -735,7 +739,7 @@ export function SnowveilScene() {
           const driveAcceleration = throttleInput * (demoMode ? 7.2 : 5.8) * (groundedBeforeMotion ? 1 : 0.12);
           playerSpeed += (driveAcceleration + slopeGravity) * delta;
           const drag = groundedBeforeMotion
-            ? 0.24 + (throttleInput > 0 ? 0 : 0.52) + brakeInput * 5.8
+            ? 0.24 + (throttleInput > 0 ? 0 : 0.52) + snowboardBrakeDrag(boardSkid)
             : 0.08;
           const downhillHeadroom = groundedBeforeMotion ? downhillSpeedHeadroom(slopeAlongTravel) : 0;
           const speedCeiling = groundedBeforeMotion
@@ -753,10 +757,7 @@ export function SnowveilScene() {
             playerSpeed *= 0.35;
           }
 
-          boardSkid += (brakeInput - boardSkid) * (1 - Math.exp(-delta * (brakeInput > 0 ? 11 : 6.5)));
-          steerVisual += (steerInput - steerVisual) * (1 - Math.exp(-delta * 8.5));
-          const alignedBoardYaw = playerHeading - Math.PI / 2;
-          const targetBoardYaw = alignedBoardYaw + boardSkid * Math.PI / 2 + steerVisual * 0.075 * (1 - boardSkid);
+          const targetBoardYaw = snowboardTargetYaw(playerHeading, boardSkid, steerVisual);
           playerBoardYaw += angleDelta(targetBoardYaw, playerBoardYaw) * (1 - Math.exp(-delta * 11));
 
           const wasAirborne = jumpHeight > 0.001;
@@ -836,7 +837,9 @@ export function SnowveilScene() {
           const deformationDelta = shouldUpdateSnowHistory ? deformationAccumulator : 0;
           if (shouldUpdateSnowHistory) deformationAccumulator = 0;
           uniforms[3] = deformationDelta;
-          uniforms[4] = yaw;
+          // Keep the orbit relative to travel so the default three-quarter
+          // chase view continues to show which end of the board is leading.
+          uniforms[4] = yaw - playerHeading;
           uniforms[5] = pitch;
           uniforms[6] = distance;
           uniforms[7] = 0.72;

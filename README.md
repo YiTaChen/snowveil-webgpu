@@ -96,6 +96,10 @@ Original project code is released under the [MIT License](./LICENSE).
 14. Responsive-input pass — accessible glass touch controls share the keyboard
     movement state, support held and simultaneous inputs, preserve the scene on
     a 480×659 mobile viewport, and leave the desktop composition unchanged.
+15. Board-readable causality v2 — the travel-following three-quarter camera,
+    asymmetric nose, torso/head look, skid-derived braking resistance, explicit
+    long elliptical contact, and real Space jump are verified together from the
+    running build.
 
 The current build is a polished playable vertical slice, not a claim of a full
 AAA production or a hundred-million-particle physical simulation. See

@@ -108,3 +108,9 @@ They are review artefacts, not third-party source material.
   snow crater, residual light, and a 60 FPS warmed reading.
 - `mobile-controls-desktop-rite-1182x749.png` — desktop 3/3 route after the
   responsive input change, confirming the controls remain visually absent.
+- `snowboard-causality-v2-ride-720x850.png` — clean 6.5 m/s three-quarter chase
+  frame with the board nose and continuous wake aligned to the same trajectory.
+- `snowboard-causality-v2-brake-720x850.png` — real shared Brake/S input captured
+  at 1.2 m/s after the blade has moved across the trajectory and onto its edge.
+- `snowboard-causality-v2-jump-720x850.png` — real shared Jump/Space input at
+  6.5 m/s with a clear board-to-snow gap and no airborne contact stamp.

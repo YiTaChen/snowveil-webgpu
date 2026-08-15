@@ -388,6 +388,13 @@ canvas {
     display: none;
   }
 
+  .snowveil__objective {
+    top: 76px;
+    left: 22px;
+  }
+}
+
+@media (pointer: coarse), (max-width: 720px) {
   .snowveil__footer {
     left: 50%;
     right: auto;
@@ -401,13 +408,6 @@ canvas {
     display: none;
   }
 
-  .snowveil__objective {
-    top: 76px;
-    left: 22px;
-  }
-}
-
-@media (pointer: coarse), (max-width: 720px) {
   .snowveil__touch-controls {
     position: absolute;
     z-index: 4;

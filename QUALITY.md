@@ -333,3 +333,31 @@ airborne gap through Jump, and produced the existing Ice Pulse crater/residue.
 The warmed mobile captures report 60 FPS. At 1182×749 the controls are visually
 absent and the deterministic route still reaches `Veil stabilized` at 60 FPS.
 Browser logs contain no WGSL, WebGPU, audio, or uncaptured-device error.
+
+### 2026-08-14 — board-readable causality v2 checkpoint
+
+Evidence:
+
+- nose-first 6.5 m/s ride and continuous narrow wake: [`evidence/snowboard-causality-v2-ride-720x850.png`](./evidence/snowboard-causality-v2-ride-720x850.png)
+- moving crosswise edge brake at 1.2 m/s: [`evidence/snowboard-causality-v2-brake-720x850.png`](./evidence/snowboard-causality-v2-brake-720x850.png)
+- real Jump/Space airborne frame at 6.5 m/s: [`evidence/snowboard-causality-v2-jump-720x850.png`](./evidence/snowboard-causality-v2-jump-720x850.png)
+
+The v1 state is rejected as insufficiently legible even though its CPU numbers
+were directionally correct. In the retained ride frame the board axis and the
+track point to the same destination, the longer lifted nose is distinguishable,
+and the upper body and head open toward travel while the boots remain across the
+board. The camera now follows heading instead of becoming an unrelated world-
+space orbit after a turn.
+
+The brake frame was captured while the rider still reports 1.2 m/s. The blade is
+already crosswise and on edge; the input no longer removes speed independently
+of that pose. The jump frame comes from the actual shared Jump/Space control at
+6.5 m/s, shows a clear board-to-snow gap, and leaves no stamp through the air.
+The three warmed 720×850 captures report 57–66 FPS with live touch controls and
+unobstructed speed/performance telemetry.
+
+Six focused motion tests now assert the travel/board dot product, the 90-degree
+brake relationship, a greater-than-4.5:1 flat contact aspect ratio, less than
+30% edge-contact width/area, skid-derived drag, slope response, and landing
+decay. This remains a compact procedural rig rather than a claim of full
+biomechanical motion capture or a rigid-body snow solver.
