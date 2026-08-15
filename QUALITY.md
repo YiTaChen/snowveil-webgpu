@@ -479,3 +479,31 @@ limit rather than presented as a 60 FPS result.
 This closes the earlier lack of authored pose transitions for the compact
 procedural rider. A conventional skinned production skeleton and facial
 performance remain outside the current art boundary.
+
+### 2026-08-14 — athletic action-silhouette checkpoint
+
+Evidence:
+
+- relaxed idle: [`evidence/rider-action-idle-1182x749.png`](./evidence/rider-action-idle-1182x749.png)
+- normal ride: [`evidence/rider-action-ride-1182x749.png`](./evidence/rider-action-ride-1182x749.png)
+- moving brake: [`evidence/rider-action-brake-1182x749.png`](./evidence/rider-action-brake-1182x749.png)
+- real Space jump: [`evidence/rider-action-air-1182x749.png`](./evidence/rider-action-air-1182x749.png)
+- real E cast: [`evidence/rider-action-cast-1182x749.png`](./evidence/rider-action-cast-1182x749.png)
+- landing inspection: [`evidence/rider-action-land-1182x749.png`](./evidence/rider-action-land-1182x749.png)
+- complete-frame native target: [`evidence/rider-action-native-2560x1440.png`](./evidence/rider-action-native-2560x1440.png)
+
+The prior ride frame is rejected as a final action silhouette because the base
+right forearm remained raised when no spell existed and the high-speed knee load
+still read too close to standing. The retained shader lowers that arm at idle,
+opens asymmetric balance arms only in athletic states, and restores the raised
+casting arm only while the real Ice Pulse envelope is active. Ride, brake, air,
+and land now add progressively stronger knee loading without changing the
+physical controller or separating either boot from the board in close review.
+
+Actual W, S, Space, and E input produced every 1182×749 frame. The ride, moving
+brake, airborne, cast, and landing inspections remain at 60 FPS and 100% render
+scale with no browser error. The calibrated native frame shades a true
+2560×1440 target; after the route completes and its measurement window warms,
+the same path reports 44 FPS, P95 33.5 ms, 1% low 30, and 100% RES. The compact
+procedural character is more physically credible, but a conventional deforming
+skin rig and detailed hands/facial performance remain outside this checkpoint.

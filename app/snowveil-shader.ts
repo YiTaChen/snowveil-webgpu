@@ -749,8 +749,8 @@ fn vsPlayer(input: PlayerVertexIn) -> PlayerVertexOut {
   let legSide = select(-1.0, 1.0, local.x >= 0.0);
   let edgeLoad = saturate(0.5 + carve * legSide * 0.38 + skid * 0.12);
   let kneeFlex =
-    ridePose * 0.055 + brakePose * 0.17 + compression * 0.2 + landing * 0.07 +
-    skid * 0.035 + airPose * (0.16 + descent * 0.08) + landPose * 0.16;
+    ridePose * 0.13 + brakePose * 0.29 + compression * 0.24 + landing * 0.08 +
+    skid * 0.045 + airPose * (0.24 + descent * 0.1) + landPose * 0.3;
   if (part == 12u) {
     let hipPivot = vec3<f32>(legSide * 0.17, 0.77, 0.02);
     let upperLegAngle = kneeFlex * (0.78 + edgeLoad * 0.4);
@@ -797,13 +797,22 @@ fn vsPlayer(input: PlayerVertexIn) -> PlayerVertexOut {
     vec3<f32>(0.53, 1.1, -0.19),
     armSide > 0.0
   );
+  let castPose = smoothstep(0.035, 0.42, globals.weather.z);
+  let athleticPose = saturate(ridePose + brakePose + airPose + landPose);
+  let relaxedRightForearm = mix(-1.42, -0.78, athleticPose) * (1.0 - castPose);
+  let authoredForearmPose = select(
+    -1.82 * athleticPose,
+    relaxedRightForearm,
+    armSide > 0.0
+  );
   let shoulderBalance =
     -carve * armSide * (0.075 + motion * 0.045) + skid * armSide * 0.035 +
     brakePose * armSide * 0.065 - airPose * armSide * 0.09 +
     takeoff * 0.045 + landPose * armSide * 0.04;
   let elbowBalance =
     carve * armSide * 0.055 + motion * (0.018 + 0.012 * sin(time * 3.1 + armSide)) +
-    skid * 0.025 + brakePose * 0.055 - airPose * 0.055 + landPose * 0.06;
+    skid * 0.025 + brakePose * 0.055 - airPose * 0.055 + landPose * 0.06 +
+    authoredForearmPose;
   if (part == 19u || part == 20u || part == 16u || part == 9u) {
     local = elbowPivot + rotateZ(local - elbowPivot, elbowBalance);
     localNormal = rotateZ(localNormal, elbowBalance);

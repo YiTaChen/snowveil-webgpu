@@ -168,3 +168,17 @@ They are review artefacts, not third-party source material.
   authored landing absorption layered over the physical compression response.
 - `rider-transition-native-2560x1440.png` — calibrated complete-frame moving
   capture at a true 2560×1440 WebGPU target, 45 FPS and 100% RES.
+- `rider-action-idle-1182x749.png` — non-casting idle with the formerly raised
+  forearm relaxed and both boots still seated on the blade.
+- `rider-action-ride-1182x749.png` — real W input with lower knee loading and an
+  asymmetric snowboard balance silhouette instead of a permanent casting pose.
+- `rider-action-brake-1182x749.png` — real moving S input with deeper edge-stop
+  compression and the balancing arm clear of the torso.
+- `rider-action-air-1182x749.png` — real Space input at 5.4 m/s with stronger
+  tuck, board separation, and no snow-contact stamp in the airborne interval.
+- `rider-action-cast-1182x749.png` — real E input restoring the raised pointing
+  forearm only while the Ice Pulse, projectile ring, and crater are visible.
+- `rider-action-land-1182x749.png` — post-jump joint inspection confirming that
+  the stronger landing load keeps guards, boots, and blade visually continuous.
+- `rider-action-native-2560x1440.png` — calibrated complete-frame 6.8 m/s route
+  capture at a true 2560×1440 WebGPU target and 100% RES.

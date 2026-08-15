@@ -381,3 +381,18 @@ the weights while evaluating its established part hierarchy.
 The interactive viewport remains frame-capped at 60 FPS through every new
 state. The short active native capture remains consistent with the documented
 fixed-native pixel-shading limit and is not used to claim native 60 FPS.
+
+## 2026-08-14 — athletic silhouette cost
+
+The action correction changes arithmetic inside the existing player vertex
+stage only. It adds no uniform bytes, vertex or index data, pass, draw call,
+texture, buffer, compute dispatch, or animation runtime. All inspected
+1182×749 idle, ride, brake, air, cast, and landing states remain at 60 FPS and
+100% RES, with P95 readings from 17.3 to 17.6 ms.
+
+The calibrated native active screenshot briefly displays 60 FPS while its P95
+window already records 33.5 ms and 1% low 20; that short counter value is not a
+stable native-performance claim. After the deterministic route completes and
+the measurement window warms, the true 2560×1440 target reports 44 FPS, P95
+33.5 ms, 1% low 30, and 100% RES. This matches the established fixed-native
+pixel-shading boundary.

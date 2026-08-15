@@ -118,6 +118,10 @@ Original project code is released under the [MIT License](./LICENSE).
     air, and land targets feed a tested exponential envelope; the same physical
     controller now produces distinct ride, crosswise-brake, tuck, and absorption
     silhouettes without state-driven speed or contact shortcuts.
+20. Athletic action-silhouette pass — normal riding now lowers the centre of
+    mass and opens asymmetric balance arms, idle relaxes the casting forearm,
+    and only a live Ice Pulse raises it; stronger state-specific knee loading
+    remains layered over the same board, jump, and contact physics.
 
 The current build is a polished playable vertical slice, not a claim of a full
 AAA production or a hundred-million-particle physical simulation. See

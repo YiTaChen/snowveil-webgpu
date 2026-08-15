@@ -508,3 +508,23 @@ idle restores restrained breathing. Velocity, heading, board yaw, ballistic
 height, gravity, deformation, and contact activation still come exclusively
 from their existing physical paths. No pass, texture, draw call, model,
 skeleton, animation clip, motion sample, image, or third-party code is added.
+
+## 2026-08-14 — Casting is an action, not the default snowboard stance
+
+The previous base mesh encoded the right forearm in a raised casting position.
+Even after state transitions were added, every ordinary ride therefore read as
+if the rider were permanently waving or casting. The same review also showed
+that the first ride envelope preserved too much of the upright base stance.
+
+The retained vertex hierarchy now separates intent without adding a new
+gameplay state. The live procedural spell pulse supplies a short casting blend;
+outside that pulse the right forearm relaxes at idle and opens to a lower
+balance angle during ride, brake, air, or land. The opposite forearm moves to an
+asymmetric counterbalance only in athletic states. Knee loading is strengthened
+independently for ride, brake, air, and land while continuing to inherit the
+existing physical pose weights.
+
+This is a visual correction, not an animation shortcut. Spell timing, velocity,
+board yaw, jump height, landing impact, and snow-contact stamping remain
+unchanged. The implementation is original WGSL over the project-owned part
+mesh, with no imported animation, pose reference, or third-party asset.
