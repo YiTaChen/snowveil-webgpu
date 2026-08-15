@@ -17,6 +17,7 @@ import {
   decayLandingCompression,
   downhillSpeedHeadroom,
   landingImpactForVelocity,
+  snowHistoryRegionOffset,
   slopeAlongHeading,
   snowboardBrakeDrag,
   snowboardTargetYaw,
@@ -502,7 +503,11 @@ export function SnowveilScene() {
             label: `Snowveil deformation history ${index}`,
             size: [deformationResolution, deformationResolution],
             format: "rgba16float",
-            usage: GPUTextureUsage.TEXTURE_BINDING | GPUTextureUsage.STORAGE_BINDING,
+            usage:
+              GPUTextureUsage.TEXTURE_BINDING |
+              GPUTextureUsage.STORAGE_BINDING |
+              GPUTextureUsage.COPY_SRC |
+              GPUTextureUsage.COPY_DST,
           }),
         );
         const deformationViews = deformationTextures.map((texture) => texture.createView());
@@ -531,7 +536,8 @@ export function SnowveilScene() {
           throw new Error(`Snow deformation setup failed: ${deformationSetupError.message}`);
         }
         let deformationReadIndex = 0;
-        const deformationInterval = 1 / 30;
+        const deformationInterval = 1;
+        const deformationRegionSize = 64;
         let deformationAccumulator = deformationInterval;
         let snowHistoryTouched = false;
         const uniforms = new Float32Array(40);
@@ -827,15 +833,30 @@ export function SnowveilScene() {
           uniforms[1] = canvas.height;
           uniforms[2] = elapsed;
           const groundedForSnow = jumpHeight <= 0.085;
-          const snowInteractionActive =
-            (playerSpeed > 0.035 && groundedForSnow) || spellPulse > 0.01;
+          const boardSnowActive = playerSpeed > 0.035 && groundedForSnow;
+          const spellSnowActive = spellPulse > 0.01;
+          const snowInteractionActive = boardSnowActive || spellSnowActive;
           snowHistoryTouched ||= snowInteractionActive;
-          deformationAccumulator = Math.min(deformationAccumulator + delta, 0.1);
-          const shouldUpdateSnowHistory =
-            snowInteractionActive ||
-            (snowHistoryTouched && deformationAccumulator >= deformationInterval);
-          const deformationDelta = shouldUpdateSnowHistory ? deformationAccumulator : 0;
-          if (shouldUpdateSnowHistory) deformationAccumulator = 0;
+          deformationAccumulator = Math.min(deformationAccumulator + delta, deformationInterval);
+          const shouldDecaySnowHistory =
+            snowHistoryTouched && deformationAccumulator >= deformationInterval;
+          const shouldUpdateSnowHistory = snowInteractionActive || shouldDecaySnowHistory;
+          const partialSnowUpdate = snowInteractionActive && !shouldDecaySnowHistory;
+          const deformationDelta = shouldDecaySnowHistory ? deformationAccumulator : 0;
+          if (shouldDecaySnowHistory) deformationAccumulator = 0;
+          let deformationRegionX = playerX;
+          let deformationRegionZ = playerZ;
+          if (spellSnowActive) {
+            deformationRegionX = boardSnowActive ? (playerX + previewImpactX) * 0.5 : previewImpactX;
+            deformationRegionZ = boardSnowActive ? (playerZ + previewImpactZ) * 0.5 : previewImpactZ;
+          }
+          const deformationRegion = snowHistoryRegionOffset(
+            deformationRegionX,
+            deformationRegionZ,
+            deformationResolution,
+            128,
+            deformationRegionSize,
+          );
           uniforms[3] = deformationDelta;
           // Keep the orbit relative to travel so the default three-quarter
           // chase view continues to show which end of the board is leading.
@@ -843,7 +864,7 @@ export function SnowveilScene() {
           uniforms[5] = pitch;
           uniforms[6] = distance;
           uniforms[7] = 0.72;
-          uniforms[8] = dragging ? 1 : 0;
+          uniforms[8] = deformationAccumulator;
           uniforms[9] = playerY;
           uniforms[10] = spellPulse;
           uniforms[11] = spellAge;
@@ -869,8 +890,8 @@ export function SnowveilScene() {
           uniforms[35] = previousStampZ;
           uniforms[36] = landingCompression;
           uniforms[37] = jumpVelocity;
-          uniforms[38] = 0;
-          uniforms[39] = 0;
+          uniforms[38] = partialSnowUpdate ? deformationRegion.x : 0;
+          uniforms[39] = partialSnowUpdate ? deformationRegion.y : 0;
           activeDevice.queue.writeBuffer(uniformBuffer, 0, uniforms);
           if (!groundedForSnow || shouldUpdateSnowHistory) {
             previousStampX = playerX;
@@ -885,10 +906,18 @@ export function SnowveilScene() {
           const encoder = activeDevice.createCommandEncoder({ label: "Snowveil frame" });
           if (shouldUpdateSnowHistory) {
             const deformationWriteIndex = 1 - deformationReadIndex;
+            if (partialSnowUpdate) {
+              encoder.copyTextureToTexture(
+                { texture: deformationTextures[deformationReadIndex] },
+                { texture: deformationTextures[deformationWriteIndex] },
+                [deformationResolution, deformationResolution],
+              );
+            }
             const deformationPass = encoder.beginComputePass({ label: "Snowveil snow memory update" });
             deformationPass.setPipeline(deformationPipeline);
             deformationPass.setBindGroup(0, deformationBindGroups[deformationReadIndex]);
-            deformationPass.dispatchWorkgroups(deformationResolution / 8, deformationResolution / 8);
+            const dispatchSize = partialSnowUpdate ? deformationRegionSize : deformationResolution;
+            deformationPass.dispatchWorkgroups(dispatchSize / 8, dispatchSize / 8);
             deformationPass.end();
             deformationReadIndex = deformationWriteIndex;
           }

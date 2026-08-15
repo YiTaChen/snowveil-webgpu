@@ -5,6 +5,7 @@ import {
   decayLandingCompression,
   downhillSpeedHeadroom,
   landingImpactForVelocity,
+  snowHistoryRegionOffset,
   slopeAlongHeading,
   snowboardBrakeDrag,
   snowboardContactAxes,
@@ -78,4 +79,14 @@ test("braking drag is caused by the visible crosswise skid", () => {
   assert.ok(snowboardBrakeDrag(0.5) > 1);
   assert.equal(snowboardBrakeDrag(1), 5.2);
   assert.ok(snowboardBrakeDrag(0.8) > snowboardBrakeDrag(0.4));
+});
+
+test("snow history update regions remain centered and inside texture bounds", () => {
+  assert.deepEqual(snowHistoryRegionOffset(0, 0), { x: 351, y: 351 });
+  assert.deepEqual(snowHistoryRegionOffset(-64, -64), { x: 0, y: 0 });
+  assert.deepEqual(snowHistoryRegionOffset(64, 64), { x: 704, y: 704 });
+
+  const movingRegion = snowHistoryRegionOffset(12.5, -25.5);
+  assert.ok(movingRegion.x >= 0 && movingRegion.x <= 704);
+  assert.ok(movingRegion.y >= 0 && movingRegion.y <= 704);
 });

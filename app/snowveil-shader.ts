@@ -493,8 +493,8 @@ fn fsTerrain(input: TerrainVertexOut) -> @location(0) vec4<f32> {
   let outcrop = outcropField(input.worldPosition.xz);
   let rockReveal = smoothstep(0.24, 0.72, outcrop) * smoothstep(0.1, 0.46, 1.0 - normal.y);
   let memory = snowMemory(input.worldPosition.xz);
-  let deformation = memory.r;
-  let spellResidue = memory.g;
+  let deformation = memory.r * exp(-globals.weather.x * 0.0035);
+  let spellResidue = memory.g * exp(-globals.weather.x * 0.22);
   let compactedSnow = saturate(-deformation * 8.5);
   let pushedSnow = saturate(deformation * 19.0);
   let playerRelative = input.worldPosition.xz - globals.reserved.xy;
@@ -562,15 +562,17 @@ fn saturate(value: f32) -> f32 {
 @compute @workgroup_size(8, 8)
 fn updateSnow(@builtin(global_invocation_id) invocation: vec3<u32>) {
   let dimensions = textureDimensions(nextSnow);
-  if (invocation.x >= dimensions.x || invocation.y >= dimensions.y) {
+  let regionOffset = vec2<u32>(u32(globals.motion.z), u32(globals.motion.w));
+  let invocationPixel = invocation.xy + regionOffset;
+  if (invocationPixel.x >= dimensions.x || invocationPixel.y >= dimensions.y) {
     return;
   }
 
-  let pixel = vec2<i32>(invocation.xy);
-  let uv = (vec2<f32>(invocation.xy) + 0.5) / vec2<f32>(dimensions);
+  let pixel = vec2<i32>(invocationPixel);
+  let uv = (vec2<f32>(invocationPixel) + 0.5) / vec2<f32>(dimensions);
   let world = (uv - 0.5) * 128.0;
   let previous = textureLoad(previousSnow, pixel, 0);
-  let delta = min(globals.viewport.w, 0.1);
+  let delta = min(globals.viewport.w, 1.0);
   var deformation = previous.r * exp(-delta * 0.0035);
   var magicResidue = previous.g * exp(-delta * 0.22);
 
@@ -637,7 +639,11 @@ fn updateSnow(@builtin(global_invocation_id) invocation: vec3<u32>) {
       smoothstep(0.68, 1.05, spellDistance) *
       (1.0 - smoothstep(1.05, 1.62, spellDistance));
     let residueCore = (1.0 - smoothstep(0.0, 0.82, spellDistance)) * 0.3;
-    magicResidue = max(magicResidue, (residueRing + residueCore) * spellPulse);
+    let residuePhaseCompensation = exp(globals.weather.x * 0.22);
+    magicResidue = max(
+      magicResidue,
+      (residueRing + residueCore) * spellPulse * residuePhaseCompensation
+    );
     if (spellCrater < -0.001) {
       deformation = min(deformation, spellCrater);
     } else if (spellRidge > 0.001 && deformation > -0.018) {

@@ -27,6 +27,23 @@ export function snowboardBrakeDrag(skidAmount: number) {
   return skid * skid * 5.2;
 }
 
+export function snowHistoryRegionOffset(
+  worldX: number,
+  worldZ: number,
+  resolution = 768,
+  worldSpan = 128,
+  regionSize = 64,
+) {
+  const boundedRegion = Math.max(8, Math.min(Math.floor(regionSize), resolution));
+  const maxOffset = Math.max(0, resolution - boundedRegion);
+  const pixelX = (worldX / worldSpan + 0.5) * resolution - 0.5;
+  const pixelZ = (worldZ / worldSpan + 0.5) * resolution - 0.5;
+  return {
+    x: Math.max(0, Math.min(Math.floor(pixelX - boundedRegion / 2), maxOffset)),
+    y: Math.max(0, Math.min(Math.floor(pixelZ - boundedRegion / 2), maxOffset)),
+  };
+}
+
 export function snowGravityAcceleration(slopeAlongTravel: number) {
   const acceleration = (-9.81 * slopeAlongTravel) / Math.sqrt(1 + slopeAlongTravel * slopeAlongTravel);
   return Math.max(-3.2, Math.min(3.2, acceleration));

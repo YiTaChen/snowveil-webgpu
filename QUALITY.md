@@ -356,8 +356,32 @@ of that pose. The jump frame comes from the actual shared Jump/Space control at
 The three warmed 720×850 captures report 57–66 FPS with live touch controls and
 unobstructed speed/performance telemetry.
 
-Six focused motion tests now assert the travel/board dot product, the 90-degree
+Focused motion tests now assert the travel/board dot product, the 90-degree
 brake relationship, a greater-than-4.5:1 flat contact aspect ratio, less than
 30% edge-contact width/area, skid-derived drag, slope response, and landing
 decay. This remains a compact procedural rig rather than a claim of full
 biomechanical motion capture or a rigid-body snow solver.
+
+### 2026-08-14 — regional snow-history performance checkpoint
+
+Evidence:
+
+- native idle baseline: [`evidence/performance-native-baseline-2560x1440.png`](./evidence/performance-native-baseline-2560x1440.png)
+- native active before/after: [`evidence/performance-native-active-before-2560x1440.png`](./evidence/performance-native-active-before-2560x1440.png) and [`evidence/performance-native-active-after-2560x1440.png`](./evidence/performance-native-active-after-2560x1440.png)
+- native completion before/after: [`evidence/performance-native-complete-before-2560x1440.png`](./evidence/performance-native-complete-before-2560x1440.png) and [`evidence/performance-native-complete-after-2560x1440.png`](./evidence/performance-native-complete-after-2560x1440.png)
+- interactive continuous track: [`evidence/performance-regional-history-track-1182x749.png`](./evidence/performance-regional-history-track-1182x749.png)
+- interactive completed rite: [`evidence/performance-regional-history-rite-1182x749.png`](./evidence/performance-regional-history-rite-1182x749.png)
+
+The active before/after pair is an actual 2560×1440 canvas and retains the same
+terrain, lighting, rider, sigils, particles, and HDR path. The visible board wake
+remains narrow and joined rather than breaking into the scalloped ovals seen in
+the rejected low-frequency experiment. Ice Pulse craters and blue residue remain
+present through the complete three-sigil route; decay is visually continuous
+between the one-second global history sweeps.
+
+This pass closes the previously dominant per-frame full-history compute cost for
+active riding. It does not close every release boundary: the fixed-native
+completion frame is still 46 FPS with P95 spikes, and the character remains a
+compact procedural part rig rather than a production skeletal animation system.
+Those limits remain explicit rather than being hidden behind the 60 FPS active
+route capture.

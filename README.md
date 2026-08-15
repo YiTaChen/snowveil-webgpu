@@ -100,6 +100,9 @@ Original project code is released under the [MIT License](./LICENSE).
     asymmetric nose, torso/head look, skid-derived braking resistance, explicit
     long elliptical contact, and real Space jump are verified together from the
     running build.
+16. Regional snow-history pass — active board and spell contact retain per-frame
+    stamps while the compute shader writes a local 64² region; a one-second
+    full sweep handles global decay with phase-correct continuous presentation.
 
 The current build is a polished playable vertical slice, not a claim of a full
 AAA production or a hundred-million-particle physical simulation. See

@@ -114,3 +114,17 @@ They are review artefacts, not third-party source material.
   at 1.2 m/s after the blade has moved across the trajectory and onto its edge.
 - `snowboard-causality-v2-jump-720x850.png` — real shared Jump/Space input at
   6.5 m/s with a clear board-to-snow gap and no airborne contact stamp.
+- `performance-native-baseline-2560x1440.png` — fresh fixed-native idle at
+  60 FPS before the regional-history comparison.
+- `performance-native-active-before-2560x1440.png` — full 768² active-history
+  baseline at 1/3 route progress, 7.1 m/s, and 47 FPS.
+- `performance-native-active-after-2560x1440.png` — retained 64² regional-write
+  frame at 1/3 progress, 6.8 m/s, and 60 FPS.
+- `performance-native-complete-before-2560x1440.png` — complete fixed-native
+  route before the regional update, at 45 FPS.
+- `performance-native-complete-after-2560x1440.png` — complete fixed-native
+  retained route at 46 FPS; recorded to keep the all-state limit explicit.
+- `performance-regional-history-track-1182x749.png` — 60 FPS interactive track
+  inspection showing a joined board wake after regionalisation.
+- `performance-regional-history-rite-1182x749.png` — 60 FPS completed route with
+  all three sigils, snow deformation, and spell residue preserved.

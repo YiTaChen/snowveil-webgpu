@@ -275,3 +275,32 @@ The camera-follow, asymmetric board nose, torso/head rotation, and changed
 ellipse math add no render pass, texture, buffer, or draw call. Braking uses one
 small CPU helper over the existing skid state. The above captures are visual QA
 readings, not a claim that refresh-rate sampling can sustain above 60 FPS.
+
+## 2026-08-14 — regional snow-history write review
+
+Environment: one active native-WebGPU Chromium tab. Native evidence used a
+verified 2560×1440 canvas; the PNG dimensions were checked after capture. The
+same deterministic `?demo` route exercised rider contact, Ice Pulse residue,
+three sigils, particles, terrain, HDR resolve, and the completion state.
+
+| Review state | Observed HUD | Result |
+| --- | ---: | --- |
+| fresh native idle | 60 FPS · P95 17.5 ms · 1% 56 | unchanged no-contact baseline |
+| native active route before, 1/3 at 7.1 m/s | 47 FPS · P95 34.2 ms · 1% 10 | full 768² update per active frame |
+| native completed route before | 45 FPS · P95 33.3 ms · 1% 29 | full-history baseline |
+| native active route retained, 1/3 at 6.8 m/s | 60 FPS · P95 33.2 ms · 1% 20 | regional active write retained |
+| native completed route retained | 46 FPS · P95 33.7 ms · 1% 29 | no all-state 60 FPS claim |
+| 1182×749 active track | 60 FPS · P95 17.7 ms · 1% 29 | continuous-contact inspection |
+| 1182×749 completed route | 60 FPS · P95 17.5 ms · 1% 56 | retained functional regression |
+
+The retained path copies the existing 768² history during active contact, then
+dispatches only the local 64² rider/spell region: about 0.69% of the previous
+compute invocations. A full-texture dispatch runs once per second to apply global
+decay. The terrain shader presents that elapsed decay continuously, and a new
+spell stamp compensates for the current phase so it never enters already faded.
+
+Full-history sweeps at 30 Hz and 15 Hz improved the native active reading by only
+about 2 FPS and were rejected. The retained result improves the comparable
+active native reading from 47 to 60 FPS, but the completed fixed-native capture
+remains 46 FPS and still has P95 frame-time spikes. Fixed 1440p therefore remains
+a measured quality mode, not a universal locked-60 release claim.

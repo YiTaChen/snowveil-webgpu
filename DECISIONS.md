@@ -396,3 +396,29 @@ calibrated against the broad movement principles in the official AASI guide,
 Burton's edge-control tutorial, and JSBA's emphasis on positioning, grip, and
 speed control. Only written technique observations were used; no video frame,
 image, mesh, animation, logo, or protected design was copied.
+
+## 2026-08-14 — Regional contact writes replace full per-frame history compute
+
+The 768² deformation texture was still being evaluated in full on every active
+board or spell frame. A 30 Hz and then 15 Hz full-surface cadence preserved the
+algorithm but recovered only about 2 FPS in native active review, so neither was
+worth retaining.
+
+The accepted path first copies the previous ping-pong texture, then dispatches a
+64² region centred on the active board, spell impact, or their midpoint. That
+region spans about 10.67 metres in world space, covering the complete contact
+segment and the nearby spell footprint while invoking about 0.69% as many
+compute threads as a full sweep. A clamped CPU helper keeps the region inside
+texture bounds and is covered by focused tests.
+
+Global decay still needs to reach untouched history. A full 768² sweep therefore
+runs once per second. The elapsed phase is passed to terrain shading so board
+deformation and spell residue fade continuously between sweeps; a new spell
+stamp applies the inverse phase factor at write time so it appears at full
+strength regardless of when within the interval it lands. This preserves the
+same exponential decay law without creating visible one-second brightness steps.
+
+The retained native active capture improves from 47 to 60 FPS. The native
+completion capture remains 46 FPS, so the decision closes a dominant active
+compute cost but does not support a universal fixed-1440p 60 FPS claim. No
+external code, image, model, texture, animation, sound, or other asset is added.
