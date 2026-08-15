@@ -109,27 +109,43 @@ fn foregroundSnow(uv: vec2<f32>, time: f32) -> f32 {
   return result;
 }
 
-fn riderSpray(uv: vec2<f32>, time: f32, speed: f32) -> f32 {
-  if (speed < 0.04) {
+fn riderSpray(uv: vec2<f32>, time: f32, powderLoad: f32, edgeLoad: f32, spraySide: f32) -> f32 {
+  if (powderLoad < 0.025) {
     return 0.0;
   }
   let aspect = globals.viewport.x / max(globals.viewport.y, 1.0);
-  let point = (uv - vec2<f32>(0.5, 0.405)) * vec2<f32>(aspect, 1.0);
-  if (length(point) > 0.42) {
+  let point = (uv - vec2<f32>(0.5, 0.38)) * vec2<f32>(aspect, 1.0);
+  if (length(point) > 0.46) {
     return 0.0;
   }
-  var result = 0.0;
-  for (var particle = 0; particle < 16; particle = particle + 1) {
+  let directional = smoothstep(0.06, 0.72, edgeLoad);
+  let cloudCenter = vec2<f32>(spraySide * mix(0.015, 0.13, edgeLoad), 0.0);
+  let cloudScale = vec2<f32>(mix(0.08, 0.25, edgeLoad), mix(0.018, 0.046, edgeLoad));
+  let cloudPoint = (point - cloudCenter) / cloudScale;
+  var result = exp(-dot(cloudPoint, cloudPoint) * 1.45) * powderLoad * directional * 1.5;
+  for (var particle = 0; particle < 12; particle = particle + 1) {
     let id = f32(particle);
     let seed = hash12(vec2<f32>(id * 17.31, id * 9.73 + 4.2));
     let age = fract(time * (0.72 + seed * 0.46) + seed * 7.1);
-    let side = hash12(vec2<f32>(id + 31.0, id * 3.7)) - 0.5;
-    let origin = vec2<f32>(side * 0.16, 0.0);
-    let drift = vec2<f32>(side * age * (0.18 + speed * 0.14), -age * (0.07 + speed * 0.15));
-    let particlePosition = origin + drift;
-    let size = mix(0.008, 0.0028, age) * (0.35 + speed * 0.72);
-    let flake = 1.0 - smoothstep(size * 0.25, size, length(point - particlePosition));
-    result = result + flake * (1.0 - age) * speed;
+    let random = hash22(vec2<f32>(id + 31.0, id * 3.7 + 8.2));
+    let scatter = random.x * 2.0 - 1.0;
+    let origin = vec2<f32>(scatter * mix(0.11, 0.055, directional), 0.006);
+    let lateralVelocity = mix(
+      scatter * 0.15,
+      spraySide * (0.14 + random.y * 0.3) + scatter * 0.075,
+      directional
+    );
+    let liftVelocity = -(0.035 + random.x * mix(0.055, 0.21, directional));
+    let gravity = age * age * mix(0.045, 0.16, directional);
+    let particlePosition = origin + vec2<f32>(lateralVelocity * age, liftVelocity * age + gravity);
+    let size = mix(0.0095, 0.0026, age) * (0.42 + powderLoad * 0.78);
+    let flakeOffset = point - particlePosition;
+    let flake = 1.0 - smoothstep(
+      size * 0.2,
+      size,
+      length(vec2<f32>(flakeOffset.x * 0.78, flakeOffset.y * 1.38))
+    );
+    result = result + flake * (1.0 - age) * powderLoad * 1.4;
   }
   return result;
 }
@@ -222,11 +238,34 @@ fn fsMain(input: SkyVertexOut) -> @location(0) vec4<f32> {
 fn fsSnowOverlay(input: SkyVertexOut) -> @location(0) vec4<f32> {
   let flake = foregroundSnow(input.uv, globals.viewport.z);
   let grounded = 1.0 - smoothstep(0.015, 0.09, globals.objective.w);
-  let spray = riderSpray(input.uv, globals.viewport.z, globals.reserved.w * grounded);
+  let alignedBoardYaw = globals.reserved.z - 1.570796;
+  let skidAngle = atan2(
+    sin(globals.objective.x - alignedBoardYaw),
+    cos(globals.objective.x - alignedBoardYaw)
+  );
+  let skid = saturate(abs(skidAngle) / 1.570796);
+  let powderMemory = globals.weather.w;
+  let powderLoad = abs(powderMemory) * grounded;
+  let edgeLoad = saturate(max(max(abs(globals.objective.y), skid), powderLoad));
+  let requestedSide = select(sign(skidAngle), sign(globals.objective.y), abs(globals.objective.y) > 0.06);
+  let storedSide = select(1.0, sign(powderMemory), abs(powderMemory) > 0.001);
+  let spraySide = select(storedSide, requestedSide, abs(requestedSide) > 0.01);
+  let spray = riderSpray(
+    input.uv,
+    globals.viewport.z,
+    powderLoad,
+    edgeLoad,
+    spraySide
+  );
   let landing = landingBurst(input.uv, globals.motion.x);
   let spell = spellBurst(input.uv, globals.weather.z);
-  let alpha = saturate(flake * 0.56 + spray * 0.48 + landing * 0.62 + spell * 0.68);
-  let color = mix(vec3<f32>(0.78, 0.89, 0.96), vec3<f32>(0.18, 0.76, 1.0) * 2.4, saturate(spell * 1.8));
+  let alpha = saturate(flake * 0.56 + spray * 1.05 + landing * 0.62 + spell * 0.68);
+  let powderColor = mix(
+    vec3<f32>(0.78, 0.89, 0.96),
+    vec3<f32>(0.42, 0.64, 0.8),
+    saturate(spray * 1.8)
+  );
+  let color = mix(powderColor, vec3<f32>(0.18, 0.76, 1.0) * 2.4, saturate(spell * 1.8));
   return vec4<f32>(color, alpha);
 }
 `;

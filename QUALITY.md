@@ -583,5 +583,32 @@ response handles landing.
 
 The full automated route still completes all three sigils at 60 FPS, P95 17.7
 ms, and 100% RES. Browser diagnostics contain no WGSL, WebGPU, or uncaptured-
-device error. Sixteen tests cover board alignment, skid, turn coupling, contact
+device error. Eighteen tests cover board alignment, skid, turn coupling, contact
 taper, Space-to-vertical-velocity mapping, pose state, rendering, and geometry.
+
+### 2026-08-14 — edge-responsive powder and scrape checkpoint
+
+Evidence:
+
+- restrained straight baseline: [`evidence/powder-response-straight-1182x749.png`](./evidence/powder-response-straight-1182x749.png)
+- loaded carve plume: [`evidence/powder-response-grounded-carve-1182x749.png`](./evidence/powder-response-grounded-carve-1182x749.png)
+- moving crosswise brake: [`evidence/powder-response-memory-brake-1182x749.png`](./evidence/powder-response-memory-brake-1182x749.png)
+- airborne cutoff: [`evidence/powder-response-airborne-cutoff-1182x749.png`](./evidence/powder-response-airborne-cutoff-1182x749.png)
+- completed route: [`evidence/powder-response-route-1182x749.png`](./evidence/powder-response-route-1182x749.png)
+
+The straight frame keeps only a restrained wake. At 6.2 m/s the carve frame
+shows a low cold-blue plume spreading from the loaded side rather than a generic
+screen-centred particle halo. The brake frame remains in motion at 4.5 m/s and
+retains the transferred powder energy after the long axis crosses travel. Space
+then produces a 0.6 m visible gap with no cloud attached to the airborne rider.
+
+The first 24-fleck candidate was rejected after a four-FPS large-view
+regression. The retained twelve-fleck version returns that view to 46 FPS and
+keeps the normal interaction and completed three-sigil route at 60 FPS, 100%
+RES. With audio explicitly enabled, ride, carve, and brake exercise the separate
+procedural edge band without an AudioContext or browser error. Diagnostics are
+also free of WGSL, WebGPU validation, and uncaptured-device errors.
+
+This passes the dynamic snow-response checkpoint. It remains a controlled
+screen-space near-rider plume, not a world-particle fluid simulation; persistent
+world snow displacement continues to come from the separate 1536² history.

@@ -122,6 +122,8 @@ export function SnowveilScene() {
     let jumpHeight = 0;
     let jumpVelocity = 0;
     let landingCompression = 0;
+    let powderEnergy = 0;
+    let powderSide = 1;
     let ridePose = 0;
     let brakePose = 0;
     let airPose = 0;
@@ -771,6 +773,24 @@ export function SnowveilScene() {
           const targetBoardYaw = snowboardTargetYaw(playerHeading, boardSkid, steerVisual);
           playerBoardYaw += angleDelta(targetBoardYaw, playerBoardYaw) * (1 - Math.exp(-delta * 11));
           const actualBoardSkid = snowboardSkidAmount(playerBoardYaw, playerHeading);
+          const edgePressure = Math.max(actualBoardSkid, Math.abs(steerVisual) * 0.55);
+          if (Math.abs(steerVisual) > 0.06) {
+            powderSide = Math.sign(steerVisual);
+          } else if (actualBoardSkid > 0.06) {
+            powderSide = Math.sign(
+              angleDelta(playerBoardYaw, playerHeading - Math.PI / 2),
+            );
+          }
+          const powderTarget = groundedBeforeMotion
+            ? Math.min(
+                1,
+                Math.min(playerSpeed / 8.4, 1) *
+                  (0.16 + Math.pow(edgePressure, 1.35) * 1.25),
+              )
+            : 0;
+          const powderRate = powderTarget > powderEnergy ? 36 : 4.2;
+          powderEnergy +=
+            (powderTarget - powderEnergy) * (1 - Math.exp(-delta * powderRate));
           if (groundedBeforeMotion) {
             const boardNoseHeading = playerBoardYaw + Math.PI / 2;
             const travelTurnRate = snowboardTravelTurnRate(playerSpeed, boardSkid);
@@ -827,7 +847,13 @@ export function SnowveilScene() {
           airPose = riderPoseBlend(airPose, animationState === "air" ? 1 : 0, delta, poseRate);
           landPose = riderPoseBlend(landPose, animationState === "land" ? 1 : 0, delta, poseRate);
 
-          audio.setMotion(playerSpeed, jumpHeight <= 0.018);
+          audio.setMotion(
+            playerSpeed,
+            jumpHeight <= 0.018,
+            actualBoardSkid,
+            Math.abs(steerVisual),
+            powderEnergy,
+          );
           if (speedRef.current) {
             speedRef.current.textContent =
               jumpHeight > 0.03
@@ -921,7 +947,7 @@ export function SnowveilScene() {
           uniforms[8] = deformationAccumulator;
           uniforms[9] = playerY;
           uniforms[10] = spellPulse;
-          uniforms[11] = spellAge;
+          uniforms[11] = powderEnergy * powderSide;
           uniforms[12] = playerX;
           uniforms[13] = playerZ;
           uniforms[14] = playerHeading;

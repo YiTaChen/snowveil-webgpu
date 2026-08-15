@@ -5,7 +5,13 @@ export type SnowveilAudio = {
   jump: () => void;
   land: () => void;
   activateBeacon: (index: number, final: boolean) => void;
-  setMotion: (speed: number, grounded: boolean) => void;
+  setMotion: (
+    speed: number,
+    grounded: boolean,
+    skidAmount?: number,
+    edgeAmount?: number,
+    powderEnergy?: number,
+  ) => void;
   dispose: () => void;
 };
 
@@ -34,6 +40,7 @@ export function createSnowveilAudio(): SnowveilAudio {
   let master: GainNode | null = null;
   let windGain: GainNode | null = null;
   let rideGain: GainNode | null = null;
+  let edgeGain: GainNode | null = null;
   let noiseBuffer: AudioBuffer | null = null;
   let enabled = true;
   let disposed = false;
@@ -89,6 +96,7 @@ export function createSnowveilAudio(): SnowveilAudio {
     noiseBuffer = makeNoiseBuffer(context);
     windGain = createLoop("bandpass", 430, 0.036);
     rideGain = createLoop("highpass", 920, MIN_GAIN);
+    edgeGain = createLoop("bandpass", 1680, MIN_GAIN);
 
     const rumble = context.createOscillator();
     const rumbleGain = context.createGain();
@@ -199,12 +207,25 @@ export function createSnowveilAudio(): SnowveilAudio {
         playTone(397, 794, 3.1, 0.026, "sine", 0.48);
       }
     },
-    setMotion(speed, grounded) {
-      if (!context || !rideGain || !windGain || context.state !== "running" || !enabled) return;
+    setMotion(speed, grounded, skidAmount = 0, edgeAmount = 0, powderEnergy = 0) {
+      if (
+        !context || !rideGain || !edgeGain || !windGain ||
+        context.state !== "running" || !enabled
+      ) return;
       const now = context.currentTime;
       const normalized = Math.min(Math.max(speed / 8.4, 0), 1);
+      const skid = Math.min(Math.max(skidAmount, 0), 1);
+      const edge = Math.min(Math.max(edgeAmount, 0), 1);
+      const powder = Math.min(Math.max(powderEnergy, 0), 1);
       const contact = grounded ? 1 : 0;
       rideGain.gain.setTargetAtTime(MIN_GAIN + normalized * normalized * 0.062 * contact, now, 0.055);
+      const edgePressure = Math.max(skid, edge * 0.55);
+      const scrapeEnergy = Math.max(normalized * edgePressure, powder * 0.82);
+      edgeGain.gain.setTargetAtTime(
+        MIN_GAIN + scrapeEnergy * scrapeEnergy * 0.085 * contact,
+        now,
+        0.035,
+      );
       windGain.gain.setTargetAtTime(0.032 + normalized * 0.018, now, 0.3);
     },
     dispose() {
@@ -216,6 +237,7 @@ export function createSnowveilAudio(): SnowveilAudio {
       master = null;
       windGain = null;
       rideGain = null;
+      edgeGain = null;
       noiseBuffer = null;
     },
   };

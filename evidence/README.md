@@ -210,3 +210,13 @@ They are review artefacts, not third-party source material.
 - `snowboard-causality-capture-1280x720.png` — complete-frame export of the
   1280×720 presentation while `?capture` allocates its 2560×1440 WebGPU target;
   retained at the honest exported pixel dimensions.
+- `powder-response-straight-1182x749.png` — high-speed straight baseline with a
+  restrained wake rather than an always-on cloud.
+- `powder-response-grounded-carve-1182x749.png` — real W+D input at 6.2 m/s with
+  the retained low directional powder plume, 60 FPS, and 100% RES.
+- `powder-response-memory-brake-1182x749.png` — real S input still moving at 4.5
+  m/s; signed powder memory keeps transferred snow on the loaded side.
+- `powder-response-airborne-cutoff-1182x749.png` — real Space takeoff at `AIR
+  0.6 m`; the grounded powder layer is absent instead of following the board.
+- `powder-response-route-1182x749.png` — optimized twelve-fleck build after the
+  full deterministic route, at 60 FPS, P95 17.3 ms, and 100% RES.

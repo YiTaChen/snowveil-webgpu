@@ -442,3 +442,23 @@ The large-view browser export was 2073×1440 and is not labelled as a true
 2560×1440 screenshot. The project keeps the previously calibrated fixed-native
 boundary rather than inflating this measurement. The complete `?capture` path
 still allocates a 2560×1440 WebGPU target from a 1280×720 presentation.
+
+## 2026-08-14 — edge-response powder cost
+
+The first visible powder version evaluated 24 ballistic flecks inside a
+0.58-radius full-screen region. Although the normal viewport remained at 60
+FPS, the fixed-scale large host view fell to 43 FPS and was rejected. The
+retained version preserves the anisotropic ground plume, halves fine flecks to
+12, and shrinks the early-out region to 0.46.
+
+| Running state | Observed HUD | Result |
+| --- | ---: | --- |
+| first 24-fleck large-view candidate | 43 FPS · P95 33.6 ms · 100% | rejected |
+| retained 12-fleck large view | 46 FPS · P95 33.5 ms · 100% | within established 46–47 FPS boundary |
+| retained carve/brake/air, 1182×749 | 60 FPS · P95 17.5–17.7 ms · 100% | retained |
+| retained completed route, 1182×749 | 60 FPS · P95 17.3 ms · 100% | retained |
+
+The audio addition is one pre-existing two-second procedural noise buffer read
+through another filter/gain branch; it introduces no network or decoding cost.
+The powder layer remains inside the existing overlay pass and adds no draw,
+texture, buffer, compute dispatch, or pipeline.

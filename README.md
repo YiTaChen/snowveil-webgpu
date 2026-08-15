@@ -135,6 +135,10 @@ Original project code is released under the [MIT License](./LICENSE).
     follows, actual board-to-travel skid angle supplies braking drag, the rider
     looks into travel, a 1536² history retains the tapered long contact print,
     and Space exposes its physical airborne height in the live HUD.
+24. Edge-response powder pass — grounded speed, real skid, carve pressure, and
+    a signed short-lived powder envelope drive a directional low snow plume;
+    airborne contact cuts it immediately, while a separate synthesized edge
+    band adds audible scrape without a recording or sample.
 
 The current build is a polished playable vertical slice, not a claim of a full
 AAA production or a hundred-million-particle physical simulation. See

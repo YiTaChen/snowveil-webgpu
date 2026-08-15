@@ -603,3 +603,30 @@ turn guide](https://www.rei.com/learn/expert-advice/how-to-snowboard.html),
 and [Burton's cross-slope stopping explanation](https://www.burton.com/en-us/blogs/the-burton-blog/snowboarding-for-beginners).
 These sources informed mechanics only. No footage, frame, image, model,
 texture, motion capture, code, or other copyrighted asset was copied.
+
+## 2026-08-14 — Powder keeps its own short response envelope
+
+The previous rider spray read only normalized speed. Straight glide, carve, and
+crosswise braking therefore emitted nearly the same sparse flecks, and the
+effect vanished on the frame that braking removed the rider's speed. Raising
+opacity alone was rejected because it produced a camera-centred haze without
+representing transferred snow momentum.
+
+The retained CPU envelope combines grounded speed with actual board skid and
+carve pressure. It attacks at 36 s⁻¹, releases at 4.2 s⁻¹, and stores the last
+loaded side in the sign of one existing uniform component. The overlay uses
+that signed memory to keep a low anisotropic powder plume and twelve shrinking
+ballistic flecks moving briefly after deceleration. Multiplying the load by the
+same grounded mask removes the plume immediately on Space takeoff. The base
+glide remains restrained instead of emitting a permanent white cloud.
+
+Audio receives the same envelope. A new procedural 1680 Hz band-pass noise loop
+is silent during ordinary motion and rises with skid/edge energy beside the
+existing board hiss. It adds no sound file, recording, sample, oscillator asset,
+buffer download, render pass, texture, geometry, or third-party material.
+
+The original 5.2 s⁻¹ maximum skid drag stopped a fast rider before the visual
+response could read and felt closer to an input kill-switch than progressive
+snow resistance. The retained 3.6 s⁻¹ coefficient still decelerates strongly
+only after the board visibly crosses travel, while leaving a measurable moving
+brake interval.

@@ -95,8 +95,8 @@ test("edge pressure turns the flat long ellipse into a narrow contact strip", ()
 
 test("braking drag is caused by the visible crosswise skid", () => {
   assert.equal(snowboardBrakeDrag(0), 0);
-  assert.ok(snowboardBrakeDrag(0.5) > 1);
-  assert.equal(snowboardBrakeDrag(1), 5.2);
+  assert.ok(snowboardBrakeDrag(0.5) > 0.8);
+  assert.equal(snowboardBrakeDrag(1), 3.6);
   assert.ok(snowboardBrakeDrag(0.8) > snowboardBrakeDrag(0.4));
 });
 

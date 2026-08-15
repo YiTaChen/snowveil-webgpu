@@ -4,6 +4,7 @@ import test from "node:test";
 import {
   snowveilDeformationShader,
   snowveilPlayerShader,
+  snowveilSkyShader,
   snowveilTerrainShader,
 } from "../app/snowveil-shader.ts";
 
@@ -29,4 +30,15 @@ test("terrain and history use the same tapered snowboard contact", () => {
     assert.match(shader, /let tipTaper = sqrt\(max\(1\.0 - contactLong \* contactLong, 0\.0\)\)/);
     assert.match(shader, /max\(contactWidth \* tipTaper, 0\.012\)/);
   }
+});
+
+test("powder spray is driven by edge load and actual board skid", () => {
+  assert.match(snowveilSkyShader, /let skidAngle = atan2\(/);
+  assert.match(snowveilSkyShader, /let powderLoad = abs\(powderMemory\) \* grounded/);
+  assert.match(snowveilSkyShader, /max\(max\(abs\(globals\.objective\.y\), skid\), powderLoad\)/);
+  assert.match(snowveilSkyShader, /let spraySide = select\(storedSide, requestedSide/);
+  assert.match(snowveilSkyShader, /powderLoad < 0\.025/);
+  assert.match(snowveilSkyShader, /particle < 12/);
+  assert.match(snowveilSkyShader, /spray \* 1\.05/);
+  assert.match(snowveilSkyShader, /vec3<f32>\(0\.42, 0\.64, 0\.8\)/);
 });

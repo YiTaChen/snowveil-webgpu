@@ -43,7 +43,7 @@ export function snowboardContactAxes(edgeAmount: number) {
 
 export function snowboardBrakeDrag(skidAmount: number) {
   const skid = Math.max(0, Math.min(skidAmount, 1));
-  return skid * skid * 5.2;
+  return skid * skid * 3.6;
 }
 
 export function snowHistoryRegionOffset(
