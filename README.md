@@ -44,7 +44,10 @@ Append `?demo` to the local URL for a deterministic end-to-end route used by
 visual QA. It steers toward each real beacon and casts through the same Ice Pulse
 and proximity test as keyboard input while exercising the same heading, speed,
 board-yaw, and snow-contact state; it is not a pre-rendered or separate evidence
-scene. Append `&evidence` for the fixed 2560×1440 still-review path.
+scene. Append `&evidence` for the fixed 2560×1440 CSS performance path. Append
+`&capture` for the calibrated still path: the page is 1280×720 while WebGPU
+allocates and shades a true 2560×1440 target, allowing the app browser's 2×
+export to contain the complete frame instead of a top-left crop.
 For repeatable physics review, `?slope=downhill` and `?slope=uphill` place the
 rider on the same local grade with opposite headings; they use the normal
 controller and renderer rather than a separate animation.
@@ -107,6 +110,10 @@ Original project code is released under the [MIT License](./LICENSE).
     consolidated, the near-focused terrain grid is reduced to 288², and a
     tested 84–100% dynamic-resolution controller exposes its live scale in the
     HUD while retaining a fixed 100% evidence mode.
+18. Articulated rider pass — distinct shoulder, elbow, hip, knee, boot, cuff,
+    and guard groups add edge-dependent weight transfer and impact compression;
+    the capture route separates full-frame 1440p visual proof from performance
+    telemetry after a host-pixel screenshot audit.
 
 The current build is a polished playable vertical slice, not a claim of a full
 AAA production or a hundred-million-particle physical simulation. See

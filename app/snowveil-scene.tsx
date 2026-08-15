@@ -47,6 +47,7 @@ export function SnowveilScene() {
     let disposed = false;
     const query = new URLSearchParams(window.location.search);
     const evidenceMode = query.has("evidence");
+    const captureMode = query.has("capture");
     const demoMode = query.has("demo");
     const requestedRenderScale = Number(query.get("renderScale"));
     const fixedRenderScale =
@@ -57,6 +58,9 @@ export function SnowveilScene() {
     const hasSlopeProbe = slopeProbe === "downhill" || slopeProbe === "uphill";
     if (evidenceMode) {
       document.documentElement.dataset.snowveilEvidence = "true";
+    }
+    if (captureMode) {
+      document.documentElement.dataset.snowveilCapture = "true";
     }
     const webgpu = navigator.gpu;
     if (!webgpu) {
@@ -627,7 +631,7 @@ export function SnowveilScene() {
         let depthHeight = 0;
 
         const resize = () => {
-          const ratio = Math.min(window.devicePixelRatio || 1, renderScale);
+          const ratio = captureMode ? 2 : Math.min(window.devicePixelRatio || 1, renderScale);
           const width = Math.max(1, Math.floor(canvas.clientWidth * ratio));
           const height = Math.max(1, Math.floor(canvas.clientHeight * ratio));
           if (canvas.width !== width || canvas.height !== height) {
@@ -689,7 +693,7 @@ export function SnowveilScene() {
             if (fpsRef.current) {
               fpsRef.current.textContent = `${fps} FPS · P95 ${p95.toFixed(1)} ms · 1% ${lowOnePercent} · ${Math.round(renderScale * 100)}% RES`;
             }
-            if (!evidenceMode && fixedRenderScale === undefined) {
+            if (!evidenceMode && !captureMode && fixedRenderScale === undefined) {
               renderScale = nextRenderScale(renderScale, fps, p95);
             }
             fpsStarted = now;
@@ -1019,6 +1023,9 @@ export function SnowveilScene() {
       audioControllerRef.current = null;
       if (evidenceMode) {
         delete document.documentElement.dataset.snowveilEvidence;
+      }
+      if (captureMode) {
+        delete document.documentElement.dataset.snowveilCapture;
       }
       device?.destroy?.();
     };

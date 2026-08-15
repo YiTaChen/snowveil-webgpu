@@ -306,16 +306,19 @@ about 2 FPS and were rejected. The retained result improves the comparable
 active fixed-canvas reading from 47 to 60 FPS. Because the visible viewport was
 not also 2560×1440, these values do not establish full-display native speed.
 
-## 2026-08-14 — visible-viewport 1440p release review
+## 2026-08-14 — 2560×1440 CSS/native-target telemetry review
 
 Environment: one active native-WebGPU Chromium tab with both `window.innerWidth`
 and canvas CSS size fixed to 2560×1440 at DPR 1. The HUD now records render scale
 alongside FPS, P95, and 1% low. `?evidence` holds 100%; normal play uses the same
-renderer and can step between 84% and 100% with tested hysteresis.
+renderer and can step between 84% and 100% with tested hysteresis. A later audit
+found that the app browser exported the older PNGs at a separate 2× host-pixel
+scale, so their telemetry remains valid but their image content is a top-left
+crop rather than complete-frame visual evidence.
 
 | Review state | Observed HUD | Result |
 | --- | ---: | --- |
-| original visible-native idle | 44 FPS · P95 33.6 ms · 1% 29 · 100% | authoritative display-chain baseline |
+| original visible-native idle | 44 FPS · P95 33.6 ms · 1% 29 · 100% | recorded DOM/render-target baseline |
 | retained visible-native idle | 51 FPS · P95 33.5 ms · 1% 29 · 100% | two atmospheric plus one foreground snow layer |
 | original full-native completed route | 44 FPS · P95 33.7 ms · 1% 29 · 100% | five snow layers and 352² terrain |
 | retained full-native completed route | 47 FPS · P95 33.5 ms · 1% 30 · 100% | fixed quality/evidence mode |
@@ -326,8 +329,7 @@ renderer and can step between 84% and 100% with tested hysteresis.
 The retained snowfall evaluates two atmospheric depth layers and one weighted
 foreground layer instead of five full-screen procedural layers. Flake size,
 motion, near/far separation, rider spray, landing powder, and spell particles
-remain; the native idle capture still shows flakes across sky and terrain. This
-raises the exact full-display idle reading from 44 to 51 FPS. The 288² terrain
+remain; the native-target idle telemetry rises from 44 to 51 FPS. The 288² terrain
 grid retains about 7.2-centimetre spacing at the rider, below half
 the 16.7-centimetre snow-history texel and sufficient for the accepted joined
 contact track.
@@ -339,3 +341,23 @@ each recovered 0–4 FPS or stopped scaling; all were reverted. The remaining
 100%-native completion cost is therefore documented rather than hidden. Normal
 play reaches 60 FPS by lowering the canvas to 2150×1209 inside the 2560×1440 CSS
 viewport, with the exact 84% value visible in the HUD.
+
+## 2026-08-14 — calibrated full-frame target capture
+
+The app browser emits two host pixels per CSS pixel for full-page exports even
+when the emulated page reports DPR 1. `?capture` therefore fixes the page and
+canvas CSS size at 1280×720 while the WebGPU resize path explicitly allocates a
+2560×1440 render target. Both are 16:9, the normal camera and shader paths are
+unchanged, and the exported 2560×1440 PNG contains the full composition instead
+of half of the page.
+
+| Calibrated target state | Observed HUD | Result |
+| --- | ---: | --- |
+| articulated rider, active route | 48 FPS · P95 34.1 ms · 1% 15 · 100% | complete 2560×1440 frame |
+| articulated rider, completed route | 46 FPS · P95 33.6 ms · 1% 29 · 100% | complete 2560×1440 frame |
+
+This path is for visual evidence, not a faster renderer: it still shades all
+3,686,400 pixels, and its completion reading remains consistent with the prior
+46–47 FPS fixed-native boundary. Normal gameplay continues to use the disclosed
+84–100% adaptive controller. The articulated limb hierarchy adds no pass,
+texture, buffer, draw call, or imported animation runtime.

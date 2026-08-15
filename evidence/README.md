@@ -129,16 +129,32 @@ They are review artefacts, not third-party source material.
   inspection showing a joined board wake after regionalisation.
 - `performance-regional-history-rite-1182x749.png` — 60 FPS completed route with
   all three sigils, snow deformation, and spell residue preserved.
-- `performance-visible-native-idle-before-2560x1440.png` — authoritative exact
-  2560×1440 visible-viewport idle baseline at 44 FPS with the original five
-  procedural snowfall layers and 352² terrain.
+- `performance-visible-native-idle-before-2560x1440.png` — 44 FPS native-target
+  idle telemetry with the original five snowfall layers and 352² terrain. A
+  later host-scale audit reclassified the image as a top-left crop, not full-
+  frame composition evidence.
 - `performance-visible-native-idle-after-2560x1440.png` — retained 100%-scale
-  visible-native idle at 51 FPS with atmospheric depth still visible.
-- `performance-visible-native-route-before-2560x1440.png` — exact 352², five-
-  layer completed-route baseline at 44 FPS.
-- `performance-visible-native-route-full-2560x1440.png` — retained 288² route at
-  47 FPS and 100% render scale.
-- `performance-visible-release-route-2560x1440.png` — default automatic route
-  settled at the same disclosed 84% scale and 60 FPS.
+  idle telemetry at 51 FPS; subject to the same crop limitation.
+- `performance-visible-native-route-before-2560x1440.png` — 352², five-layer
+  completed-route telemetry at 44 FPS; subject to the same crop limitation.
+- `performance-visible-native-route-full-2560x1440.png` — retained 288² route
+  telemetry at 47 FPS and 100%; subject to the same crop limitation.
+- `performance-visible-release-route-2560x1440.png` — automatic-route telemetry
+  at the disclosed 84% scale and 60 FPS; subject to the same crop limitation.
 - `performance-adaptive-track-1182x749.png` — 6.6 m/s close route frame at
   100% scale and 60 FPS, retaining the joined pointed board wake.
+- `rider-articulation-before-1182x749.png` and
+  `rider-articulation-after-1182x749.png` — same-size moving comparison before
+  and after the smaller hood, vented hem, independent boots, guards, and joint
+  hierarchy.
+- `rider-articulation-close-1182x749.png`,
+  `rider-articulation-carve-1182x749.png`, and
+  `rider-articulation-far-1182x749.png` — near, loaded-carve, and distant
+  silhouette inspections at 60 FPS and 100% render scale.
+- `rider-articulation-jump-1182x749.png` and
+  `rider-articulation-landing-1182x749.png` — real shared Space input at 5.4 m/s
+  and its first grounded compression state, with clean browser diagnostics.
+- `rider-articulation-native-2560x1440.png` — calibrated complete-frame moving
+  capture: 1280×720 CSS presentation, true 2560×1440 WebGPU target, 48 FPS.
+- `rider-articulation-native-complete-2560x1440.png` — calibrated complete-frame
+  three-sigil result at a true 2560×1440 target, 46 FPS and 100% RES.

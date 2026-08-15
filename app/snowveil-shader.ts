@@ -726,13 +726,29 @@ fn vsPlayer(input: PlayerVertexIn) -> PlayerVertexOut {
   var local = input.position;
   var localNormal = normalize(input.normal);
 
-  if (part != 11u && part != 13u && part != 14u && part != 15u && !(part == 8u && local.y < 0.28)) {
+  if (
+    part != 11u && part != 13u && part != 14u && part != 15u && part != 17u && part != 21u &&
+    !(part == 8u && local.y < 0.28)
+  ) {
     local.y = local.y - compression * 0.032;
   }
+
+  let legSide = select(-1.0, 1.0, local.x >= 0.0);
+  let edgeLoad = saturate(0.5 + carve * legSide * 0.38 + skid * 0.12);
+  let kneeFlex =
+    motion * 0.07 + compression * 0.22 + landing * 0.1 + skid * 0.055 +
+    airborne * (0.035 + descent * 0.055);
   if (part == 12u) {
-    let legHeight = saturate((local.y - 0.16) / 0.68);
-    local.y = local.y - compression * legHeight * 0.055;
-    local.z = local.z + carve * (0.5 - legHeight) * sign(local.x) * 0.018;
+    let hipPivot = vec3<f32>(legSide * 0.17, 0.77, 0.02);
+    let upperLegAngle = kneeFlex * (0.78 + edgeLoad * 0.4);
+    local = hipPivot + rotateX(local - hipPivot, upperLegAngle);
+    localNormal = rotateX(localNormal, upperLegAngle);
+  }
+  if (part == 13u || part == 21u) {
+    let anklePivot = vec3<f32>(legSide * 0.25, 0.165, select(-0.08, -0.04, legSide > 0.0));
+    let lowerLegAngle = -kneeFlex * (1.38 - edgeLoad * 0.16);
+    local = anklePivot + rotateX(local - anklePivot, lowerLegAngle);
+    localNormal = rotateX(localNormal, lowerLegAngle);
   }
   if (part == 5u) {
     let tail = saturate((local.z - 0.08) / 1.52);
@@ -757,7 +773,36 @@ fn vsPlayer(input: PlayerVertexIn) -> PlayerVertexOut {
     local.z = local.z + capeTail * motion * (0.025 + 0.035 * sin(time * 1.9 + capeTail * 3.6));
   }
 
-  if (part != 11u && part != 12u && part != 13u && part != 14u && part != 15u) {
+  let armSide = select(-1.0, 1.0, local.x >= 0.0);
+  let shoulderPivot = select(
+    vec3<f32>(-0.34, 1.25, -0.01),
+    vec3<f32>(0.34, 1.26, -0.03),
+    armSide > 0.0
+  );
+  let elbowPivot = select(
+    vec3<f32>(-0.53, 1.04, -0.06),
+    vec3<f32>(0.53, 1.1, -0.19),
+    armSide > 0.0
+  );
+  let shoulderBalance =
+    -carve * armSide * (0.075 + motion * 0.045) + skid * armSide * 0.035 +
+    takeoff * 0.045 - landing * 0.035;
+  let elbowBalance =
+    carve * armSide * 0.055 + motion * (0.018 + 0.012 * sin(time * 3.1 + armSide)) +
+    skid * 0.04 + landing * 0.035;
+  if (part == 19u || part == 20u || part == 16u || part == 9u) {
+    local = elbowPivot + rotateZ(local - elbowPivot, elbowBalance);
+    localNormal = rotateZ(localNormal, elbowBalance);
+  }
+  if (part == 18u || part == 19u || part == 20u || part == 16u || part == 9u) {
+    local = shoulderPivot + rotateZ(local - shoulderPivot, shoulderBalance);
+    localNormal = rotateZ(localNormal, shoulderBalance);
+  }
+
+  if (
+    part != 11u && part != 12u && part != 13u && part != 14u && part != 15u &&
+    part != 17u && part != 21u
+  ) {
     let lookBlend = smoothstep(0.76, 1.48, local.y);
     let lookTwist = mix(0.72, 0.06, skid) * motion * lookBlend;
     let torsoPivot = vec3<f32>(0.0, 0.88, -0.02);
@@ -766,7 +811,8 @@ fn vsPlayer(input: PlayerVertexIn) -> PlayerVertexOut {
   }
 
   if (
-    part == 0u || part == 3u || part == 4u || part == 5u || part == 10u ||
+    part == 0u || part == 3u || part == 4u || part == 5u ||
+    (part == 10u && local.y > 1.48) ||
     (part == 8u && local.y > 1.3)
   ) {
     let headLook = mix(0.16, 0.025, skid) * motion;
@@ -777,14 +823,14 @@ fn vsPlayer(input: PlayerVertexIn) -> PlayerVertexOut {
 
   let lean = carve * 0.12 + skid * 0.045 + compression * 0.012;
   let bank = carve * 0.026;
-  if (part != 0u && part != 11u && part != 14u && part != 15u) {
+  if (part != 0u && part != 11u && part != 14u && part != 15u && part != 17u) {
     let stancePivot = vec3<f32>(0.0, 0.12, -0.04);
     local = stancePivot + rotateX(local - stancePivot, lean);
     localNormal = rotateX(localNormal, lean);
     local = stancePivot + rotateZ(local - stancePivot, bank);
     localNormal = rotateZ(localNormal, bank);
   }
-  if (part == 14u || part == 15u || (part == 8u && local.y < 0.28)) {
+  if (part == 14u || part == 15u || part == 17u || (part == 8u && local.y < 0.28)) {
     let boardEdge = carve * 0.12 + skid * 0.085;
     local = rotateX(local, boardEdge);
     localNormal = rotateX(localNormal, boardEdge);
@@ -871,7 +917,7 @@ fn fsPlayer(input: PlayerVertexOut) -> @location(0) vec4<f32> {
   } else if (input.part == 6u) {
     albedo = vec3<f32>(0.072, 0.185, 0.235);
     roughness = 0.9;
-  } else if (input.part == 7u) {
+  } else if (input.part == 7u || input.part == 18u || input.part == 19u) {
     albedo = vec3<f32>(0.06, 0.15, 0.205);
   } else if (input.part == 8u) {
     albedo = vec3<f32>(0.16, 0.27, 0.32);
@@ -881,9 +927,12 @@ fn fsPlayer(input: PlayerVertexOut) -> @location(0) vec4<f32> {
   } else if (input.part == 12u) {
     albedo = vec3<f32>(0.035, 0.095, 0.125);
     roughness = 0.74;
-  } else if (input.part == 13u || input.part == 16u) {
+  } else if (input.part == 13u || input.part == 16u || input.part == 17u) {
     albedo = vec3<f32>(0.018, 0.046, 0.062);
     roughness = 0.42;
+  } else if (input.part == 20u || input.part == 21u) {
+    albedo = vec3<f32>(0.105, 0.215, 0.255);
+    roughness = 0.3;
   } else if (input.part == 14u) {
     let nose = smoothstep(0.42, 0.9, input.localPosition.x);
     let noseInlay =
@@ -912,7 +961,9 @@ fn fsPlayer(input: PlayerVertexOut) -> @location(0) vec4<f32> {
   let weaveY = input.localPosition.y * 194.0 - input.localPosition.z * 23.0;
   let weaveSampling = 1.0 - smoothstep(0.42, 1.5, max(fwidth(weaveX), fwidth(weaveY)));
   let weave = sin(weaveX) * sin(weaveY) * weaveSampling;
-  let clothMaterial = input.part == 1u || input.part == 2u || input.part == 3u || input.part == 6u || input.part == 7u || input.part == 12u;
+  let clothMaterial =
+    input.part == 1u || input.part == 2u || input.part == 3u || input.part == 6u ||
+    input.part == 7u || input.part == 12u || input.part == 18u || input.part == 19u;
   if (clothMaterial) {
     color = color * (0.985 + weave * 0.015);
   }
@@ -929,7 +980,7 @@ fn fsPlayer(input: PlayerVertexOut) -> @location(0) vec4<f32> {
     color = color + vec3<f32>(0.16, 0.3, 0.38) * hoodBack * hoodSeam * 0.18;
   }
   if (input.part == 0u) {
-    let visorBand = 1.0 - smoothstep(0.018, 0.048, abs(input.localPosition.y - 1.62));
+    let visorBand = 1.0 - smoothstep(0.016, 0.042, abs(input.localPosition.y - 1.605));
     color = color + vec3<f32>(0.12, 0.48, 0.68) * visorBand * (0.12 + rim * 0.28);
   }
   if (input.part == 6u) {
@@ -945,7 +996,10 @@ fn fsPlayer(input: PlayerVertexOut) -> @location(0) vec4<f32> {
   color = color + vec3<f32>(1.0, 0.82, 0.61) * specular * (1.0 - roughness) * 0.6;
 
   var snowCatch = 0.0;
-  if (input.part == 2u || input.part == 8u || input.part == 10u || input.part == 14u) {
+  if (
+    input.part == 2u || input.part == 8u || input.part == 10u || input.part == 14u ||
+    input.part == 20u || input.part == 21u
+  ) {
     snowCatch = smoothstep(0.58, 0.91, normal.y) * 0.13;
   }
   color = mix(color, vec3<f32>(0.63, 0.78, 0.88) * (0.7 + direct * 0.7), snowCatch);

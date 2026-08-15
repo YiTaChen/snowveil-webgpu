@@ -456,3 +456,31 @@ Four-neighbour bloom, bounded ritual marks, vertex-carried material fields,
 hashed micro-normal candidates, and suppressed snow-history compute were all
 measured and reverted because their gains were insufficient or zero. No external
 asset or third-party code is introduced by the retained pass.
+
+## 2026-08-14 — Articulated part hierarchy and calibrated capture path
+
+The retained rider had separate visible parts but most limbs inherited one
+torso deformation. Both arms shared one part id, boots were fused to the lower
+legs, the rounded hood remained oversized, and a full head-pivot condition also
+rotated belt and cape-trim vertices because they shared the same material id.
+This was enough for direction cues but not convincing weight transfer.
+
+The geometry now assigns distinct upper-arm, forearm, cuff, boot, and knee-guard
+groups. Upper and lower legs bend about complementary hip and ankle pivots;
+front and rear loads differ with the signed edge input. Forearms inherit an
+elbow balance before the whole arm inherits shoulder counterbalance. A narrower
+vented hem exposes the stance, while a smaller hood keeps the character stylized
+without the earlier chibi proportion. Material ids remain independent from
+animation conditions so the belt and cape trim no longer rotate around the
+head. A geometry test verifies finite indexed data and the presence of all seven
+articulated groups.
+
+During this review, exact 2560×1440 clipped PNGs were found to cover only the
+top-left half of the emulated page: the app browser exports full pages at two
+host pixels per CSS pixel even though the page reports DPR 1. The old files are
+retained only as HUD telemetry records. A new `?capture` path uses a 1280×720 CSS
+page and an explicitly doubled 2560×1440 WebGPU target, producing a complete
+16:9 2560×1440 frame without changing camera, terrain, material, gameplay, or
+draw topology. `?evidence` remains the 2560×1440 CSS performance path. No model,
+skeleton, animation clip, image, texture, video frame, or third-party code is
+introduced.

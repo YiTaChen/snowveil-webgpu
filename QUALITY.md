@@ -390,24 +390,24 @@ route capture.
 
 ### 2026-08-14 — visible-1440p adaptive release checkpoint
 
-Evidence:
+Telemetry captures:
 
-- authoritative visible-native idle baseline: [`evidence/performance-visible-native-idle-before-2560x1440.png`](./evidence/performance-visible-native-idle-before-2560x1440.png)
-- retained full-native idle: [`evidence/performance-visible-native-idle-after-2560x1440.png`](./evidence/performance-visible-native-idle-after-2560x1440.png)
-- original full-native route: [`evidence/performance-visible-native-route-before-2560x1440.png`](./evidence/performance-visible-native-route-before-2560x1440.png)
-- retained 288² full-native route: [`evidence/performance-visible-native-route-full-2560x1440.png`](./evidence/performance-visible-native-route-full-2560x1440.png)
-- automatic release route: [`evidence/performance-visible-release-route-2560x1440.png`](./evidence/performance-visible-release-route-2560x1440.png)
+- native-target idle baseline telemetry: [`evidence/performance-visible-native-idle-before-2560x1440.png`](./evidence/performance-visible-native-idle-before-2560x1440.png)
+- retained native-target idle telemetry: [`evidence/performance-visible-native-idle-after-2560x1440.png`](./evidence/performance-visible-native-idle-after-2560x1440.png)
+- original native-target route telemetry: [`evidence/performance-visible-native-route-before-2560x1440.png`](./evidence/performance-visible-native-route-before-2560x1440.png)
+- retained 288² native-target telemetry: [`evidence/performance-visible-native-route-full-2560x1440.png`](./evidence/performance-visible-native-route-full-2560x1440.png)
+- automatic release telemetry: [`evidence/performance-visible-release-route-2560x1440.png`](./evidence/performance-visible-release-route-2560x1440.png)
 - full-resolution interactive track: [`evidence/performance-adaptive-track-1182x749.png`](./evidence/performance-adaptive-track-1182x749.png)
 
-For this checkpoint both browser viewport and CSS canvas are explicitly
-2560×1440, and each native file is an exact 2560×1440 clip rather than a scaled
-browser screenshot. Full-native idle improves from 44 to 51 FPS after removing
-two redundant procedural snowfall layers while retaining three visually
-separated depth scales. The completed route improves from 44 to 47 FPS at 100%;
-the default controller
-therefore settles at a disclosed 84% canvas scale and returns to 60 FPS. The
-native DOM/HUD stays sharp and reports the scale rather than presenting an
-upscaled frame as native rendering.
+For this checkpoint browser telemetry recorded `innerWidth`, `innerHeight`, CSS
+canvas size, render-target size, and DPR at 2560×1440. A later capture audit found
+that the app browser exports full-page pixels at a separate 2× host scale: these
+older files have exact 2560×1440 dimensions but contain only the top-left half of
+the CSS page. Their HUD numbers remain performance records, but they are no
+longer accepted as complete-frame composition evidence. Full-native idle
+improves from 44 to 51 FPS, and the completed route improves from 44 to 47 FPS at
+100%. The default controller therefore settles at a disclosed 84% canvas scale
+and returns to 60 FPS.
 
 At 1182×749 the route remains at 100% and the close 6.6 m/s frame preserves the
 asymmetric board, narrow continuous wake, wind ridges, particle depth, and rider
@@ -415,3 +415,39 @@ silhouette at 60 FPS. Browser diagnostics contain no WGSL compilation, WebGPU
 validation, audio, or uncaptured-device error. Production skeletal animation is
 still an open art boundary; the display-performance boundary is now both usable
 and honestly measurable.
+
+### 2026-08-14 — articulated rider and calibrated 1440p capture checkpoint
+
+Evidence:
+
+- moving before/after: [`evidence/rider-articulation-before-1182x749.png`](./evidence/rider-articulation-before-1182x749.png) and [`evidence/rider-articulation-after-1182x749.png`](./evidence/rider-articulation-after-1182x749.png)
+- close/middle/far: [`evidence/rider-articulation-close-1182x749.png`](./evidence/rider-articulation-close-1182x749.png), [`evidence/rider-articulation-carve-1182x749.png`](./evidence/rider-articulation-carve-1182x749.png), and [`evidence/rider-articulation-far-1182x749.png`](./evidence/rider-articulation-far-1182x749.png)
+- real Jump/landing pair: [`evidence/rider-articulation-jump-1182x749.png`](./evidence/rider-articulation-jump-1182x749.png) and [`evidence/rider-articulation-landing-1182x749.png`](./evidence/rider-articulation-landing-1182x749.png)
+- complete-frame 2560×1440 target while moving: [`evidence/rider-articulation-native-2560x1440.png`](./evidence/rider-articulation-native-2560x1440.png)
+- complete-frame 2560×1440 target after the rite: [`evidence/rider-articulation-native-complete-2560x1440.png`](./evidence/rider-articulation-native-complete-2560x1440.png)
+
+The retained geometry reduces the oversized hood and pear-shaped hem, opens two
+stance vents, separates boots from lower legs, and adds distinct knee guards,
+upper arms, forearms, and cuffs. The player vertex stage now bends upper and
+lower legs around connected hip/ankle pivots with different front/rear edge
+loads. Forearms inherit elbow motion and then shoulder counterbalance; the
+previous shared torso deformation no longer rotates the belt and cape trim about
+the head. This remains an original compact part hierarchy, with no imported
+mesh, skeleton, animation, image, or motion data.
+
+The same-size moving pair shows more leg clearance, a smaller head, a narrower
+coat, and two readable loaded knees. The close carve confirms that cuffs stay on
+the forearms and guards bridge the leg segments; the far frame keeps the cape,
+raised casting arm, separated legs, and asymmetric board readable. Actual shared
+W/A/D and Space input produced the 5.4 m/s carve, airborne frame, and first
+landing response. The 1182×749 checks remain at 60 FPS and browser diagnostics
+contain no WGSL, WebGPU, audio, or uncaptured-device error.
+
+The earlier forced 2560×1440 clip method was rejected because the app browser's
+host export scale cropped the page despite producing a correctly sized PNG. The
+new `?capture` path fixes the CSS page at 1280×720 and allocates a true
+2560×1440 WebGPU canvas. Its 2× full-page export therefore covers the entire
+16:9 scene. The moving target reports 48 FPS and the completed target 46 FPS at
+100% RES, consistent with the documented fixed-native boundary. Production
+facial performance, authored clip transitions, and a conventional deforming
+skin skeleton remain outside this checkpoint.

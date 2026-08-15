@@ -207,10 +207,10 @@ export function createRiderGeometry() {
   };
 
   const cloakRings = [
-    { y: 0.58, x: 0.41, z: 0.3, back: 0.14 },
-    { y: 0.72, x: 0.42, z: 0.31, back: 0.13 },
-    { y: 0.9, x: 0.39, z: 0.29, back: 0.1 },
-    { y: 1.08, x: 0.36, z: 0.27, back: 0.07 },
+    { y: 0.62, x: 0.35, z: 0.275, back: 0.125 },
+    { y: 0.75, x: 0.38, z: 0.295, back: 0.12 },
+    { y: 0.92, x: 0.365, z: 0.28, back: 0.095 },
+    { y: 1.09, x: 0.35, z: 0.265, back: 0.065 },
     { y: 1.23, x: 0.43, z: 0.29, back: 0.045 },
     { y: 1.34, x: 0.31, z: 0.24, back: 0.02 },
   ];
@@ -226,9 +226,10 @@ export function createRiderGeometry() {
       const cosine = Math.cos(theta);
       const sine = Math.sin(theta);
       const backDrape = Math.max(sine, 0) * ring.back;
-      const brokenHem = ringIndex === 0 ? Math.cos(theta * 4 + 0.45) * 0.028 : 0;
+      const brokenHem = ringIndex === 0 ? Math.cos(theta * 4 + 0.45) * 0.022 : 0;
+      const stanceVent = ringIndex === 0 ? Math.pow(Math.abs(cosine), 7) * 0.095 : 0;
       addVertex(
-        [cosine * ring.x, ring.y + brokenHem, sine * ring.z + backDrape],
+        [cosine * ring.x, ring.y + brokenHem + stanceVent, sine * ring.z + backDrape],
         normalize([cosine / ring.x, slope, sine / ring.z]),
         1,
       );
@@ -326,17 +327,19 @@ export function createRiderGeometry() {
   addCapsule([0.17, 0.77, 0.02], [0.25, 0.37, -0.01], 0.1, 12);
   addCapsule([-0.24, 0.39, -0.07], [-0.25, 0.17, -0.08], 0.095, 13);
   addCapsule([0.25, 0.38, -0.01], [0.25, 0.17, -0.04], 0.095, 13);
-  addSphere([-0.25, 0.14, -0.14], [0.13, 0.065, 0.19], 13, 20, 10);
-  addSphere([0.25, 0.14, -0.08], [0.13, 0.065, 0.19], 13, 20, 10);
+  addSphere([-0.24, 0.405, -0.112], [0.125, 0.105, 0.085], 21, 18, 10);
+  addSphere([0.25, 0.395, -0.052], [0.125, 0.105, 0.085], 21, 18, 10);
+  addSphere([-0.25, 0.14, -0.14], [0.13, 0.065, 0.19], 17, 20, 10);
+  addSphere([0.25, 0.14, -0.08], [0.13, 0.065, 0.19], 17, 20, 10);
   addSphere([-0.25, 0.095, -0.09], [0.17, 0.022, 0.14], 8, 18, 8);
   addSphere([0.25, 0.095, -0.05], [0.17, 0.022, 0.14], 8, 18, 8);
 
   addSphere([0, 1.08, -0.005], [0.32, 0.39, 0.235], 2, 28, 16);
-  addSphere([0, 1.59, -0.015], [0.235, 0.285, 0.245], 3, 28, 18);
-  addSphere([0, 1.57, -0.245], [0.145, 0.125, 0.045], 4, 22, 12);
-  addSphere([0, 1.62, -0.278], [0.17, 0.088, 0.026], 8, 24, 12);
-  addSphere([0, 1.62, -0.307], [0.142, 0.061, 0.017], 0, 24, 12);
-  addCapsule([0, 1.675, -0.321], [0, 1.55, -0.321], 0.017, 10, 12);
+  addSphere([0, 1.575, -0.015], [0.205, 0.245, 0.215], 3, 28, 18);
+  addSphere([0, 1.56, -0.218], [0.126, 0.105, 0.04], 4, 22, 12);
+  addSphere([0, 1.605, -0.248], [0.147, 0.076, 0.024], 8, 24, 12);
+  addSphere([0, 1.605, -0.274], [0.123, 0.052, 0.016], 0, 24, 12);
+  addCapsule([0, 1.655, -0.287], [0, 1.56, -0.287], 0.014, 10, 12);
   addSphere([0, 1.38, -0.205], [0.09, 0.055, 0.055], 5, 18, 10);
 
   // Layered curved shells replace primitive shoulder ellipsoids.
@@ -344,12 +347,14 @@ export function createRiderGeometry() {
   addShoulderShell(1);
   addTorus([0, 1.36, 0.015], 0.235, 0.026, 2);
 
-  addCapsule([-0.34, 1.25, -0.01], [-0.53, 1.04, -0.06], 0.078, 7);
-  addCapsule([-0.53, 1.04, -0.06], [-0.38, 0.84, -0.27], 0.072, 7);
-  addCapsule([0.34, 1.26, -0.03], [0.53, 1.1, -0.19], 0.082, 7);
-  addCapsule([0.53, 1.1, -0.19], [0.8, 1.37, -0.54], 0.074, 7);
-  addCapsule([-0.43, 0.91, -0.2], [-0.38, 0.84, -0.27], 0.086, 10, 14);
-  addCapsule([0.72, 1.29, -0.44], [0.8, 1.37, -0.54], 0.088, 10, 14);
+  // Distinct upper/lower arm parts allow shoulder and elbow pivots to move as
+  // a compact authored hierarchy in the vertex shader.
+  addCapsule([-0.34, 1.25, -0.01], [-0.53, 1.04, -0.06], 0.078, 18);
+  addCapsule([-0.53, 1.04, -0.06], [-0.38, 0.84, -0.27], 0.072, 19);
+  addCapsule([0.34, 1.26, -0.03], [0.53, 1.1, -0.19], 0.082, 18);
+  addCapsule([0.53, 1.1, -0.19], [0.8, 1.37, -0.54], 0.074, 19);
+  addCapsule([-0.43, 0.91, -0.2], [-0.38, 0.84, -0.27], 0.086, 20, 14);
+  addCapsule([0.72, 1.29, -0.44], [0.8, 1.37, -0.54], 0.088, 20, 14);
   // Gloves need their own transform part: lower legs share part 13 and must
   // stay aligned with the board while the hands follow the turning torso.
   addSphere([-0.37, 0.81, -0.3], [0.082, 0.09, 0.11], 16, 18, 11);
