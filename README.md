@@ -22,22 +22,24 @@ npm run build
 
 This starter does not use `wrangler.jsonc`.
 
-Use a desktop browser with WebGPU enabled. Ride with WASD or the arrow keys,
-cast Ice Pulse with Space, drag the scene to orbit, hold Shift for a faster
-traverse, and use the mouse wheel to change camera distance. Audio begins only
-after a key, canvas, or explicit audio-button gesture and can be muted from the
-top-right control.
+Use a desktop browser with WebGPU enabled. Hold W or Up to accelerate, use A/D
+or Left/Right to carve, and hold S or Down to rotate the board across the travel
+direction and brake. Space jumps; E casts Ice Pulse. Drag the scene to orbit,
+hold Shift for a faster traverse, and use the mouse wheel to change camera
+distance. Audio begins only after a key, canvas, or explicit audio-button gesture
+and can be muted from the top-right control.
 
 The playable Frost Rite asks the rider to awaken three original sigil beacons.
 Follow the dormant blue cores, aim the visible casting hand toward a beacon,
-and press Space when the HUD prompts. Each successful Ice Pulse activates its
+and press E when the HUD prompts. Each successful Ice Pulse activates its
 crystal and rotating ring, records a frost mark in the snow, and advances the
 ritual state.
 
 Append `?demo` to the local URL for a deterministic end-to-end route used by
 visual QA. It steers toward each real beacon and casts through the same Ice Pulse
-and proximity test as keyboard input; it is not a pre-rendered or separate
-evidence scene. Append `&evidence` for the fixed 2560×1440 still-review path.
+and proximity test as keyboard input while exercising the same heading, speed,
+board-yaw, and snow-contact state; it is not a pre-rendered or separate evidence
+scene. Append `&evidence` for the fixed 2560×1440 still-review path.
 
 ## Originality and licensing
 

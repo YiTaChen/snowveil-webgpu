@@ -205,3 +205,19 @@ sections above document renderer output. The final interactive route at the
 normal 1182×749 review viewport reached 60 FPS, P95 17.4 ms, and 1% low 57 after
 the retained shadow change; the fixed 2560×1440 path remains a still-review mode
 at 22–26 FPS on the test machine.
+
+### 2026-08-14 — snowboard motion-causality correction
+
+The prior board orientation is rejected even though its silhouette passed the
+earlier art checkpoint. The new controller was browser-tested as one causal
+sequence: repeated W input reached 5.4 m/s; repeated S input rotated toward a
+crosswise edge-stop and reduced that speed to 0.1 m/s in roughly one-third of a
+second; Space produced a visible airborne interval with no snow stamp or board
+hiss; E remained the only manual Ice Pulse input. The 15-second deterministic
+route still activated all three sigils and emitted no WebGPU or audio errors.
+
+The running shader now uses one board-yaw value for mesh orientation, pointed
+elliptical contact shadow, base/edge pressure, and persistent deformation. This
+closes the basic direction/contact inconsistency. It does not claim a rigid-body
+snowboard simulator: terrain slope does not yet contribute gravity, and the
+compact procedural rider still has no production skeletal rig.

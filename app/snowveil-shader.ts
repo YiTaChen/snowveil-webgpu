@@ -182,7 +182,8 @@ fn fsMain(input: SkyVertexOut) -> @location(0) vec4<f32> {
 @fragment
 fn fsSnowOverlay(input: SkyVertexOut) -> @location(0) vec4<f32> {
   let flake = foregroundSnow(input.uv, globals.viewport.z);
-  let spray = riderSpray(input.uv, globals.viewport.z, globals.reserved.w);
+  let grounded = 1.0 - smoothstep(0.015, 0.09, globals.objective.w);
+  let spray = riderSpray(input.uv, globals.viewport.z, globals.reserved.w * grounded);
   let spell = spellBurst(input.uv, globals.weather.z);
   let alpha = saturate(flake * 0.42 + spray * 0.48 + spell * 0.68);
   let color = mix(vec3<f32>(0.78, 0.89, 0.96), vec3<f32>(0.18, 0.76, 1.0) * 2.4, saturate(spell * 1.8));
@@ -451,7 +452,18 @@ fn fsTerrain(input: TerrainVertexOut) -> @location(0) vec4<f32> {
   let compactedSnow = saturate(-deformation * 8.5);
   let pushedSnow = saturate(deformation * 19.0);
   let playerRelative = input.worldPosition.xz - globals.reserved.xy;
-  let contactShadow = exp(-length(playerRelative * vec2<f32>(1.85, 1.1)) * 2.0) * (1.0 - smoothstep(0.0, 2.4, length(playerRelative)));
+  let boardYaw = globals.objective.x;
+  let boardForward = vec2<f32>(cos(boardYaw), sin(boardYaw));
+  let boardSide = vec2<f32>(-sin(boardYaw), cos(boardYaw));
+  let boardLongitudinal = dot(playerRelative, boardForward);
+  let boardLateral = dot(playerRelative, boardSide);
+  let alignedBoardYaw = globals.reserved.z - 1.570796;
+  let skidAngle = atan2(sin(boardYaw - alignedBoardYaw), cos(boardYaw - alignedBoardYaw));
+  let edgeAmount = saturate(max(abs(globals.objective.y), abs(skidAngle) / 1.570796));
+  let contactWidth = mix(0.28, 0.105, edgeAmount);
+  let contactDistance = length(vec2<f32>(boardLongitudinal / 0.94, boardLateral / contactWidth));
+  let grounded = 1.0 - smoothstep(0.012, 0.085, globals.objective.w);
+  let contactShadow = exp(-contactDistance * 2.6) * (1.0 - smoothstep(0.82, 1.12, contactDistance)) * grounded;
 
   var snow = base * (bounce + warmSun * wrapped * shadow * 1.35 + subsurface);
   snow = snow * surfaceVariation;
@@ -512,20 +524,34 @@ fn updateSnow(@builtin(global_invocation_id) invocation: vec3<u32>) {
   var magicResidue = previous.g * exp(-delta * 0.22);
 
   let speed = globals.reserved.w;
-  if (speed > 0.035) {
-    let heading = globals.reserved.z;
-    let forward = vec2<f32>(sin(heading), -cos(heading));
-    let right = vec2<f32>(cos(heading), sin(heading));
+  let grounded = 1.0 - smoothstep(0.012, 0.085, globals.objective.w);
+  if (speed > 0.035 && grounded > 0.01) {
+    let boardYaw = globals.objective.x;
+    let forward = vec2<f32>(cos(boardYaw), sin(boardYaw));
+    let right = vec2<f32>(-sin(boardYaw), cos(boardYaw));
     let relative = world - globals.reserved.xy;
     let longitudinal = dot(relative, forward);
     let lateral = dot(relative, right);
-    let boardLength = 1.0 - smoothstep(0.82, 1.28, abs(longitudinal + 0.08));
-    let compressed = 1.0 - smoothstep(0.34, 0.78, abs(lateral));
-    let edgeRidge =
-      smoothstep(0.62, 0.76, abs(lateral)) *
-      (1.0 - smoothstep(0.76, 0.98, abs(lateral))) *
-      boardLength;
-    let stamped = -0.075 * compressed * boardLength * speed + 0.028 * edgeRidge * speed;
+    let alignedBoardYaw = globals.reserved.z - 1.570796;
+    let skidAngle = atan2(sin(boardYaw - alignedBoardYaw), cos(boardYaw - alignedBoardYaw));
+    let skid = saturate(abs(skidAngle) / 1.570796);
+    let steer = globals.objective.y;
+    let edgeAmount = saturate(max(abs(steer), skid));
+    let edgeSign = select(1.0, sign(steer), abs(steer) > 0.055);
+    let contactWidth = mix(0.22, 0.075, edgeAmount);
+    let contactOffset = edgeSign * edgeAmount * 0.105;
+    let contactDistance = length(vec2<f32>(longitudinal / 0.94, (lateral - contactOffset) / contactWidth));
+    let compressed = 1.0 - smoothstep(0.74, 1.0, contactDistance);
+    let endFade = 1.0 - smoothstep(0.7, 0.96, abs(longitudinal) / 0.94);
+    let twinRidge =
+      smoothstep(0.15, 0.205, abs(lateral)) *
+      (1.0 - smoothstep(0.205, 0.29, abs(lateral))) * endFade;
+    let singleRidge =
+      smoothstep(0.17, 0.225, abs(lateral - edgeSign * 0.03)) *
+      (1.0 - smoothstep(0.225, 0.31, abs(lateral - edgeSign * 0.03))) * endFade;
+    let edgeRidge = mix(twinRidge, singleRidge, edgeAmount);
+    let pressure = mix(0.72, 1.18, max(edgeAmount, skid));
+    let stamped = (-0.072 * compressed * pressure + 0.025 * edgeRidge) * speed * grounded;
     if (stamped < 0.0) {
       deformation = min(deformation, stamped);
     } else if (deformation > -0.018) {
@@ -587,9 +613,9 @@ fn rotateY(point: vec3<f32>, angle: f32) -> vec3<f32> {
   let cosine = cos(angle);
   let sine = sin(angle);
   return vec3<f32>(
-    point.x * cosine + point.z * sine,
+    point.x * cosine - point.z * sine,
     point.y,
-    -point.x * sine + point.z * cosine
+    point.x * sine + point.z * cosine
   );
 }
 
@@ -610,13 +636,18 @@ fn vsPlayer(input: PlayerVertexIn) -> PlayerVertexOut {
   var output: PlayerVertexOut;
   let time = globals.viewport.z;
   let speed = globals.reserved.w;
-  let heading = globals.reserved.z;
+  let travelHeading = globals.reserved.z;
+  let boardYaw = globals.objective.x;
+  let jumpHeight = globals.objective.w;
   let part = u32(round(input.part));
   let motion = saturate(speed * 1.3);
-  let carvePhase = time * (1.75 + motion * 2.15);
-  let carve = sin(carvePhase) * motion;
-  let compression = (0.5 + 0.5 * sin(carvePhase * 2.0 + 0.72)) * motion;
-  let bob = sin(carvePhase * 2.0 + 0.22) * motion * 0.009;
+  let alignedBoardYaw = travelHeading - 1.570796;
+  let skidAngle = atan2(sin(boardYaw - alignedBoardYaw), cos(boardYaw - alignedBoardYaw));
+  let skid = saturate(abs(skidAngle) / 1.570796);
+  let carve = clamp(globals.objective.y, -1.0, 1.0) * motion;
+  let airborne = smoothstep(0.015, 0.18, jumpHeight);
+  let compression = motion * (0.12 + abs(carve) * 0.28 + skid * 0.22) + airborne * 0.48;
+  let bob = sin(time * (4.2 + motion * 1.8)) * motion * (1.0 - airborne) * 0.006;
   var local = input.position;
   var localNormal = normalize(input.normal);
 
@@ -651,8 +682,16 @@ fn vsPlayer(input: PlayerVertexIn) -> PlayerVertexOut {
     local.z = local.z + capeTail * motion * (0.025 + 0.035 * sin(time * 1.9 + capeTail * 3.6));
   }
 
-  let lean = motion * 0.105 + compression * 0.018;
-  let bank = carve * 0.072;
+  if (part != 11u && part != 12u && part != 13u && part != 14u && part != 15u) {
+    let lookBlend = smoothstep(0.76, 1.48, local.y);
+    let lookTwist = mix(0.58, 0.08, skid) * motion * lookBlend;
+    let torsoPivot = vec3<f32>(0.0, 0.88, -0.02);
+    local = torsoPivot + rotateY(local - torsoPivot, lookTwist);
+    localNormal = rotateY(localNormal, lookTwist);
+  }
+
+  let lean = carve * 0.12 + skid * 0.045 + compression * 0.012;
+  let bank = carve * 0.026;
   if (part != 0u && part != 11u && part != 14u && part != 15u) {
     let stancePivot = vec3<f32>(0.0, 0.12, -0.04);
     local = stancePivot + rotateX(local - stancePivot, lean);
@@ -661,14 +700,20 @@ fn vsPlayer(input: PlayerVertexIn) -> PlayerVertexOut {
     localNormal = rotateZ(localNormal, bank);
   }
   if (part == 14u || part == 15u || (part == 8u && local.y < 0.28)) {
-    let boardBank = carve * 0.024;
-    local = rotateZ(local, boardBank);
-    localNormal = rotateZ(localNormal, boardBank);
+    let boardEdge = carve * 0.12 + skid * 0.085;
+    local = rotateX(local, boardEdge);
+    localNormal = rotateX(localNormal, boardEdge);
+  }
+  if (part != 11u && airborne > 0.001) {
+    let airPivot = vec3<f32>(0.0, 0.42, -0.04);
+    local = airPivot + rotateZ(local - airPivot, airborne * 0.075);
+    localNormal = rotateZ(localNormal, airborne * 0.075);
   }
 
-  let playerOrigin = vec3<f32>(globals.reserved.x, globals.weather.y - 0.015 + bob, globals.reserved.y);
-  let worldPosition = playerOrigin + rotateY(local, heading);
-  let worldNormal = normalize(rotateY(localNormal, heading));
+  let modelYaw = select(boardYaw, travelHeading, part == 11u);
+  let playerOrigin = vec3<f32>(globals.reserved.x, globals.weather.y - 0.015 + bob + jumpHeight, globals.reserved.y);
+  let worldPosition = playerOrigin + rotateY(local, modelYaw);
+  let worldNormal = normalize(rotateY(localNormal, modelYaw));
 
   let cameraDistance = globals.camera.z;
   let fieldOfView = globals.camera.w;

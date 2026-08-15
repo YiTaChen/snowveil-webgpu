@@ -70,10 +70,13 @@ export function SnowveilScene() {
     let playerX = 0;
     let playerZ = -4;
     let playerHeading = 0;
-    let playerVelocityX = 0;
-    let playerVelocityZ = 0;
+    let playerBoardYaw = -Math.PI / 2;
+    let playerSpeed = 0;
+    let boardSkid = 0;
+    let steerVisual = 0;
+    let jumpHeight = 0;
+    let jumpVelocity = 0;
     let spellAge = 100;
-    let completionPulse = 0;
     let completionAge = 100;
     let activatedCount = 0;
     const beaconPositions = [
@@ -84,6 +87,9 @@ export function SnowveilScene() {
     const beaconActive = [false, false, false];
     const pressedKeys = new Set<string>();
     const keyPulseUntil = new Map<string, number>();
+
+    const angleDelta = (target: number, current: number) =>
+      Math.atan2(Math.sin(target - current), Math.cos(target - current));
 
     const onPointerDown = (event: PointerEvent) => {
       void audio.unlock().then((enabled) => {
@@ -141,7 +147,6 @@ export function SnowveilScene() {
       if (closestBeacon >= 0 && closestDistance < 2.6) {
         beaconActive[closestBeacon] = true;
         activatedCount += 1;
-        completionPulse = 1;
         const finalBeacon = activatedCount === beaconPositions.length;
         audio.activateBeacon(closestBeacon, finalBeacon);
         if (finalBeacon) {
@@ -161,7 +166,11 @@ export function SnowveilScene() {
       }
       pressedKeys.add(event.code);
       keyPulseUntil.set(event.code, performance.now() + 145);
-      if (event.code === "Space" && !event.repeat) {
+      if (event.code === "Space" && !event.repeat && jumpHeight <= 0.001) {
+        jumpVelocity = 3.85;
+        audio.jump();
+      }
+      if (event.code === "KeyE" && !event.repeat) {
         castIcePulse();
       }
     };
@@ -602,7 +611,7 @@ export function SnowveilScene() {
             fpsFrames = 0;
           }
 
-          const manualInputX =
+          const manualSteer =
             (pressedKeys.has("KeyD") ||
             pressedKeys.has("ArrowRight") ||
             (keyPulseUntil.get("KeyD") ?? 0) > now ||
@@ -615,66 +624,75 @@ export function SnowveilScene() {
             (keyPulseUntil.get("ArrowLeft") ?? 0) > now
               ? 1
               : 0);
-          const manualInputForward =
+          const manualThrottle =
             (pressedKeys.has("KeyW") ||
             pressedKeys.has("ArrowUp") ||
             (keyPulseUntil.get("KeyW") ?? 0) > now ||
             (keyPulseUntil.get("ArrowUp") ?? 0) > now
               ? 1
-              : 0) -
-            (pressedKeys.has("KeyS") ||
+              : 0);
+          const manualBrake =
+            pressedKeys.has("KeyS") ||
             pressedKeys.has("ArrowDown") ||
             (keyPulseUntil.get("KeyS") ?? 0) > now ||
             (keyPulseUntil.get("ArrowDown") ?? 0) > now
               ? 1
-              : 0);
+              : 0;
           const demoTargetIndex = demoMode ? beaconActive.findIndex((isActive) => !isActive) : -1;
-          const inputX = demoMode ? (demoTargetIndex >= 0 ? 1 : 0) : manualInputX;
-          const inputForward = demoMode ? 0 : manualInputForward;
-          const inputLength = Math.hypot(inputX, inputForward);
-          const forwardX = Math.sin(yaw);
-          const forwardZ = -Math.cos(yaw);
-          const rightX = Math.cos(yaw);
-          const rightZ = Math.sin(yaw);
-          const rideSpeed = pressedKeys.has("ShiftLeft") || pressedKeys.has("ShiftRight") ? 8.4 : 5.4;
           const demoTarget = demoTargetIndex >= 0 ? beaconPositions[demoTargetIndex] : null;
-          const demoTargetDistance = demoTarget ? Math.hypot(demoTarget.x - playerX, demoTarget.z - playerZ) : 0;
-          const desiredVelocityX = demoTarget
-            ? ((demoTarget.x - playerX) / Math.max(demoTargetDistance, 0.001)) * rideSpeed
-            : inputLength > 0
-              ? ((rightX * inputX + forwardX * inputForward) / inputLength) * rideSpeed
-              : 0;
-          const desiredVelocityZ = demoTarget
-            ? ((demoTarget.z - playerZ) / Math.max(demoTargetDistance, 0.001)) * rideSpeed
-            : inputLength > 0
-              ? ((rightZ * inputX + forwardZ * inputForward) / inputLength) * rideSpeed
-              : 0;
-          const acceleration = 1 - Math.exp(-delta * (inputLength > 0 ? 7.5 : 4.2));
-          playerVelocityX += (desiredVelocityX - playerVelocityX) * acceleration;
-          playerVelocityZ += (desiredVelocityZ - playerVelocityZ) * acceleration;
-          playerX += playerVelocityX * delta;
-          playerZ += playerVelocityZ * delta;
+          const demoHeading = demoTarget
+            ? Math.atan2(demoTarget.x - playerX, -(demoTarget.z - playerZ))
+            : playerHeading;
+          const steerInput = demoTarget
+            ? Math.max(-1, Math.min(1, angleDelta(demoHeading, playerHeading) * 1.8))
+            : manualSteer;
+          const throttleInput = demoTarget ? 1 : demoMode ? 0 : manualThrottle;
+          const brakeInput = demoMode ? (demoTarget ? 0 : 1) : manualBrake;
+          const speedLimit = demoMode
+            ? 6.4
+            : pressedKeys.has("ShiftLeft") || pressedKeys.has("ShiftRight")
+              ? 8.4
+              : 5.4;
+          const turnAuthority = 0.28 + Math.min(playerSpeed / 3.2, 1) * 0.72;
+          playerHeading += steerInput * delta * (0.72 + playerSpeed * 0.13) * turnAuthority;
+          playerSpeed += throttleInput * (demoMode ? 7.2 : 5.8) * delta;
+          const drag = 0.24 + (throttleInput > 0 ? 0 : 0.52) + brakeInput * 5.8;
+          playerSpeed = Math.min(speedLimit, Math.max(0, playerSpeed * Math.exp(-drag * delta)));
+
+          const forwardX = Math.sin(playerHeading);
+          const forwardZ = -Math.cos(playerHeading);
+          playerX += forwardX * playerSpeed * delta;
+          playerZ += forwardZ * playerSpeed * delta;
           const playerRadius = Math.hypot(playerX, playerZ);
           if (playerRadius > 54) {
             const boundaryScale = 54 / playerRadius;
             playerX *= boundaryScale;
             playerZ *= boundaryScale;
+            playerSpeed *= 0.35;
           }
-          const playerSpeed = Math.hypot(playerVelocityX, playerVelocityZ);
-          audio.setMotion(playerSpeed);
+
+          boardSkid += (brakeInput - boardSkid) * (1 - Math.exp(-delta * (brakeInput > 0 ? 11 : 6.5)));
+          steerVisual += (steerInput - steerVisual) * (1 - Math.exp(-delta * 8.5));
+          const alignedBoardYaw = playerHeading - Math.PI / 2;
+          const targetBoardYaw = alignedBoardYaw + boardSkid * Math.PI / 2 + steerVisual * 0.075 * (1 - boardSkid);
+          playerBoardYaw += angleDelta(targetBoardYaw, playerBoardYaw) * (1 - Math.exp(-delta * 11));
+
+          const wasAirborne = jumpHeight > 0.001;
+          if (jumpVelocity > 0 || wasAirborne) {
+            jumpVelocity -= 10.8 * delta;
+            jumpHeight += jumpVelocity * delta;
+            if (jumpHeight <= 0) {
+              jumpHeight = 0;
+              jumpVelocity = 0;
+              if (wasAirborne) audio.land();
+            }
+          }
+
+          audio.setMotion(playerSpeed, jumpHeight <= 0.018);
           if (speedRef.current) speedRef.current.textContent = `${playerSpeed.toFixed(1)} m/s`;
-          if (playerSpeed > 0.08) {
-            const desiredHeading = Math.atan2(playerVelocityX, -playerVelocityZ);
-            const headingDelta = Math.atan2(
-              Math.sin(desiredHeading - playerHeading),
-              Math.cos(desiredHeading - playerHeading),
-            );
-            playerHeading += headingDelta * (1 - Math.exp(-delta * 9));
-          }
           const playerY = snowHeightAt(playerX, playerZ);
           spellAge += delta;
           const spellPulse = Math.exp(-spellAge * 2.7);
-          completionPulse = Math.max(0, completionPulse - delta * 0.34);
           completionAge += delta;
 
           const spellForwardX = Math.sin(playerHeading);
@@ -706,7 +724,7 @@ export function SnowveilScene() {
               activatedCount === beaconPositions.length
                 ? "All sigils resonant"
                 : nearestDormantDistance < 2.6
-                  ? "Space — awaken sigil"
+                  ? "E — awaken sigil"
                   : "Follow the blue light";
           }
 
@@ -734,9 +752,10 @@ export function SnowveilScene() {
             uniforms[offset + 2] = beacon.z;
             uniforms[offset + 3] = beaconActive[index] ? 1 : 0;
           }
-          uniforms[28] = activatedCount / beaconPositions.length;
-          uniforms[29] = completionPulse;
+          uniforms[28] = playerBoardYaw;
+          uniforms[29] = steerVisual;
           uniforms[30] = completionAge;
+          uniforms[31] = jumpHeight;
           activeDevice.queue.writeBuffer(uniformBuffer, 0, uniforms);
 
           if (!depthTexture || !sceneColorTexture || !postBindGroup) {
@@ -850,7 +869,7 @@ export function SnowveilScene() {
         ref={canvasRef}
         className="snowveil__canvas"
         data-ready={sceneState === "ready"}
-        aria-label="Interactive procedural snow landscape. Ride with WASD, cast with Space, drag to orbit, and scroll to change distance."
+        aria-label="Interactive procedural snow landscape. Accelerate with W, carve with A and D, brake with S, jump with Space, cast with E, drag to orbit, and scroll to change distance."
       />
 
       <div className="snowveil__veil" aria-hidden="true" />
@@ -897,7 +916,7 @@ export function SnowveilScene() {
           </button>
 
           <footer className="snowveil__footer">
-            <span>WASD ride · Space cast</span>
+            <span>W accelerate · A/D carve · S brake · Space jump · E pulse</span>
             <span className="snowveil__rule" aria-hidden="true" />
             <span ref={speedRef}>0.0 m/s</span>
             <span className="snowveil__rule" aria-hidden="true" />

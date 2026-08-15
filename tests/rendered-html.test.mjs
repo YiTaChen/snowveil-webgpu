@@ -32,6 +32,7 @@ test("server-renders the Snowveil visual shell", async () => {
   assert.match(html, /property="og:image" content="http:\/\/localhost\/og\.png"/i);
   assert.match(html, /name="twitter:card" content="summary_large_image"/i);
   assert.match(html, /Interactive procedural snow landscape/);
+  assert.match(html, /jump with Space, cast with E/);
   assert.match(html, /Preparing atmosphere/);
   assert.match(html, /role="status"/);
   assert.doesNotMatch(html, /codex-preview|react-loading-skeleton/i);

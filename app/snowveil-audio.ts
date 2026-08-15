@@ -2,8 +2,10 @@ export type SnowveilAudio = {
   unlock: () => Promise<boolean>;
   toggle: () => Promise<boolean>;
   cast: () => void;
+  jump: () => void;
+  land: () => void;
   activateBeacon: (index: number, final: boolean) => void;
-  setMotion: (speed: number) => void;
+  setMotion: (speed: number, grounded: boolean) => void;
   dispose: () => void;
 };
 
@@ -161,6 +163,28 @@ export function createSnowveilAudio(): SnowveilAudio {
         burst.start(now, 0.37, 0.25);
       }
     },
+    jump() {
+      if (!context || !master || context.state !== "running" || !enabled) return;
+      playTone(118, 196, 0.18, 0.032, "triangle");
+      playTone(246, 318, 0.13, 0.018, "sine", 0.025);
+    },
+    land() {
+      if (!context || !master || context.state !== "running" || !enabled) return;
+      playTone(92, 48, 0.2, 0.04, "sine");
+      if (noiseBuffer) {
+        const burst = context.createBufferSource();
+        const filter = context.createBiquadFilter();
+        const gain = context.createGain();
+        const now = context.currentTime;
+        burst.buffer = noiseBuffer;
+        filter.type = "lowpass";
+        filter.frequency.value = 680;
+        gain.gain.setValueAtTime(0.028, now);
+        gain.gain.exponentialRampToValueAtTime(MIN_GAIN, now + 0.16);
+        burst.connect(filter).connect(gain).connect(master);
+        burst.start(now, 0.82, 0.18);
+      }
+    },
     activateBeacon(index, final) {
       if (activeBeacons.has(index)) return;
       activeBeacons.add(index);
@@ -175,11 +199,12 @@ export function createSnowveilAudio(): SnowveilAudio {
         playTone(397, 794, 3.1, 0.026, "sine", 0.48);
       }
     },
-    setMotion(speed) {
+    setMotion(speed, grounded) {
       if (!context || !rideGain || !windGain || context.state !== "running" || !enabled) return;
       const now = context.currentTime;
       const normalized = Math.min(Math.max(speed / 8.4, 0), 1);
-      rideGain.gain.setTargetAtTime(MIN_GAIN + normalized * normalized * 0.062, now, 0.09);
+      const contact = grounded ? 1 : 0;
+      rideGain.gain.setTargetAtTime(MIN_GAIN + normalized * normalized * 0.062 * contact, now, 0.055);
       windGain.gain.setTargetAtTime(0.032 + normalized * 0.018, now, 0.3);
     },
     dispose() {

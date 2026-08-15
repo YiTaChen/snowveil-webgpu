@@ -135,7 +135,7 @@ fade the weave when it would become undersampled. All motion and material detail
 remains project-authored WGSL; no rig, animation clip, texture, or model asset is
 imported.
 
-The `?demo` query provides a deterministic curved 5.4 m/s ride for repeatable
+The `?demo` query provides a deterministic curved ride for repeatable
 visual QA while using the same input integration, deformation compute, and
 rendering path as manual play. Long-run review also showed that the previous
 13-centimetre snow compression read as a trench, so the retained board stamp is
@@ -172,7 +172,7 @@ the shared frame uniform. Dormant crystals retain a weak cold core so the HUD's
 direction is visually actionable, while activated crystals raise and accelerate
 their rings without adding a separate animation system.
 
-Manual Space input and deterministic `?demo` both call the same Ice Pulse cast
+Manual E input and deterministic `?demo` both call the same Ice Pulse cast
 function. The projectile's visible offset is also the activation test point, so
 the QA route cannot complete a beacon from an invisible or unrelated trigger.
 Activated positions feed back into terrain shading to draw antialiased broken
@@ -249,3 +249,25 @@ The social card is deliberately separate from runtime evidence. It was generated
 once from a Snowveil-owned screenshot with the built-in image generator, checked
 for exact title/subtitle text and unwanted third-party marks, and is never used
 as a texture or proof of in-engine quality.
+
+## 2026-08-14 — Board direction and snow contact follow one physical state
+
+User review exposed a basic motion contradiction: the blade's long axis remained
+perpendicular to velocity during every glide, the player-model yaw used the
+opposite horizontal sign from the CPU travel vector, and the deformation compute
+stamped an oversized fixed rectangle. Animation could not hide those errors.
+
+The retained controller separates travel heading from board yaw. During a glide,
+one end of the board leads along the trajectory; steering adds a small edge angle.
+Holding S rotates the board progressively across the trajectory, raises edge
+pressure, and applies strong drag. The upper coat and head turn separately toward
+the travel direction rather than being welded to the board. This follows the
+broad stopping and turning principles described by the Japan Professional Ski
+Instructors Association and U.S. Ski & Snowboard; their pages were observation
+references only and no footage, imagery, geometry, or animation was copied.
+
+The snow compute and the terrain contact shadow now consume that exact board yaw.
+Their footprint is a pointed 1.88-by-0.44-metre ellipse when flat, narrows and
+shifts toward the engaged edge while carving or braking, and disappears while
+airborne. Space therefore becomes a real ballistic jump with takeoff/landing
+sound and a gap in persistent snow history; Ice Pulse moves to E.
