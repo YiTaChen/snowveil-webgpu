@@ -507,3 +507,27 @@ scale with no browser error. The calibrated native frame shades a true
 the same path reports 44 FPS, P95 33.5 ms, 1% low 30, and 100% RES. The compact
 procedural character is more physically credible, but a conventional deforming
 skin rig and detailed hands/facial performance remain outside this checkpoint.
+
+### 2026-08-14 — chase-camera obstruction checkpoint
+
+Before: [`evidence/rider-action-native-2560x1440.png`](./evidence/rider-action-native-2560x1440.png)
+
+After: [`evidence/camera-occlusion-after-2560x1440.png`](./evidence/camera-occlusion-after-2560x1440.png)
+
+The before frame records the real deterministic route immediately after the
+first sigil. Its activated crystal, ring, fins, and plinth occupy the centre
+foreground and obscure the snow path around the rider. The object is valid world
+geometry, but letting it become an opaque camera obstruction fails a polished
+third-person composition.
+
+The retained frame uses the same route, camera logic, player controller, beacon
+world positions, materials, and true 2560×1440 WebGPU target. A world-space
+camera-to-rider corridor fades the near beacon while the two distant beacons
+remain solid and readable. The rider, board, contact shadow, track, and
+surrounding snow now stay visible through the obstruction. Browser diagnostics
+report no WGSL, WebGPU, or uncaptured-device error.
+
+At the normal review viewport the full three-sigil route remains at 60 FPS,
+100% RES. The completed calibrated target stabilizes at 47 FPS, P95 33.8 ms,
+1% low 20, and 100% RES. This passes the camera-obstruction checkpoint without
+claiming fixed-native 60 FPS.

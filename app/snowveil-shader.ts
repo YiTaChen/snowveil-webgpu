@@ -1063,6 +1063,7 @@ struct BeaconVertexOut {
   @location(4) @interpolate(flat) part: u32,
   @location(5) @interpolate(flat) activation: f32,
   @location(6) viewDistance: f32,
+  @location(7) @interpolate(flat) cameraOcclusion: f32,
 };
 
 fn saturate(value: f32) -> f32 {
@@ -1142,6 +1143,14 @@ fn vsBeacon(input: BeaconVertexIn, @builtin(instance_index) instance: u32) -> Be
   output.part = part;
   output.activation = activation;
   output.viewDistance = length(relative);
+  let playerDistance = length(cameraTarget - cameraPosition);
+  let beaconFromCamera = beacon.xyz - cameraPosition;
+  let beaconAlongView = dot(beaconFromCamera, forward);
+  let beaconFromSightline = length(beaconFromCamera - forward * beaconAlongView);
+  let betweenCameraAndRider =
+    step(0.25, beaconAlongView) * (1.0 - step(playerDistance + 0.85, beaconAlongView));
+  let sightlineCorridor = 1.0 - smoothstep(0.9, 2.8, beaconFromSightline);
+  output.cameraOcclusion = betweenCameraAndRider * sightlineCorridor;
   return output;
 }
 
@@ -1191,7 +1200,13 @@ fn fsBeacon(input: BeaconVertexOut) -> @location(0) vec4<f32> {
   let rayDirection = -viewDirection;
   let fog = smoothstep(18.0, 50.0, input.viewDistance);
   color = mix(color, atmosphere(normalize(vec3<f32>(rayDirection.x, max(rayDirection.y, 0.025), rayDirection.z)), sunDirection), fog);
-  return vec4<f32>(max(color, vec3<f32>(0.0)), 1.0);
+  // A beacon crossed by the chase camera should reveal the rider instead of
+  // becoming an opaque full-frame obstruction. At normal gameplay distances
+  // this evaluates to one and preserves the established material.
+  let proximityFade = smoothstep(1.6, 5.0, input.viewDistance);
+  let sightlineFade = mix(1.0, 0.1, input.cameraOcclusion);
+  let cameraFade = min(proximityFade, sightlineFade);
+  return vec4<f32>(max(color, vec3<f32>(0.0)), cameraFade);
 }
 `;
 

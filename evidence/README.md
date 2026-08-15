@@ -182,3 +182,6 @@ They are review artefacts, not third-party source material.
   the stronger landing load keeps guards, boots, and blade visually continuous.
 - `rider-action-native-2560x1440.png` — calibrated complete-frame 6.8 m/s route
   capture at a true 2560×1440 WebGPU target and 100% RES.
+- `camera-occlusion-after-2560x1440.png` — the same calibrated first-sigil route
+  region after sightline-aware alpha keeps the rider and snow path readable
+  through the near beacon; distant beacons retain their established opacity.

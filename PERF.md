@@ -396,3 +396,16 @@ stable native-performance claim. After the deterministic route completes and
 the measurement window warms, the true 2560×1440 target reports 44 FPS, P95
 33.5 ms, 1% low 30, and 100% RES. This matches the established fixed-native
 pixel-shading boundary.
+
+## 2026-08-14 — sightline-aware beacon alpha
+
+The existing instanced beacon draw changes from opaque depth writing to
+source-alpha blending after the opaque rider draw. The shader adds one flat
+occlusion value and a small per-vertex sightline calculation. There is no new
+pass, draw, instance, geometry, buffer, texture, uniform, or CPU traversal.
+
+The completed true 2560×1440 route stabilizes at 47 FPS, P95 33.8 ms, 1% low
+20, and 100% RES with clean diagnostics. The normal 1182×749 completion route
+remains at 60 FPS and 100% RES. These readings show no measurable regression
+outside normal run-to-run variance; they do not change the documented fixed-
+native performance boundary.

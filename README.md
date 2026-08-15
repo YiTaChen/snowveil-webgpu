@@ -122,6 +122,10 @@ Original project code is released under the [MIT License](./LICENSE).
     mass and opens asymmetric balance arms, idle relaxes the casting forearm,
     and only a live Ice Pulse raises it; stronger state-specific knee loading
     remains layered over the same board, jump, and contact physics.
+21. Camera-obstruction pass — frost beacons now detect whether they occupy the
+    chase-camera sightline, fade through a depth-safe alpha path only while
+    obstructing the rider, and return to their opaque established material at
+    ordinary viewing distances.
 
 The current build is a polished playable vertical slice, not a claim of a full
 AAA production or a hundred-million-particle physical simulation. See

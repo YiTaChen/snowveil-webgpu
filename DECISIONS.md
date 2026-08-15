@@ -528,3 +528,24 @@ This is a visual correction, not an animation shortcut. Spell timing, velocity,
 board yaw, jump height, landing impact, and snow-contact stamping remain
 unchanged. The implementation is original WGSL over the project-owned part
 mesh, with no imported animation, pose reference, or third-party asset.
+
+## 2026-08-14 — Chase-camera obstructions fade without moving world objects
+
+The calibrated route capture exposed an activated beacon filling the lower
+foreground while the player passed it. Selecting a more flattering screenshot
+time, moving the route object, or scaling its mesh would hide the camera defect
+or change gameplay state, so all three were rejected.
+
+The retained beacon vertex stage measures the beacon centre against the segment
+from the camera to the rider. A centre between those endpoints and inside a
+world-space sightline corridor receives a strong fade; a separate proximity
+envelope catches geometry that passes extremely close to the lens. The normal
+material remains fully opaque outside those conditions. Beacon triangles now
+use standard source-alpha blending, do not write depth, and render after the
+opaque rider so a front obstruction can fade while a distant beacon still obeys
+the rider depth buffer.
+
+This adds no object movement, collision exception, pass, draw call, texture,
+uniform, or external asset. A source-level test locks the alpha factors,
+depth-write rule, draw order, and shader obstruction contract; running WebGPU
+captures verify the compiled result.

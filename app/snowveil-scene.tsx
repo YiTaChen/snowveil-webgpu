@@ -465,11 +465,23 @@ export function SnowveilScene() {
               },
             ],
           },
-          fragment: { module: beaconShaderModule, entryPoint: "fsBeacon", targets: [{ format: sceneFormat }] },
+          fragment: {
+            module: beaconShaderModule,
+            entryPoint: "fsBeacon",
+            targets: [
+              {
+                format: sceneFormat,
+                blend: {
+                  color: { srcFactor: "src-alpha", dstFactor: "one-minus-src-alpha", operation: "add" },
+                  alpha: { srcFactor: "one", dstFactor: "one-minus-src-alpha", operation: "add" },
+                },
+              },
+            ],
+          },
           primitive: { topology: "triangle-list", cullMode: "none" },
           depthStencil: {
             format: "depth24plus",
-            depthWriteEnabled: true,
+            depthWriteEnabled: false,
             depthCompare: "less",
           },
         });
@@ -977,16 +989,16 @@ export function SnowveilScene() {
           pass.setVertexBuffer(0, terrainVertexBuffer);
           pass.setIndexBuffer(terrainIndexBuffer, "uint32");
           pass.drawIndexed(terrainIndices.length);
-          pass.setPipeline(beaconPipeline);
-          pass.setBindGroup(0, beaconBindGroup);
-          pass.setVertexBuffer(0, beaconVertexBuffer);
-          pass.setIndexBuffer(beaconIndexBuffer, "uint32");
-          pass.drawIndexed(beaconGeometry.indices.length, beaconPositions.length);
           pass.setPipeline(playerPipeline);
           pass.setBindGroup(0, playerBindGroup);
           pass.setVertexBuffer(0, riderVertexBuffer);
           pass.setIndexBuffer(riderIndexBuffer, "uint32");
           pass.drawIndexed(riderGeometry.indices.length);
+          pass.setPipeline(beaconPipeline);
+          pass.setBindGroup(0, beaconBindGroup);
+          pass.setVertexBuffer(0, beaconVertexBuffer);
+          pass.setIndexBuffer(beaconIndexBuffer, "uint32");
+          pass.drawIndexed(beaconGeometry.indices.length, beaconPositions.length);
           pass.setPipeline(snowOverlayPipeline);
           pass.setBindGroup(0, snowOverlayBindGroup);
           pass.draw(3);
