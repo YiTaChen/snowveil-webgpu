@@ -409,3 +409,17 @@ The completed true 2560×1440 route stabilizes at 47 FPS, P95 33.8 ms, 1% low
 remains at 60 FPS and 100% RES. These readings show no measurable regression
 outside normal run-to-run variance; they do not change the documented fixed-
 native performance boundary.
+
+## 2026-08-14 — rider equipment-detail geometry
+
+Helmet lenses, rim, bridge, hinges, mask vents, glove thumbs, hand plates, and
+the smaller casting core remain inside the existing rider vertex/index buffers
+and single player draw. Four extra material groups add no pipeline, pass, draw,
+uniform, texture, storage buffer, or animation runtime.
+
+The first visually accepted mesh used excessive sphere tessellation for
+millimetre-scale pieces and coincided with a 44 FPS fixed-native completion
+reading. Retessellating only those pieces preserves the close silhouette while
+the final active capture reports 47 FPS, P95 33.7 ms, 1% low 21, and 100% RES;
+the warmed completion reports 46 FPS, P95 33.5 ms, 1% low 29. The normal
+1182×749 ride and cast checks remain at 60 FPS and 100% RES.

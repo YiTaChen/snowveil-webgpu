@@ -531,3 +531,33 @@ At the normal review viewport the full three-sigil route remains at 60 FPS,
 100% RES. The completed calibrated target stabilizes at 47 FPS, P95 33.8 ms,
 1% low 20, and 100% RES. This passes the camera-obstruction checkpoint without
 claiming fixed-native 60 FPS.
+
+### 2026-08-14 — rider helmet and glove construction checkpoint
+
+Evidence:
+
+- before: [`evidence/rider-detail-before-1182x749.png`](./evidence/rider-detail-before-1182x749.png)
+- close front after: [`evidence/rider-detail-after-1182x749.png`](./evidence/rider-detail-after-1182x749.png)
+- moving hierarchy: [`evidence/rider-detail-ride-1182x749.png`](./evidence/rider-detail-ride-1182x749.png)
+- live casting hand: [`evidence/rider-detail-cast-1182x749.png`](./evidence/rider-detail-cast-1182x749.png)
+- complete-frame native target: [`evidence/rider-detail-native-2560x1440.png`](./evidence/rider-detail-native-2560x1440.png)
+
+The before frame shows the prior single dark visor and featureless glove ends at
+the closest available orbit. The retained close frame separates left and right
+cold-glass optics inside a narrower raised frame, adds a bridge, side hinges,
+mask plane and vents, and gives each hand a thumb plus raised back plate. The
+new 2.8-metre wheel limit exposes these forms without clipping the hood, board,
+or feet and remains an ordinary perspective camera, not a separate render.
+
+Real W input at 5.4 m/s confirms that lens, mask, thumb, and hand plate groups
+stay attached while head look, elbow balance, shoulder counterbalance, and
+terrain stance all move. Real E input restores strong emission only at the
+small casting core while the projectile, crater, and post wave are visible.
+All 1182×749 close checks report 60 FPS and 100% RES; browser diagnostics are
+clean.
+
+The calibrated active frame shades a true 2560×1440 target at 47 FPS, P95 33.7
+ms, 1% low 21, and 100% RES. The warmed completed route reports 46 FPS, P95
+33.5 ms, 1% low 29, and 100% RES. Detailed hands and optics are improved, but
+the compact procedural character remains below a conventional production skin
+rig or facial-animation system.

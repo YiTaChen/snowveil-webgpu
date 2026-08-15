@@ -185,3 +185,13 @@ They are review artefacts, not third-party source material.
 - `camera-occlusion-after-2560x1440.png` — the same calibrated first-sigil route
   region after sightline-aware alpha keeps the rider and snow path readable
   through the near beacon; distant beacons retain their established opacity.
+- `rider-detail-before-1182x749.png` — closest pre-change front inspection with
+  one dark visor surface, ball-ended gloves, and the hand-sized constant core.
+- `rider-detail-after-1182x749.png` — retained 2.8-metre front inspection with
+  split cold-glass lenses, narrower frame, mask construction, and thumb shapes.
+- `rider-detail-ride-1182x749.png` — real 5.4 m/s input showing all new head and
+  hand pieces inheriting the moving procedural hierarchy at 60 FPS.
+- `rider-detail-cast-1182x749.png` — real E input showing the smaller hand core
+  brightening with the projectile, crater, and post-process ring.
+- `rider-detail-native-2560x1440.png` — calibrated complete-frame active route
+  at a true 2560×1440 target, 47 FPS and 100% RES.

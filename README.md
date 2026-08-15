@@ -126,6 +126,11 @@ Original project code is released under the [MIT License](./LICENSE).
     chase-camera sightline, fade through a depth-safe alpha path only while
     obstructing the rider, and return to their opaque established material at
     ordinary viewing distances.
+22. Rider equipment-detail pass — split optical lenses, a raised goggle rim,
+    lower mask, hinges, vents, glove thumbs, hand-back plates, and a pulse-gated
+    casting core add close-range construction while inheriting the existing
+    head, elbow, and shoulder hierarchy; mouse-wheel inspection now reaches a
+    safe 2.8-metre close camera.
 
 The current build is a polished playable vertical slice, not a claim of a full
 AAA production or a hundred-million-particle physical simulation. See

@@ -813,11 +813,11 @@ fn vsPlayer(input: PlayerVertexIn) -> PlayerVertexOut {
     carve * armSide * 0.055 + motion * (0.018 + 0.012 * sin(time * 3.1 + armSide)) +
     skid * 0.025 + brakePose * 0.055 - airPose * 0.055 + landPose * 0.06 +
     authoredForearmPose;
-  if (part == 19u || part == 20u || part == 16u || part == 9u) {
+  if (part == 19u || part == 20u || part == 16u || part == 23u || part == 9u) {
     local = elbowPivot + rotateZ(local - elbowPivot, elbowBalance);
     localNormal = rotateZ(localNormal, elbowBalance);
   }
-  if (part == 18u || part == 19u || part == 20u || part == 16u || part == 9u) {
+  if (part == 18u || part == 19u || part == 20u || part == 16u || part == 23u || part == 9u) {
     local = shoulderPivot + rotateZ(local - shoulderPivot, shoulderBalance);
     localNormal = rotateZ(localNormal, shoulderBalance);
   }
@@ -835,6 +835,7 @@ fn vsPlayer(input: PlayerVertexIn) -> PlayerVertexOut {
 
   if (
     part == 0u || part == 3u || part == 4u || part == 5u ||
+    part == 22u || part == 24u || part == 25u ||
     (part == 10u && local.y > 1.48) ||
     (part == 8u && local.y > 1.3)
   ) {
@@ -846,7 +847,7 @@ fn vsPlayer(input: PlayerVertexIn) -> PlayerVertexOut {
 
   let lean = carve * (0.08 + ridePose * 0.04) + skid * 0.03 + brakePose * 0.025 + compression * 0.012;
   let bank = carve * 0.026;
-  if (part != 0u && part != 11u && part != 14u && part != 15u && part != 17u) {
+  if (part != 11u && part != 14u && part != 15u && part != 17u) {
     let stancePivot = vec3<f32>(0.0, 0.12, -0.04);
     local = stancePivot + rotateX(local - stancePivot, lean);
     localNormal = rotateX(localNormal, lean);
@@ -956,6 +957,19 @@ fn fsPlayer(input: PlayerVertexOut) -> @location(0) vec4<f32> {
   } else if (input.part == 20u || input.part == 21u) {
     albedo = vec3<f32>(0.105, 0.215, 0.255);
     roughness = 0.3;
+  } else if (input.part == 22u) {
+    let lensSide = smoothstep(-0.12, 0.12, input.localPosition.x);
+    albedo = mix(vec3<f32>(0.035, 0.25, 0.34), vec3<f32>(0.12, 0.42, 0.5), lensSide);
+    roughness = 0.08;
+  } else if (input.part == 23u) {
+    albedo = vec3<f32>(0.012, 0.036, 0.05);
+    roughness = 0.36;
+  } else if (input.part == 24u) {
+    albedo = vec3<f32>(0.045, 0.105, 0.13);
+    roughness = 0.62;
+  } else if (input.part == 25u) {
+    albedo = vec3<f32>(0.012, 0.045, 0.062);
+    roughness = 0.28;
   } else if (input.part == 14u) {
     let nose = smoothstep(0.42, 0.9, input.localPosition.x);
     let noseInlay =
@@ -1006,6 +1020,15 @@ fn fsPlayer(input: PlayerVertexOut) -> @location(0) vec4<f32> {
     let visorBand = 1.0 - smoothstep(0.016, 0.042, abs(input.localPosition.y - 1.605));
     color = color + vec3<f32>(0.12, 0.48, 0.68) * visorBand * (0.12 + rim * 0.28);
   }
+  if (input.part == 22u) {
+    let opticalFresnel = pow(1.0 - saturate(dot(normal, viewDirection)), 2.0);
+    let lensSweep = 0.5 + 0.5 * sin(input.localPosition.x * 34.0 - input.localPosition.y * 18.0);
+    color = color + vec3<f32>(0.18, 0.72, 0.9) * (0.2 + opticalFresnel * 0.58 + lensSweep * 0.075);
+  }
+  if (input.part == 24u) {
+    let maskCenter = 1.0 - smoothstep(0.012, 0.075, abs(input.localPosition.x));
+    color = color * (1.0 - maskCenter * 0.12) + vec3<f32>(0.08, 0.2, 0.25) * maskCenter * 0.08;
+  }
   if (input.part == 6u) {
     let capeTail = saturate((1.29 - input.localPosition.y) / 0.61);
     let capeCenter = capeTail * 0.055 + sin(capeTail * 3.14159) * 0.035;
@@ -1029,7 +1052,8 @@ fn fsPlayer(input: PlayerVertexOut) -> @location(0) vec4<f32> {
 
   if (input.part == 9u) {
     let pulse = 0.88 + sin(globals.viewport.z * 3.2) * 0.12;
-    color = vec3<f32>(0.22, 0.72, 1.0) * (4.6 + globals.weather.z * 3.8) * pulse;
+    let charge = 0.18 + globals.weather.z * 0.82;
+    color = vec3<f32>(0.22, 0.72, 1.0) * (1.15 + charge * 6.9) * pulse;
   }
   if (input.part == 11u) {
     if (globals.weather.z < 0.012) {

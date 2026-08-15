@@ -50,7 +50,15 @@ export function createRiderGeometry() {
     }
   };
 
-  const addCapsule = (start: Vec3, end: Vec3, radius: number, part: number, segments = 18) => {
+  const addCapsule = (
+    start: Vec3,
+    end: Vec3,
+    radius: number,
+    part: number,
+    segments = 18,
+    capLongitude = 16,
+    capLatitude = 10,
+  ) => {
     const direction = normalize([end[0] - start[0], end[1] - start[1], end[2] - start[2]]);
     const reference: Vec3 = Math.abs(direction[1]) > 0.92 ? [1, 0, 0] : [0, 1, 0];
     const tangent = normalize(cross(direction, reference));
@@ -79,8 +87,8 @@ export function createRiderGeometry() {
       const endRight = endLeft + 1;
       indices.push(startLeft, endLeft, startRight, startRight, endLeft, endRight);
     }
-    addSphere(start, [radius, radius, radius], part, 16, 10);
-    addSphere(end, [radius * 0.96, radius * 0.96, radius * 0.96], part, 16, 10);
+    addSphere(start, [radius, radius, radius], part, capLongitude, capLatitude);
+    addSphere(end, [radius * 0.96, radius * 0.96, radius * 0.96], part, capLongitude, capLatitude);
   };
 
   const addTorus = (center: Vec3, majorRadius: number, tubeRadius: number, part: number) => {
@@ -107,6 +115,57 @@ export function createRiderGeometry() {
     for (let major = 0; major < majorSegments; major += 1) {
       for (let tube = 0; tube < tubeSegments; tube += 1) {
         const topLeft = base + major * row + tube;
+        const topRight = topLeft + 1;
+        const bottomLeft = topLeft + row;
+        const bottomRight = bottomLeft + 1;
+        indices.push(topLeft, bottomLeft, topRight, topRight, bottomLeft, bottomRight);
+      }
+    }
+  };
+
+  const addFaceRing = (
+    center: Vec3,
+    radius: [number, number],
+    tubeRadius: number,
+    part: number,
+  ) => {
+    const ringSegments = 24;
+    const tubeSegments = 5;
+    const base = vertices.length / 7;
+    for (let ring = 0; ring <= ringSegments; ring += 1) {
+      const theta = (ring / ringSegments) * Math.PI * 2;
+      const cosine = Math.cos(theta);
+      const sine = Math.sin(theta);
+      const ringCenter: Vec3 = [
+        center[0] + cosine * radius[0],
+        center[1] + sine * radius[1],
+        center[2],
+      ];
+      const outward = normalize([cosine / radius[0], sine / radius[1], 0]);
+      for (let tube = 0; tube <= tubeSegments; tube += 1) {
+        const phi = (tube / tubeSegments) * Math.PI * 2;
+        const tubeCosine = Math.cos(phi);
+        const tubeSine = Math.sin(phi);
+        const normal = normalize([
+          outward[0] * tubeCosine,
+          outward[1] * tubeCosine,
+          tubeSine,
+        ]);
+        addVertex(
+          [
+            ringCenter[0] + outward[0] * tubeRadius * tubeCosine,
+            ringCenter[1] + outward[1] * tubeRadius * tubeCosine,
+            ringCenter[2] + tubeRadius * tubeSine,
+          ],
+          normal,
+          part,
+        );
+      }
+    }
+    const row = tubeSegments + 1;
+    for (let ring = 0; ring < ringSegments; ring += 1) {
+      for (let tube = 0; tube < tubeSegments; tube += 1) {
+        const topLeft = base + ring * row + tube;
         const topRight = topLeft + 1;
         const bottomLeft = topLeft + row;
         const bottomRight = bottomLeft + 1;
@@ -340,6 +399,17 @@ export function createRiderGeometry() {
   addSphere([0, 1.605, -0.248], [0.147, 0.076, 0.024], 8, 24, 12);
   addSphere([0, 1.605, -0.274], [0.123, 0.052, 0.016], 0, 24, 12);
   addCapsule([0, 1.655, -0.287], [0, 1.56, -0.287], 0.014, 10, 12);
+  // Split optics, raised rim, bridge, hinges, and a lower breathing mask keep
+  // the face readable without an image texture or imported helmet asset.
+  addSphere([-0.063, 1.612, -0.294], [0.052, 0.034, 0.009], 22, 14, 8);
+  addSphere([0.063, 1.612, -0.294], [0.052, 0.034, 0.009], 22, 14, 8);
+  addFaceRing([0, 1.606, -0.286], [0.145, 0.076], 0.008, 25);
+  addCapsule([-0.017, 1.612, -0.299], [0.017, 1.612, -0.299], 0.01, 25, 10);
+  addSphere([-0.145, 1.606, -0.274], [0.022, 0.026, 0.018], 25, 10, 6);
+  addSphere([0.145, 1.606, -0.274], [0.022, 0.026, 0.018], 25, 10, 6);
+  addSphere([0, 1.526, -0.286], [0.09, 0.045, 0.014], 24, 16, 8);
+  addSphere([-0.036, 1.523, -0.297], [0.007, 0.018, 0.006], 25, 10, 6);
+  addSphere([0.036, 1.523, -0.297], [0.007, 0.018, 0.006], 25, 10, 6);
   addSphere([0, 1.38, -0.205], [0.09, 0.055, 0.055], 5, 18, 10);
 
   // Layered curved shells replace primitive shoulder ellipsoids.
@@ -359,7 +429,13 @@ export function createRiderGeometry() {
   // stay aligned with the board while the hands follow the turning torso.
   addSphere([-0.37, 0.81, -0.3], [0.082, 0.09, 0.11], 16, 18, 11);
   addSphere([0.83, 1.4, -0.58], [0.085, 0.09, 0.11], 16, 18, 11);
-  addSphere([0.85, 1.43, -0.59], [0.075, 0.075, 0.075], 9, 18, 12);
+  // Thumb and hand-back pieces move with the forearm hierarchy and remove the
+  // previous featureless ball termination at each glove.
+  addCapsule([-0.35, 0.83, -0.36], [-0.275, 0.79, -0.405], 0.034, 23, 12, 10, 6);
+  addCapsule([0.81, 1.42, -0.64], [0.75, 1.37, -0.7], 0.034, 23, 12, 10, 6);
+  addSphere([-0.37, 0.82, -0.35], [0.066, 0.061, 0.042], 23, 12, 7);
+  addSphere([0.83, 1.41, -0.63], [0.068, 0.061, 0.042], 23, 12, 7);
+  addSphere([0.85, 1.42, -0.68], [0.034, 0.034, 0.034], 9, 10, 6);
   addTorus([0, 0.91, 0], 0.335, 0.021, 10);
   addCapsule([-0.19, 1.27, -0.245], [0.075, 0.94, -0.315], 0.022, 10, 12);
   addCapsule([0.19, 1.27, -0.245], [-0.075, 0.94, -0.315], 0.022, 10, 12);

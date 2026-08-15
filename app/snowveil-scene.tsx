@@ -170,7 +170,7 @@ export function SnowveilScene() {
 
     const onWheel = (event: WheelEvent) => {
       event.preventDefault();
-      distance = Math.max(4.2, Math.min(11.5, distance + event.deltaY * 0.006));
+      distance = Math.max(2.8, Math.min(11.5, distance + event.deltaY * 0.006));
     };
 
     const castIcePulse = () => {

@@ -549,3 +549,26 @@ This adds no object movement, collision exception, pass, draw call, texture,
 uniform, or external asset. A source-level test locks the alpha factors,
 depth-write rule, draw order, and shader obstruction contract; running WebGPU
 captures verify the compiled result.
+
+## 2026-08-14 — Close equipment detail remains geometry, not a pasted surface
+
+The retained rider silhouette survived normal chase distance, but the closest
+front review still exposed one dark visor ellipsoid and ball-like glove ends.
+Painting apparent lenses or fingers into a screen-space overlay was rejected:
+those marks would not survive head turns, arm articulation, lighting, or camera
+orbit and would undermine the project's original procedural construction.
+
+Four new geometry/material groups separate two optical lenses, an elliptical
+rim with bridge and hinges, a lower breathing mask with vents, and articulated
+thumb/hand-back pieces. Head equipment inherits torso and head look; hand pieces
+inherit elbow deformation before shoulder counterbalance. The right-hand
+casting core shrinks from a hand-sized always-bright sphere to a small device
+whose emission is mostly supplied by the real Ice Pulse envelope. The existing
+visor now shares the stance lean applied to the rest of the helmet.
+
+The first dense version was visually accepted but measured at 44 FPS on the
+fixed-native completed route. Tiny lenses, hinges, vents, rim tubes, thumbs, and
+hand plates were then retessellated to their projected size without changing
+their silhouette. The retained version records 47 FPS in the active native
+capture and 46 FPS after completion, while the normal viewport remains at 60
+FPS. No image, model, normal map, animation, or third-party asset is introduced.
