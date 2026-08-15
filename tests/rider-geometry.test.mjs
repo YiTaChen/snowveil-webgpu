@@ -31,6 +31,7 @@ test("rider geometry keeps finite indexed surfaces and articulated part groups",
   for (const part of [22, 23, 24, 25]) {
     assert.ok((partCounts.get(part) ?? 0) > 100, `missing helmet or glove detail part ${part}`);
   }
+  assert.ok((partCounts.get(26) ?? 0) > 40, "missing independently simulated cape trim");
   assert.ok((partCounts.get(14) ?? 0) > 40, "missing authored board top");
   assert.ok((partCounts.get(15) ?? 0) > 80, "missing authored board base and edge");
 });

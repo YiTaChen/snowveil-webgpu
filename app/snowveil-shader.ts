@@ -11,6 +11,8 @@ struct Globals {
   terrain: vec4<f32>,
   motion: vec4<f32>,
   pose: vec4<f32>,
+  clothFlowX: vec4<f32>,
+  clothFlowZ: vec4<f32>,
 };
 
 @group(0) @binding(0) var<uniform> globals: Globals;
@@ -744,6 +746,20 @@ fn rotateZ(point: vec3<f32>, angle: f32) -> vec3<f32> {
   return vec3<f32>(point.x * cosine - point.y * sine, point.x * sine + point.y * cosine, point.z);
 }
 
+fn clothFlowAt(chain: vec4<f32>, amount: f32) -> f32 {
+  let scaled = saturate(amount) * 4.0;
+  if (scaled < 1.0) {
+    return mix(0.0, chain.x, scaled);
+  }
+  if (scaled < 2.0) {
+    return mix(chain.x, chain.y, scaled - 1.0);
+  }
+  if (scaled < 3.0) {
+    return mix(chain.y, chain.z, scaled - 2.0);
+  }
+  return mix(chain.z, chain.w, min(scaled - 3.0, 1.0));
+}
+
 @vertex
 fn vsPlayer(input: PlayerVertexIn) -> PlayerVertexOut {
   var output: PlayerVertexOut;
@@ -808,9 +824,12 @@ fn vsPlayer(input: PlayerVertexIn) -> PlayerVertexOut {
   }
   if (part == 5u) {
     let tail = saturate((local.z - 0.08) / 1.52);
-    local.x = local.x + sin(time * (2.9 + motion * 2.5) + tail * 6.4) * (0.018 + tail * 0.115) * (0.35 + motion);
-    local.y = local.y + sin(time * (2.45 + motion * 1.7) + tail * 4.8) * tail * (0.018 + motion * 0.034);
-    local.z = local.z + motion * tail * (0.04 + 0.045 * sin(time * 2.1 + tail * 3.7));
+    let broadX = clothFlowAt(globals.clothFlowX, tail);
+    let broadZ = clothFlowAt(globals.clothFlowZ, tail);
+    let turbulence = sin(time * (3.4 + motion * 1.6) + tail * 8.2) * tail;
+    local.x = local.x + broadX * 1.38 + turbulence * (0.006 + motion * 0.012);
+    local.y = local.y + sin(time * 2.7 + tail * 5.1) * tail * (0.005 + motion * 0.008) - abs(broadX) * tail * 0.055;
+    local.z = local.z + broadZ * 1.06 + turbulence * motion * 0.006;
   }
   if (part == 11u) {
     let spellCenter = vec3<f32>(0.9, 0.88, -3.2);
@@ -822,11 +841,14 @@ fn vsPlayer(input: PlayerVertexIn) -> PlayerVertexOut {
     local.x = local.x + (sin(time * 2.15 + local.z * 3.1) * motion * 0.034 + carve * 0.022) * hem;
     local.z = local.z + sin(time * 2.7 + local.x * 4.6) * hem * motion * 0.018;
   }
-  if (part == 6u) {
+  if (part == 6u || part == 26u) {
     let capeTail = saturate((1.31 - local.y) / 0.72);
-    local.x = local.x + sin(time * (2.5 + motion * 1.4) + capeTail * 5.2) * capeTail * (0.012 + motion * 0.052);
-    local.y = local.y + cos(time * 2.2 + capeTail * 4.3) * capeTail * motion * 0.022;
-    local.z = local.z + capeTail * motion * (0.025 + 0.035 * sin(time * 1.9 + capeTail * 3.6));
+    let broadX = clothFlowAt(globals.clothFlowX, capeTail);
+    let broadZ = clothFlowAt(globals.clothFlowZ, capeTail);
+    let turbulence = sin(time * (3.05 + motion * 1.15) + capeTail * 7.4) * capeTail;
+    local.x = local.x + broadX * 0.82 + turbulence * (0.003 + motion * 0.008);
+    local.y = local.y + cos(time * 2.45 + capeTail * 5.3) * capeTail * (0.002 + motion * 0.006) - abs(broadX) * capeTail * 0.035;
+    local.z = local.z + broadZ * 0.68 + turbulence * motion * 0.004;
   }
 
   let armSide = select(-1.0, 1.0, local.x >= 0.0);
@@ -989,7 +1011,7 @@ fn fsPlayer(input: PlayerVertexOut) -> @location(0) vec4<f32> {
   } else if (input.part == 8u) {
     albedo = vec3<f32>(0.16, 0.27, 0.32);
     roughness = 0.34;
-  } else if (input.part == 10u) {
+  } else if (input.part == 10u || input.part == 26u) {
     albedo = vec3<f32>(0.018, 0.052, 0.078);
   } else if (input.part == 12u) {
     albedo = vec3<f32>(0.035, 0.095, 0.125);
@@ -1043,7 +1065,8 @@ fn fsPlayer(input: PlayerVertexOut) -> @location(0) vec4<f32> {
   let weave = sin(weaveX) * sin(weaveY) * weaveSampling;
   let clothMaterial =
     input.part == 1u || input.part == 2u || input.part == 3u || input.part == 6u ||
-    input.part == 7u || input.part == 12u || input.part == 18u || input.part == 19u;
+    input.part == 7u || input.part == 12u || input.part == 18u || input.part == 19u ||
+    input.part == 26u;
   if (clothMaterial) {
     color = color * (0.985 + weave * 0.015);
   }

@@ -22,6 +22,9 @@ test("player shader gates casting and retains state-specific athletic loading", 
   assert.match(snowveilPlayerShader, /let charge = 0\.18 \+ globals\.weather\.z \* 0\.82/);
   assert.match(snowveilPlayerShader, /let lookTwist = mix\(0\.92, 0\.08, skid\)/);
   assert.match(snowveilPlayerShader, /let headLook = mix\(0\.27, 0\.035, skid\)/);
+  assert.match(snowveilPlayerShader, /fn clothFlowAt\(chain: vec4<f32>, amount: f32\)/);
+  assert.match(snowveilPlayerShader, /clothFlowAt\(globals\.clothFlowX, tail\)/);
+  assert.match(snowveilPlayerShader, /part == 6u \|\| part == 26u/);
 });
 
 test("terrain and history use the same tapered snowboard contact", () => {

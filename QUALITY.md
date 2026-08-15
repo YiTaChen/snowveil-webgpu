@@ -612,3 +612,32 @@ also free of WGSL, WebGPU validation, and uncaptured-device errors.
 This passes the dynamic snow-response checkpoint. It remains a controlled
 screen-space near-rider plume, not a world-particle fluid simulation; persistent
 world snow displacement continues to come from the separate 1536² history.
+
+### 2026-08-14 — relative-airflow cloth checkpoint
+
+Evidence:
+
+- loaded ride and carve: [`evidence/cloth-airflow-ride-1182x749.png`](./evidence/cloth-airflow-ride-1182x749.png)
+- stopped-tail inertia: [`evidence/cloth-inertia-brake-1182x749.png`](./evidence/cloth-inertia-brake-1182x749.png)
+- completed route: [`evidence/cloth-route-complete-1182x749.png`](./evidence/cloth-route-complete-1182x749.png)
+- complete target downsample: [`evidence/cloth-airflow-target-1280x720.png`](./evidence/cloth-airflow-target-1280x720.png)
+
+The ride frame comes from real W+D input at 5.6 m/s. The scarf opens along the
+relative airflow while the cape carries a separate, shorter response down its
+four-link span. After four real S inputs stop the rider, the second frame keeps
+the free end extended instead of snapping immediately to an idle sine phase.
+The dark edge remains joined because it now has its own transform id rather than
+sharing the static belt and chest-harness group.
+
+The normal interaction and completed three-sigil route remain at 60 FPS and
+100% RES. A manual carve on the true 2560×1440 WebGPU target reports 48 FPS,
+P95 33.5 ms, and 100% RES; a large visible host view reports 47 FPS. The current
+browser export downscales the complete calibrated page to 1280×720, so that file
+is labelled at its real exported dimensions and is not used as a native 1440p
+still. Browser diagnostics contain no audio, WGSL, WebGPU validation, or
+uncaptured-device error, and twenty tests cover the bounded cloth integrator,
+geometry attachment, shader routing, movement, contact, audio, and rendering.
+
+This closes the looping-cloth defect without claiming a full finite-element
+fabric solver. The rider remains a compact procedural hierarchy rather than a
+conventional skinned production character or facial-animation system.

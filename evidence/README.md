@@ -220,3 +220,12 @@ They are review artefacts, not third-party source material.
   0.6 m`; the grounded powder layer is absent instead of following the board.
 - `powder-response-route-1182x749.png` — optimized twelve-fleck build after the
   full deterministic route, at 60 FPS, P95 17.3 ms, and 100% RES.
+- `cloth-airflow-ride-1182x749.png` — real W+D input at 5.6 m/s showing the
+  scarf and cape loaded by relative airflow, at 60 FPS and 100% RES.
+- `cloth-inertia-brake-1182x749.png` — immediate post-stop frame retaining the
+  free-end cloth displacement instead of snapping to an idle loop.
+- `cloth-route-complete-1182x749.png` — completed deterministic route after the
+  cloth change, at 60 FPS, P95 17.2 ms, and 100% RES.
+- `cloth-airflow-target-1280x720.png` — complete-frame exporter output while
+  `?capture` reports a 1280×720 CSS presentation and true 2560×1440 WebGPU
+  target; retained at the honest exported dimensions.

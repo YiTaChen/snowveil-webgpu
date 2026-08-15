@@ -21,6 +21,7 @@ import {
   riderAnimationState,
   riderPoseBlend,
   riderTransitionRate,
+  stepClothChain,
   snowHistoryRegionOffset,
   slopeAlongHeading,
   snowboardBrakeDrag,
@@ -128,6 +129,10 @@ export function SnowveilScene() {
     let brakePose = 0;
     let airPose = 0;
     let landPose = 0;
+    const clothFlowX = new Float32Array(4);
+    const clothFlowXVelocity = new Float32Array(4);
+    const clothFlowZ = new Float32Array(4);
+    const clothFlowZVelocity = new Float32Array(4);
     let spellAge = 100;
     let completionAge = 100;
     let activatedCount = 0;
@@ -498,7 +503,7 @@ export function SnowveilScene() {
 
         const uniformBuffer = activeDevice.createBuffer({
           label: "Snowveil frame uniforms",
-          size: 176,
+          size: 208,
           usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST,
         });
         const skyBindGroup = activeDevice.createBindGroup({
@@ -575,7 +580,7 @@ export function SnowveilScene() {
         const deformationRegionSize = 128;
         let deformationAccumulator = deformationInterval;
         let snowHistoryTouched = false;
-        const uniforms = new Float32Array(44);
+        const uniforms = new Float32Array(52);
 
         const terrainSegments = 288;
         const terrainVertexCount = (terrainSegments + 1) * (terrainSegments + 1);
@@ -813,6 +818,31 @@ export function SnowveilScene() {
             : Math.max(speedLimit, playerSpeed);
           playerSpeed = Math.min(speedCeiling, Math.max(0, playerSpeed * Math.exp(-drag * delta)));
 
+          // Resolve the moving rider against a world-space katabatic wind, then
+          // let two four-link damped chains carry that force down the cloth.
+          // The small gust term changes force rather than vertex phase, so a
+          // turn or stop has real lag instead of restarting a sine animation.
+          const windGust = 1 + Math.sin(elapsed * 0.63 + Math.sin(elapsed * 0.17) * 1.4) * 0.16;
+          const relativeWindX = 0.82 * 1.25 * windGust - forwardX * playerSpeed;
+          const relativeWindZ = 0.57 * 1.25 * windGust - forwardZ * playerSpeed;
+          const boardCosine = Math.cos(playerBoardYaw);
+          const boardSine = Math.sin(playerBoardYaw);
+          const localWindX = relativeWindX * boardCosine + relativeWindZ * boardSine;
+          const localWindZ = -relativeWindX * boardSine + relativeWindZ * boardCosine;
+          const carveInertia = -steerVisual * Math.min(playerSpeed / 5.4, 1) * 0.075;
+          stepClothChain(
+            clothFlowX,
+            clothFlowXVelocity,
+            localWindX * 0.044 + carveInertia,
+            delta,
+          );
+          stepClothChain(
+            clothFlowZ,
+            clothFlowZVelocity,
+            localWindZ * 0.034 + Math.sign(steerVisual) * Math.abs(carveInertia) * 0.45,
+            delta,
+          );
+
           playerX += forwardX * playerSpeed * delta;
           playerZ += forwardZ * playerSpeed * delta;
           const playerRadius = Math.hypot(playerX, playerZ);
@@ -976,6 +1006,8 @@ export function SnowveilScene() {
           uniforms[41] = brakePose;
           uniforms[42] = airPose;
           uniforms[43] = landPose;
+          uniforms.set(clothFlowX, 44);
+          uniforms.set(clothFlowZ, 48);
           activeDevice.queue.writeBuffer(uniformBuffer, 0, uniforms);
           if (!groundedForSnow || shouldUpdateSnowHistory) {
             previousStampX = playerX;

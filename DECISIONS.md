@@ -630,3 +630,27 @@ response could read and felt closer to an input kill-switch than progressive
 snow resistance. The retained 3.6 s⁻¹ coefficient still decelerates strongly
 only after the board visibly crosses travel, while leaving a measurable moving
 brake interval.
+
+## 2026-08-14 — Cloth follows relative airflow, not a looping pose
+
+The prior scarf and cape displacement was dominated by vertex-stage sine waves
+whose phase depended on elapsed time and speed. It provided movement, but a turn
+or stop could not carry cloth momentum: every vertex immediately sampled the
+new amplitude, which read as decorative wobble rather than material response.
+
+The retained controller resolves a constant world-space katabatic wind against
+the rider's current world velocity, transforms that relative airflow into the
+board/body frame, and adds a small opposing carve impulse. Two scalar four-link
+chains integrate the local X and Z response. Each link follows the restrained
+link above it with a progressively slower critically damped response, so the
+root remains attached and the free edge both bends farther and reverses later.
+The arrays and velocities are allocated once; the frame loop mutates eight
+values without creating temporary chain objects.
+
+WGSL interpolates those four values down the existing scarf, cape, and trim
+vertices, then adds only a low-amplitude high-frequency turbulence term. Cape
+edge vertices receive a dedicated part id so they inherit the same displacement
+without moving the visually similar but static belt and chest harness. The
+uniform buffer grows by 32 bytes, but no vertex, index, draw, render pass,
+pipeline, texture, storage buffer, animation clip, model, or external asset is
+added.

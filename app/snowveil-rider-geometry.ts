@@ -345,8 +345,10 @@ export function createRiderGeometry() {
       const windOffset = t * 0.055 + Math.sin(t * Math.PI) * 0.035;
       const brokenHem = Math.pow(t, 8) * Math.cos(side * Math.PI * 2.5 + 0.4) * 0.018;
       const edgeZ = 0.4 + t * 0.14 - Math.sin(t * Math.PI) * 0.018;
-      addVertex([side * halfWidth + windOffset, y - side * t * 0.022 + brokenHem, edgeZ + 0.006], [0, 0.1, 1], 10);
-      addVertex([side * (halfWidth - 0.024) + windOffset, y - side * t * 0.022 + 0.008 + brokenHem, edgeZ + 0.012], [0, 0.1, 1], 10);
+      // A dedicated part keeps the cape edging attached to the simulated cape
+      // without pulling the static belt and chest harness along with it.
+      addVertex([side * halfWidth + windOffset, y - side * t * 0.022 + brokenHem, edgeZ + 0.006], [0, 0.1, 1], 26);
+      addVertex([side * (halfWidth - 0.024) + windOffset, y - side * t * 0.022 + 0.008 + brokenHem, edgeZ + 0.012], [0, 0.1, 1], 26);
     }
     for (let segment = 0; segment < capeSegments; segment += 1) {
       const outerTop = trimBase + segment * 2;

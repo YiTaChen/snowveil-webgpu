@@ -462,3 +462,24 @@ The audio addition is one pre-existing two-second procedural noise buffer read
 through another filter/gain branch; it introduces no network or decoding cost.
 The powder layer remains inside the existing overlay pass and adds no draw,
 texture, buffer, compute dispatch, or pipeline.
+
+## 2026-08-14 — relative-airflow cloth cost
+
+The cloth solver mutates two persistent four-element position/velocity pairs on
+the CPU and uploads two additional `vec4<f32>` values in the existing frame
+uniform. The player vertex stage samples them only for the scarf, cape, and its
+dedicated trim. Existing geometry and the single indexed rider draw are
+unchanged.
+
+| Running state | Observed HUD | Result |
+| --- | ---: | --- |
+| real carve and stopped-tail inspection, 1182×749 | 60 FPS · P95 17.2–17.3 ms · 100% | retained |
+| completed three-sigil route, 1182×749 | 60 FPS · P95 17.2 ms · 100% | retained |
+| true 2560×1440 canvas, manual carve | 48 FPS · P95 33.5 ms · 100% | consistent with prior 46–48 FPS target boundary |
+| large visible host view | 47 FPS · P95 33.4 ms · 100% | retained |
+
+The current browser exporter returns the complete `?capture` composition at
+1280×720 even though a read-only canvas inspection reports a 1280×720 CSS
+presentation backed by a 2560×1440 WebGPU target. That downsample is labelled at
+its exported size; the 2073×1440 large-view crops used for telemetry are not
+presented as native-resolution visual proof.

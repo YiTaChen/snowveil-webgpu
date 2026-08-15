@@ -36,10 +36,11 @@ html[data-snowveil-evidence="true"] .snowveil {
 }
 
 /*
- * The app browser exports page screenshots at two host pixels per CSS pixel.
- * Capture mode therefore presents a complete 1280×720 page while the scene
- * allocates and shades a true 2560×1440 WebGPU target. Evidence mode remains a
- * separate 2560×1440 CSS viewport for full-display performance measurement.
+ * Capture mode presents a complete 1280×720 page while the scene allocates and
+ * shades a true 2560×1440 WebGPU target. Hosts that export two pixels per CSS
+ * pixel preserve that target one-to-one; one-pixel exporters produce an honest
+ * 1280×720 downsample. Evidence mode remains a separate 2560×1440 CSS viewport
+ * for full-display performance measurement.
  */
 html[data-snowveil-capture="true"],
 html[data-snowveil-capture="true"] body {

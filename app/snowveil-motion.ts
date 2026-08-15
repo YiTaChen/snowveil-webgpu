@@ -120,3 +120,32 @@ export function riderPoseBlend(current: number, target: number, delta: number, r
   const blend = 1 - Math.exp(-Math.max(delta, 0) * Math.max(rate, 0));
   return boundedCurrent + (boundedTarget - boundedCurrent) * blend;
 }
+
+/**
+ * Advance one scalar four-link cloth chain without allocating in the frame loop.
+ * Each link follows the previous link plus a share of the external airflow, so
+ * the cape root stays restrained while its free edge carries visible inertia.
+ */
+export function stepClothChain(
+  positions: Float32Array,
+  velocities: Float32Array,
+  airflowTarget: number,
+  delta: number,
+) {
+  const frameDelta = Math.max(0, Math.min(delta, 0.05));
+  const boundedAirflow = Math.max(-0.28, Math.min(airflowTarget, 0.28));
+  const linkCount = Math.min(positions.length, velocities.length, 4);
+  for (let index = 0; index < linkCount; index += 1) {
+    const progress = (index + 1) / linkCount;
+    const leader = index === 0 ? 0 : positions[index - 1];
+    const target = leader + boundedAirflow * (0.12 + progress * 0.1);
+    const smoothTime = 0.075 + index * 0.032;
+    const omega = 2 / smoothTime;
+    const x = omega * frameDelta;
+    const decay = 1 / (1 + x + 0.48 * x * x + 0.235 * x * x * x);
+    const displacement = positions[index] - target;
+    const temporary = (velocities[index] + omega * displacement) * frameDelta;
+    velocities[index] = (velocities[index] - omega * temporary) * decay;
+    positions[index] = target + (displacement + temporary) * decay;
+  }
+}

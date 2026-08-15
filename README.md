@@ -139,6 +139,10 @@ Original project code is released under the [MIT License](./LICENSE).
     a signed short-lived powder envelope drive a directional low snow plume;
     airborne contact cuts it immediately, while a separate synthesized edge
     band adds audible scrape without a recording or sample.
+25. Relative-airflow cloth pass — two allocation-free four-link damped chains
+    turn world wind, rider velocity, and carve inertia into delayed cape and
+    scarf motion; a dedicated cape-edge part keeps the dark trim attached while
+    the existing single rider draw and procedural material remain intact.
 
 The current build is a polished playable vertical slice, not a claim of a full
 AAA production or a hundred-million-particle physical simulation. See
