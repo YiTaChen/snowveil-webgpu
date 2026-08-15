@@ -176,8 +176,8 @@ export function createRiderGeometry() {
 
   const addSnowBlade = () => {
     const segments = 40;
-    const noseLength = 0.94;
-    const tailLength = 0.82;
+    const noseLength = 0.98;
+    const tailLength = 0.79;
     const halfWidth = 0.2;
     const centerZ = -0.08;
     const topCenter = addVertex([0, 0.06, centerZ], [0, 1, 0], 14);
@@ -190,10 +190,10 @@ export function createRiderGeometry() {
       const cosine = Math.cos(theta);
       const sine = Math.sin(theta);
       const x = cosine * (cosine >= 0 ? noseLength : tailLength);
-      const noseWidth = 0.97 + Math.max(cosine, 0) * 0.06;
+      const noseWidth = 0.96 + Math.max(cosine, 0) * 0.11;
       const z = centerZ + sine * halfWidth * noseWidth;
       const tip = Math.pow(Math.abs(cosine), 8);
-      const tipLift = cosine >= 0 ? 0.085 : 0.048;
+      const tipLift = cosine >= 0 ? 0.13 : 0.035;
       const topY = 0.06 + tip * tipLift;
       const tipSlope = -Math.sign(cosine) * tip * (cosine >= 0 ? 0.54 : 0.34);
       topRing.push(addVertex([x, topY, z], normalize([tipSlope, 1, 0]), 14));

@@ -7,18 +7,37 @@ export function slopeAlongHeading(slopeX: number, slopeZ: number, heading: numbe
 export function snowboardTargetYaw(travelHeading: number, brakeAmount: number, steerAmount: number) {
   const brake = Math.max(0, Math.min(brakeAmount, 1));
   const steer = Math.max(-1, Math.min(steerAmount, 1));
-  return travelHeading - Math.PI / 2 + brake * Math.PI / 2 + steer * 0.075 * (1 - brake);
+  // The board's local +X axis is its nose. It leads a normal carve by a small
+  // amount, but a brake pivots that long axis across the velocity vector.
+  return travelHeading - Math.PI / 2 + brake * Math.PI / 2 + steer * 0.18 * (1 - brake);
 }
 
 export function snowboardLongAxis(boardYaw: number) {
   return { x: Math.cos(boardYaw), z: Math.sin(boardYaw) };
 }
 
+export function snowboardSkidAmount(boardYaw: number, travelHeading: number) {
+  const alignedBoardYaw = travelHeading - Math.PI / 2;
+  const skidAngle = Math.atan2(
+    Math.sin(boardYaw - alignedBoardYaw),
+    Math.cos(boardYaw - alignedBoardYaw),
+  );
+  return Math.max(0, Math.min(Math.abs(skidAngle) / (Math.PI / 2), 1));
+}
+
+export function snowboardTravelTurnRate(speed: number, brakeAmount: number) {
+  const normalizedSpeed = Math.max(0, Math.min(speed / 5.4, 1));
+  const brake = Math.max(0, Math.min(brakeAmount, 1));
+  // The nose can pull the velocity into a carve, while an intentional
+  // crosswise skid preserves the old travel direction and sheds speed.
+  return (0.7 + normalizedSpeed * 3.8) * (1 - brake) * (1 - brake);
+}
+
 export function snowboardContactAxes(edgeAmount: number) {
   const edge = Math.max(0, Math.min(edgeAmount, 1));
   return {
-    halfLength: 0.82,
-    halfWidth: 0.18 + (0.052 - 0.18) * edge,
+    halfLength: 0.9,
+    halfWidth: 0.185 + (0.055 - 0.185) * edge,
   };
 }
 

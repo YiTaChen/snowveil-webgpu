@@ -507,14 +507,16 @@ fn fsTerrain(input: TerrainVertexOut) -> @location(0) vec4<f32> {
   let alignedBoardYaw = globals.reserved.z - 1.570796;
   let skidAngle = atan2(sin(boardYaw - alignedBoardYaw), cos(boardYaw - alignedBoardYaw));
   let edgeAmount = saturate(max(abs(globals.objective.y), abs(skidAngle) / 1.570796));
-  let contactWidth = mix(0.18, 0.052, edgeAmount);
-  let contactEllipse =
-    pow(boardLongitudinal / 0.82, 2.0) +
-    pow(boardLateral / contactWidth, 2.0);
+  let contactWidth = mix(0.185, 0.055, edgeAmount);
+  let contactLong = abs(boardLongitudinal) / 0.9;
+  let tipTaper = sqrt(max(1.0 - contactLong * contactLong, 0.0));
+  let contactSide = abs(boardLateral) / max(contactWidth * tipTaper, 0.012);
+  let contactShape = max(contactLong, contactSide);
   let grounded = 1.0 - smoothstep(0.012, 0.085, globals.objective.w);
-  let contactShadow =
-    exp(-contactEllipse * 1.7) *
-    (1.0 - smoothstep(0.68, 1.04, contactEllipse)) *
+  let contactShadow = (1.0 - smoothstep(0.42, 1.0, contactShape)) * grounded;
+  let contactLip =
+    smoothstep(0.86, 1.0, contactShape) *
+    (1.0 - smoothstep(1.0, 1.3, contactShape)) *
     grounded;
 
   var snow = base * (bounce + warmSun * wrapped * shadow * 1.35 + subsurface);
@@ -522,7 +524,8 @@ fn fsTerrain(input: TerrainVertexOut) -> @location(0) vec4<f32> {
   snow = mix(snow, snow * vec3<f32>(0.68, 0.8, 0.93), compactedSnow * 0.46);
   snow = snow + vec3<f32>(0.58, 0.78, 0.94) * pushedSnow * (0.055 + wrapped * 0.1);
   snow = snow + vec3<f32>(0.05, 0.52, 1.0) * spellResidue * (0.22 + fresnel * 0.32);
-  snow = snow * (1.0 - contactShadow * 0.22);
+  snow = snow * (1.0 - contactShadow * 0.31);
+  snow = snow * (1.0 - contactLip * 0.09) + vec3<f32>(0.48, 0.7, 0.86) * contactLip * 0.19;
   snow = snow + vec3<f32>(1.0, 0.84, 0.62) * roughSpecular * 0.46;
   snow = snow + vec3<f32>(0.76, 0.9, 1.0) * fresnel * 0.15;
   snow = snow + vec3<f32>(1.0, 0.9, 0.7) * glint * 3.4;
@@ -602,13 +605,14 @@ fn updateSnow(@builtin(global_invocation_id) invocation: vec3<u32>) {
     let steer = globals.objective.y;
     let edgeAmount = saturate(max(abs(steer), skid));
     let edgeSign = select(1.0, sign(steer), abs(steer) > 0.055);
-    let contactWidth = mix(0.18, 0.052, edgeAmount);
+    let contactWidth = mix(0.185, 0.055, edgeAmount);
     let contactOffset = edgeSign * edgeAmount * 0.12;
-    let contactEllipse =
-      pow(longitudinal / 0.82, 2.0) +
-      pow((lateral - contactOffset) / contactWidth, 2.0);
-    let compressed = 1.0 - smoothstep(0.56, 1.0, contactEllipse);
-    let endFade = 1.0 - smoothstep(0.68, 0.98, abs(longitudinal) / 0.82);
+    let contactLong = abs(longitudinal) / 0.9;
+    let tipTaper = sqrt(max(1.0 - contactLong * contactLong, 0.0));
+    let contactSide = abs(lateral - contactOffset) / max(contactWidth * tipTaper, 0.012);
+    let contactShape = max(contactLong, contactSide);
+    let compressed = 1.0 - smoothstep(0.54, 1.0, contactShape);
+    let endFade = 1.0 - smoothstep(0.7, 0.99, contactLong);
     let twinRidge =
       smoothstep(0.145, 0.18, abs(lateral)) *
       (1.0 - smoothstep(0.18, 0.235, abs(lateral))) * endFade;
@@ -827,7 +831,7 @@ fn vsPlayer(input: PlayerVertexIn) -> PlayerVertexOut {
     part != 17u && part != 21u
   ) {
     let lookBlend = smoothstep(0.76, 1.48, local.y);
-    let lookTwist = mix(0.72, 0.06, skid) * motion * lookBlend;
+    let lookTwist = mix(0.92, 0.08, skid) * motion * lookBlend;
     let torsoPivot = vec3<f32>(0.0, 0.88, -0.02);
     local = torsoPivot + rotateY(local - torsoPivot, lookTwist);
     localNormal = rotateY(localNormal, lookTwist);
@@ -839,7 +843,7 @@ fn vsPlayer(input: PlayerVertexIn) -> PlayerVertexOut {
     (part == 10u && local.y > 1.48) ||
     (part == 8u && local.y > 1.3)
   ) {
-    let headLook = mix(0.16, 0.025, skid) * motion;
+    let headLook = mix(0.27, 0.035, skid) * motion;
     let headPivot = vec3<f32>(0.0, 1.5, -0.02);
     local = headPivot + rotateY(local - headPivot, headLook);
     localNormal = rotateY(localNormal, headLook);
@@ -971,12 +975,12 @@ fn fsPlayer(input: PlayerVertexOut) -> @location(0) vec4<f32> {
     albedo = vec3<f32>(0.012, 0.045, 0.062);
     roughness = 0.28;
   } else if (input.part == 14u) {
-    let nose = smoothstep(0.42, 0.9, input.localPosition.x);
+    let nose = smoothstep(0.08, 0.94, input.localPosition.x);
     let noseInlay =
-      (1.0 - smoothstep(0.012, 0.05, abs(input.localPosition.z + 0.08))) *
-      smoothstep(0.34, 0.56, input.localPosition.x);
+      (1.0 - smoothstep(0.018, 0.062, abs(input.localPosition.z + 0.08))) *
+      smoothstep(0.18, 0.5, input.localPosition.x);
     albedo = mix(vec3<f32>(0.055, 0.225, 0.285), vec3<f32>(0.105, 0.36, 0.42), nose);
-    albedo = albedo + vec3<f32>(0.28, 0.55, 0.61) * noseInlay * 0.34;
+    albedo = albedo + vec3<f32>(0.42, 0.76, 0.82) * noseInlay * 0.58;
     roughness = 0.24;
   } else if (input.part == 15u) {
     albedo = vec3<f32>(0.012, 0.038, 0.05);

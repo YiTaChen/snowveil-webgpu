@@ -131,6 +131,10 @@ Original project code is released under the [MIT License](./LICENSE).
     casting core add close-range construction while inheriting the existing
     head, elbow, and shoulder hierarchy; mouse-wheel inspection now reaches a
     safe 2.8-metre close camera.
+23. Snowboard causality v3 — the board nose now leads a carve before velocity
+    follows, actual board-to-travel skid angle supplies braking drag, the rider
+    looks into travel, a 1536² history retains the tapered long contact print,
+    and Space exposes its physical airborne height in the live HUD.
 
 The current build is a polished playable vertical slice, not a claim of a full
 AAA production or a hundred-million-particle physical simulation. See

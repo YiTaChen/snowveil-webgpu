@@ -1,4 +1,5 @@
 import assert from "node:assert/strict";
+import { readFile } from "node:fs/promises";
 import test from "node:test";
 
 async function render() {
@@ -40,4 +41,16 @@ test("server-renders the Snowveil visual shell", async () => {
   assert.match(html, /Preparing atmosphere/);
   assert.match(html, /role="status"/);
   assert.doesNotMatch(html, /codex-preview|react-loading-skeleton/i);
+});
+
+test("Space drives a physical airborne state instead of a secondary action", async () => {
+  const sceneSource = await readFile(
+    new URL("../app/snowveil-scene.tsx", import.meta.url),
+    "utf8",
+  );
+
+  assert.match(sceneSource, /code === "Space"[^\n]+jumpHeight <= 0\.001/);
+  assert.match(sceneSource, /jumpVelocity = 3\.85/);
+  assert.match(sceneSource, /jumpVelocity -= 10\.8 \* delta/);
+  assert.match(sceneSource, /AIR \$\{jumpHeight\.toFixed\(1\)\} m/);
 });

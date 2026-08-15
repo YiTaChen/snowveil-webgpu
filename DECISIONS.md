@@ -572,3 +572,34 @@ hand plates were then retessellated to their projected size without changing
 their silhouette. The retained version records 47 FPS in the active native
 capture and 46 FPS after completion, while the normal viewport remains at 60
 FPS. No image, model, normal map, animation, or third-party asset is introduced.
+
+## 2026-08-14 — Board direction and velocity are related, not identical
+
+The earlier controller could produce the expected final orientations, but it
+rotated the travel heading directly from input before solving the board. That
+made a carve look like a character yaw animation, and the 768² history map gave
+only about one sample to the narrow edge contact. Passing helper tests was not
+enough when the running result still failed the visual read.
+
+The retained controller lets the board nose lead a normal carve by at most
+0.18 radians. Grounded velocity then converges toward that nose according to
+speed. Brake input progressively removes this coupling while rotating the long
+axis across the existing velocity; drag is calculated from the resulting real
+skid angle instead of directly from the key. The rider's lower stance remains
+aligned to the board, while the procedural upper body and head turn farther
+toward travel. Space remains the only jump control and continues to integrate a
+3.85 m/s launch velocity against 10.8 m/s² gravity.
+
+The contact kernel now states its geometry explicitly: a 0.9 m half-length,
+elliptical tip taper, and edge-dependent 0.185-to-0.055 m half-width. The same
+kernel drives live terrain shading and persistent deformation. Raising history
+resolution from 768² to 1536² prevents the narrow strip from collapsing below
+one texel; regional work grows proportionally from 64² to 128² so its physical
+coverage is unchanged.
+
+The movement reference was checked against [REI's basic snowboard stance and
+turn guide](https://www.rei.com/learn/expert-advice/how-to-snowboard.html),
+[REI's distinction between skidded and carved turns](https://www.rei.com/learn/expert-advice/snowboarding-carved-turns.html),
+and [Burton's cross-slope stopping explanation](https://www.burton.com/en-us/blogs/the-burton-blog/snowboarding-for-beginners).
+These sources informed mechanics only. No footage, frame, image, model,
+texture, motion capture, code, or other copyrighted asset was copied.

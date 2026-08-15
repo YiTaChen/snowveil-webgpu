@@ -423,3 +423,22 @@ reading. Retessellating only those pieces preserves the close silhouette while
 the final active capture reports 47 FPS, P95 33.7 ms, 1% low 21, and 100% RES;
 the warmed completion reports 46 FPS, P95 33.5 ms, 1% low 29. The normal
 1182×749 ride and cast checks remain at 60 FPS and 100% RES.
+
+## 2026-08-14 — tapered-contact history resolution
+
+The persistent history grows from 768² to 1536² because a 5.5-centimetre edged
+contact cannot be represented honestly at the former 16.7-centimetre world
+texel. Active regional dispatches grow from 64² to 128², preserving the same
+physical update radius. Texture sampling count, render passes, terrain
+tessellation, rider draw count, and post processing are unchanged.
+
+| Running state | Observed HUD | Result |
+| --- | ---: | --- |
+| carve / brake / jump, 1182×749 | 60 FPS · P95 17.6–17.7 ms · 100% | retained |
+| completed three-sigil route, 1182×749 | 60 FPS · P95 17.7 ms · 100% | retained |
+| fixed-scale large host view | 47 FPS · P95 34.2 ms · 100% | consistent with established fixed-native boundary |
+
+The large-view browser export was 2073×1440 and is not labelled as a true
+2560×1440 screenshot. The project keeps the previously calibrated fixed-native
+boundary rather than inflating this measurement. The complete `?capture` path
+still allocates a 2560×1440 WebGPU target from a 1280×720 presentation.

@@ -195,3 +195,18 @@ They are review artefacts, not third-party source material.
   brightening with the projectile, crater, and post-process ring.
 - `rider-detail-native-2560x1440.png` — calibrated complete-frame active route
   at a true 2560×1440 target, 47 FPS and 100% RES.
+- `snowboard-causality-carve-1182x749.png` — real W+D input after the board-nose
+  lead and travel-inertia split, retaining 60 FPS and 100% RES.
+- `snowboard-causality-brake-1182x749.png` — real S input during the crosswise
+  skid; measured speed falls while the board is visibly transverse.
+- `snowboard-causality-jump-1182x749.png` — real Space input with a visible
+  board-to-snow gap and the live `AIR 0.6 m` readout.
+- `snowboard-contact-taper-1182x749.png` — close high-angle inspection of the
+  raised nose and tapered live contact at 60 FPS.
+- `snowboard-contact-brake-top-1182x749.png` — high-angle terminal brake state
+  after the board has crossed the prior velocity and shed its remaining speed.
+- `snowboard-causality-route-1182x749.png` — completed deterministic route with
+  all sigils, joined high-resolution history, 60 FPS, and 100% RES.
+- `snowboard-causality-capture-1280x720.png` — complete-frame export of the
+  1280×720 presentation while `?capture` allocates its 2560×1440 WebGPU target;
+  retained at the honest exported pixel dimensions.

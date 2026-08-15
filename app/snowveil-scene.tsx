@@ -24,7 +24,9 @@ import {
   snowHistoryRegionOffset,
   slopeAlongHeading,
   snowboardBrakeDrag,
+  snowboardSkidAmount,
   snowboardTargetYaw,
+  snowboardTravelTurnRate,
   snowGravityAcceleration,
 } from "./snowveil-motion";
 
@@ -526,7 +528,9 @@ export function SnowveilScene() {
           addressModeV: "clamp-to-edge",
         });
         activeDevice.pushErrorScope("validation");
-        const deformationResolution = 768;
+        // 1536 samples across the 128 m field retain the tapered board print;
+        // the former 768 map collapsed its narrow edge contact to one texel.
+        const deformationResolution = 1536;
         const deformationTextures = [0, 1].map((index) =>
           activeDevice.createTexture({
             label: `Snowveil deformation history ${index}`,
@@ -566,7 +570,7 @@ export function SnowveilScene() {
         }
         let deformationReadIndex = 0;
         const deformationInterval = 1;
-        const deformationRegionSize = 64;
+        const deformationRegionSize = 128;
         let deformationAccumulator = deformationInterval;
         let snowHistoryTouched = false;
         const uniforms = new Float32Array(44);
@@ -763,17 +767,25 @@ export function SnowveilScene() {
               : 5.4;
           boardSkid += (brakeInput - boardSkid) * (1 - Math.exp(-delta * (brakeInput > 0 ? 11 : 6.5)));
           steerVisual += (steerInput - steerVisual) * (1 - Math.exp(-delta * 8.5));
-          const turnAuthority = 0.28 + Math.min(playerSpeed / 3.2, 1) * 0.72;
-          playerHeading += steerInput * delta * (0.72 + playerSpeed * 0.13) * turnAuthority;
+          const groundedBeforeMotion = jumpHeight <= 0.018;
+          const targetBoardYaw = snowboardTargetYaw(playerHeading, boardSkid, steerVisual);
+          playerBoardYaw += angleDelta(targetBoardYaw, playerBoardYaw) * (1 - Math.exp(-delta * 11));
+          const actualBoardSkid = snowboardSkidAmount(playerBoardYaw, playerHeading);
+          if (groundedBeforeMotion) {
+            const boardNoseHeading = playerBoardYaw + Math.PI / 2;
+            const travelTurnRate = snowboardTravelTurnRate(playerSpeed, boardSkid);
+            playerHeading +=
+              angleDelta(boardNoseHeading, playerHeading) *
+              (1 - Math.exp(-delta * travelTurnRate));
+          }
           const forwardX = Math.sin(playerHeading);
           const forwardZ = -Math.cos(playerHeading);
-          const groundedBeforeMotion = jumpHeight <= 0.018;
           const slopeAlongTravel = slopeAlongHeading(playerSlopeX, playerSlopeZ, playerHeading);
           const slopeGravity = groundedBeforeMotion ? snowGravityAcceleration(slopeAlongTravel) : 0;
           const driveAcceleration = throttleInput * (demoMode ? 7.2 : 5.8) * (groundedBeforeMotion ? 1 : 0.12);
           playerSpeed += (driveAcceleration + slopeGravity) * delta;
           const drag = groundedBeforeMotion
-            ? 0.24 + (throttleInput > 0 ? 0 : 0.52) + snowboardBrakeDrag(boardSkid)
+            ? 0.24 + (throttleInput > 0 ? 0 : 0.52) + snowboardBrakeDrag(actualBoardSkid)
             : 0.08;
           const downhillHeadroom = groundedBeforeMotion ? downhillSpeedHeadroom(slopeAlongTravel) : 0;
           const speedCeiling = groundedBeforeMotion
@@ -791,9 +803,6 @@ export function SnowveilScene() {
             playerSpeed *= 0.35;
           }
 
-          const targetBoardYaw = snowboardTargetYaw(playerHeading, boardSkid, steerVisual);
-          playerBoardYaw += angleDelta(targetBoardYaw, playerBoardYaw) * (1 - Math.exp(-delta * 11));
-
           const wasAirborne = jumpHeight > 0.001;
           if (jumpVelocity > 0 || wasAirborne) {
             jumpVelocity -= 10.8 * delta;
@@ -808,7 +817,7 @@ export function SnowveilScene() {
 
           const animationState = riderAnimationState(
             playerSpeed,
-            boardSkid,
+            actualBoardSkid,
             jumpHeight,
             landingCompression,
           );
@@ -819,7 +828,12 @@ export function SnowveilScene() {
           landPose = riderPoseBlend(landPose, animationState === "land" ? 1 : 0, delta, poseRate);
 
           audio.setMotion(playerSpeed, jumpHeight <= 0.018);
-          if (speedRef.current) speedRef.current.textContent = `${playerSpeed.toFixed(1)} m/s`;
+          if (speedRef.current) {
+            speedRef.current.textContent =
+              jumpHeight > 0.03
+                ? `${playerSpeed.toFixed(1)} m/s · AIR ${jumpHeight.toFixed(1)} m`
+                : `${playerSpeed.toFixed(1)} m/s`;
+          }
           playerSurface = snowSurfaceAt(playerX, playerZ);
           const slopeBlend = 1 - Math.exp(-delta * 7.5);
           playerSlopeX += (playerSurface.slopeX - playerSlopeX) * slopeBlend;

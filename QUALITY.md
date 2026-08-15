@@ -561,3 +561,27 @@ ms, 1% low 21, and 100% RES. The warmed completed route reports 46 FPS, P95
 33.5 ms, 1% low 29, and 100% RES. Detailed hands and optics are improved, but
 the compact procedural character remains below a conventional production skin
 rig or facial-animation system.
+
+### 2026-08-14 — visible snowboard causality checkpoint
+
+Evidence:
+
+- nose-led carve: [`evidence/snowboard-causality-carve-1182x749.png`](./evidence/snowboard-causality-carve-1182x749.png)
+- crosswise deceleration: [`evidence/snowboard-causality-brake-1182x749.png`](./evidence/snowboard-causality-brake-1182x749.png)
+- real Space jump: [`evidence/snowboard-causality-jump-1182x749.png`](./evidence/snowboard-causality-jump-1182x749.png)
+- tapered contact inspection: [`evidence/snowboard-contact-taper-1182x749.png`](./evidence/snowboard-contact-taper-1182x749.png)
+- completed route and track: [`evidence/snowboard-causality-route-1182x749.png`](./evidence/snowboard-causality-route-1182x749.png)
+
+Actual keyboard input produced all action frames. Normal motion shows the
+asymmetric raised nose leading the path while the upper body and head look into
+travel. S then turns the long axis across the existing velocity and derives
+deceleration from the measured skid angle; it no longer treats the brake key as
+invisible drag. The close top inspection verifies that the contact narrows
+toward both tips and toward the loaded edge. Space creates a visible snow gap
+and reports `AIR 0.6 m` during the measured frame before the existing impact
+response handles landing.
+
+The full automated route still completes all three sigils at 60 FPS, P95 17.7
+ms, and 100% RES. Browser diagnostics contain no WGSL, WebGPU, or uncaptured-
+device error. Sixteen tests cover board alignment, skid, turn coupling, contact
+taper, Space-to-vertical-velocity mapping, pose state, rendering, and geometry.

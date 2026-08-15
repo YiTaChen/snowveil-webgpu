@@ -14,7 +14,9 @@ import {
   snowboardBrakeDrag,
   snowboardContactAxes,
   snowboardLongAxis,
+  snowboardSkidAmount,
   snowboardTargetYaw,
+  snowboardTravelTurnRate,
   snowGravityAcceleration,
 } from "../app/snowveil-motion.ts";
 import { snowHeightAt, snowSurfaceAt } from "../app/snowveil-terrain.ts";
@@ -64,6 +66,19 @@ test("snowboard points along travel until braking turns it across the velocity",
 
   assert.ok(ridingAxis.x * travel.x + ridingAxis.z * travel.z > 0.999);
   assert.ok(Math.abs(brakingAxis.x * travel.x + brakingAxis.z * travel.z) < 0.001);
+  assert.equal(snowboardSkidAmount(snowboardTargetYaw(heading, 0, 0), heading), 0);
+  assert.equal(snowboardSkidAmount(snowboardTargetYaw(heading, 1, 0), heading), 1);
+});
+
+test("the nose leads a carve while a crosswise brake stops redirecting travel", () => {
+  const heading = -0.45;
+  const straightYaw = snowboardTargetYaw(heading, 0, 0);
+  const carveYaw = snowboardTargetYaw(heading, 0, 1);
+
+  assert.ok(carveYaw > straightYaw);
+  assert.ok(snowboardSkidAmount(carveYaw, heading) < 0.12);
+  assert.ok(snowboardTravelTurnRate(5.4, 0) > snowboardTravelTurnRate(1, 0));
+  assert.equal(snowboardTravelTurnRate(5.4, 1), 0);
 });
 
 test("edge pressure turns the flat long ellipse into a narrow contact strip", () => {
