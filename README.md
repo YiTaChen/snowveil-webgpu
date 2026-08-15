@@ -22,14 +22,17 @@ npm run build
 
 This starter does not use `wrangler.jsonc`.
 
-Use a desktop browser with WebGPU enabled. Hold W or Up to accelerate, use A/D
-or Left/Right to carve, and hold S or Down to rotate the board across the travel
-direction and brake. Space jumps; E casts Ice Pulse. Drag the scene to orbit,
-hold Shift for a faster traverse, and use the mouse wheel to change camera
-distance. Audio begins only after a key, canvas, or explicit audio-button gesture
-and can be muted from the top-right control. Snow grade contributes real forward
-or resisting acceleration: a downhill board can coast without W, while the same
-input climbs more slowly in the opposite direction.
+Use a WebGPU-capable browser. With a keyboard, hold W or Up to accelerate, use
+A/D or Left/Right to carve, and hold S or Down to rotate the board across the
+travel direction and brake. Space jumps; E casts Ice Pulse. On a narrow or
+coarse-pointer device, the same six actions are available through the glass
+onscreen controls and support simultaneous steering plus acceleration. Drag the
+scene to orbit, hold Shift for a faster keyboard traverse, and use the mouse
+wheel to change camera distance. Audio begins only after a key, canvas, touch
+control, or explicit audio-button gesture and can be muted from the top-right
+control. Snow grade contributes real forward or resisting acceleration: a
+downhill board can coast without W, while the same input climbs more slowly in
+the opposite direction.
 
 The playable Frost Rite asks the rider to awaken three original sigil beacons.
 Follow the dormant blue cores, aim the visible casting hand toward a beacon,
@@ -90,6 +93,9 @@ Original project code is released under the [MIT License](./LICENSE).
 13. Jump-response pass — signed vertical velocity shapes takeoff and descent,
     impact velocity drives a tested no-overshoot landing compression, and a
     short original snow burst marks only the grounded contact frame.
+14. Responsive-input pass — accessible glass touch controls share the keyboard
+    movement state, support held and simultaneous inputs, preserve the scene on
+    a 480×659 mobile viewport, and leave the desktop composition unchanged.
 
 The current build is a polished playable vertical slice, not a claim of a full
 AAA production or a hundred-million-particle physical simulation. See

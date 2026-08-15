@@ -311,6 +311,10 @@ canvas {
   background: rgba(229, 244, 252, 0.42);
 }
 
+.snowveil__touch-controls {
+  display: none;
+}
+
 .snowveil__loader,
 .snowveil__fallback {
   position: absolute;
@@ -385,13 +389,142 @@ canvas {
   }
 
   .snowveil__footer {
-    left: 22px;
+    left: 50%;
     right: auto;
+    bottom: calc(max(18px, env(safe-area-inset-bottom)) + 86px);
+    transform: translateX(-50%);
+    gap: 10px;
+    white-space: nowrap;
+  }
+
+  .snowveil__footer > span:first-child {
+    display: none;
   }
 
   .snowveil__objective {
     top: 76px;
     left: 22px;
+  }
+}
+
+@media (pointer: coarse), (max-width: 720px) {
+  .snowveil__touch-controls {
+    position: absolute;
+    z-index: 4;
+    left: max(16px, env(safe-area-inset-left));
+    right: max(16px, env(safe-area-inset-right));
+    bottom: max(16px, env(safe-area-inset-bottom));
+    display: flex;
+    align-items: end;
+    justify-content: space-between;
+    gap: 18px;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 420ms ease;
+  }
+
+  .snowveil__touch-controls[data-visible="true"] {
+    opacity: 1;
+  }
+
+  .snowveil__touch-steer,
+  .snowveil__touch-actions {
+    display: flex;
+    align-items: end;
+    gap: 8px;
+    pointer-events: auto;
+  }
+
+  .snowveil__touch-steer {
+    display: grid;
+    grid-template-columns: repeat(3, 50px);
+    grid-template-rows: repeat(2, 46px);
+  }
+
+  .snowveil__touch-steer button:nth-child(1) {
+    grid-column: 1;
+    grid-row: 2;
+  }
+
+  .snowveil__touch-steer button:nth-child(2) {
+    grid-column: 2;
+    grid-row: 1;
+  }
+
+  .snowveil__touch-steer button:nth-child(3) {
+    grid-column: 3;
+    grid-row: 2;
+  }
+
+  .snowveil__touch-steer button:nth-child(4) {
+    grid-column: 2;
+    grid-row: 2;
+  }
+
+  .snowveil__touch-actions button,
+  .snowveil__touch-steer button {
+    min-width: 48px;
+    min-height: 46px;
+    display: grid;
+    place-items: center;
+    align-content: center;
+    gap: 1px;
+    padding: 4px 8px;
+    border: 1px solid rgba(211, 238, 250, 0.22);
+    border-radius: 14px;
+    background:
+      linear-gradient(155deg, rgba(225, 244, 252, 0.11), rgba(8, 24, 36, 0.2)),
+      rgba(4, 16, 25, 0.24);
+    color: rgba(235, 248, 254, 0.82);
+    box-shadow:
+      inset 0 1px rgba(255, 255, 255, 0.08),
+      0 8px 28px rgba(2, 10, 17, 0.18);
+    backdrop-filter: blur(10px);
+    touch-action: none;
+    user-select: none;
+    -webkit-user-select: none;
+  }
+
+  .snowveil__touch-actions button {
+    width: 58px;
+    height: 58px;
+    border-radius: 50%;
+  }
+
+  .snowveil__touch-actions button:last-child {
+    border-color: rgba(119, 213, 255, 0.38);
+    background:
+      radial-gradient(circle at 50% 34%, rgba(104, 214, 255, 0.2), transparent 54%),
+      rgba(4, 18, 29, 0.34);
+  }
+
+  .snowveil__touch-actions button span,
+  .snowveil__touch-steer button span {
+    font-size: 20px;
+    font-weight: 330;
+    line-height: 0.9;
+    text-shadow: 0 0 12px rgba(127, 218, 255, 0.32);
+  }
+
+  .snowveil__touch-actions button small,
+  .snowveil__touch-steer button small {
+    color: rgba(217, 239, 248, 0.54);
+    font-size: 6px;
+    font-weight: 540;
+    letter-spacing: 0.12em;
+    line-height: 1;
+    text-transform: uppercase;
+  }
+
+  .snowveil__touch-actions button[data-active="true"],
+  .snowveil__touch-steer button[data-active="true"] {
+    border-color: rgba(143, 224, 255, 0.72);
+    background: rgba(104, 203, 238, 0.24);
+    box-shadow:
+      inset 0 0 18px rgba(130, 220, 255, 0.16),
+      0 0 22px rgba(84, 199, 243, 0.2);
+    color: white;
+    transform: translateY(1px) scale(0.97);
   }
 }
 
@@ -406,5 +539,9 @@ canvas {
 
   .snowveil__completion {
     animation-duration: 7s;
+  }
+
+  .snowveil__touch-controls {
+    transition: none;
   }
 }

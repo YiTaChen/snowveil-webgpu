@@ -349,3 +349,23 @@ Two performance experiments were rejected before this animation pass. A packed
 more widely supported 16-bit target. Reconstructing the terrain normal from
 fragment derivatives measured 42 FPS against a 43 FPS vertex-normal baseline;
 the original dense-mesh normal path is retained.
+
+## 2026-08-14 — Touch controls feed the same causal input state
+
+A responsive canvas was not enough for release because narrow and touch-first
+devices could see Snowveil but could not move the rider. The retained interface
+adds six semantic buttons for ride, left/right carve, brake, jump, and Ice Pulse.
+Pointer-down enters the existing pressed-key set, pointer-up/cancel/lost-capture
+removes it, and each pointer is tracked separately. Acceleration and steering can
+therefore be held simultaneously without creating a parallel physics controller.
+
+Jump and Pulse reuse the exact keyboard one-shot path, including takeoff slope,
+audio unlock, collision test, persistent deformation, and ritual activation.
+The controls exist in server-rendered HTML for accessibility but remain hidden
+and unfocusable until WebGPU is ready. They appear only for coarse pointers or
+viewports at or below 720 CSS pixels. Safe-area insets, 46-pixel minimum targets,
+pressed-state feedback, and restrained translucent styling keep them operable
+without covering the rider or main horizon.
+
+No icon, font, UI library, image, or external asset was added. The glyphs, markup,
+CSS, input routing, and captured evidence are project-authored.

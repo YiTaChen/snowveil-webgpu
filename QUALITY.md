@@ -311,3 +311,25 @@ the same tested compression envelope. The deterministic route still reaches
 or uncaptured-device error. This closes the rigid vertical-translation defect;
 it remains a compact procedural part rig rather than a production motion-capture
 or skeletal-animation claim.
+
+### 2026-08-14 — responsive touch-control checkpoint
+
+Evidence:
+
+- unobstructed mobile idle composition: [`evidence/mobile-controls-idle-480x659.png`](./evidence/mobile-controls-idle-480x659.png)
+- touch-driven ride and carve: [`evidence/mobile-controls-ride-480x659.png`](./evidence/mobile-controls-ride-480x659.png)
+- moving touch Jump: [`evidence/mobile-controls-jump-480x659.png`](./evidence/mobile-controls-jump-480x659.png)
+- touch Ice Pulse and residue: [`evidence/mobile-controls-pulse-480x659.png`](./evidence/mobile-controls-pulse-480x659.png)
+- desktop 3/3 regression: [`evidence/mobile-controls-desktop-rite-1182x749.png`](./evidence/mobile-controls-desktop-rite-1182x749.png)
+
+The 480×659 inspection keeps brand, ritual objective, rider, horizon, speed/FPS,
+and both control clusters readable without a full-screen opaque HUD. Buttons
+remain outside the primary rider silhouette and use the existing ice/glass
+palette. The footer removes keyboard instructions at narrow widths while keeping
+live speed and performance evidence above the controls.
+
+Actual pointer events drove the shared controller to 4.5 m/s, produced a visible
+airborne gap through Jump, and produced the existing Ice Pulse crater/residue.
+The warmed mobile captures report 60 FPS. At 1182×749 the controls are visually
+absent and the deterministic route still reaches `Veil stabilized` at 60 FPS.
+Browser logs contain no WGSL, WebGPU, audio, or uncaptured-device error.

@@ -240,3 +240,22 @@ frame rate means that small precision trade does not buy performance here. Both
 experiments were fully reverted. The retained landing response adds one uniform
 vector and evaluates its 24-particle burst only while impact exceeds 0.012; it
 does not allocate a new texture, buffer, draw, or compute pass.
+
+## 2026-08-14 — responsive touch-input review
+
+Environment: native WebGPU Chromium. The mobile review used the smallest stable
+in-app viewport available in the session, 480×659 CSS pixels. The desktop route
+used the established 1182×749 viewport.
+
+| Review state | Observed HUD | Result |
+| --- | ---: | --- |
+| mobile idle with six controls | 60 FPS · P95 17.3 ms · 1% 57 | retained |
+| mobile Ride taps reaching 4.5 m/s | 44 FPS · P95 33.5 ms · 1% 20 | active automation/capture |
+| mobile moving Jump capture | 60 FPS · P95 33.4 ms · 1% 20 | retained |
+| mobile Pulse and snow residue | 60 FPS · P95 17.7 ms · 1% 20 | retained |
+| desktop completed route after input change | 60 FPS · P95 17.5 ms · 1% 57 | retained regression |
+
+The control layer adds no render target, GPU buffer, shader branch, draw, or
+compute dispatch. Its pointer map and DOM state are idle outside actual input.
+The temporary 44 FPS figure occurred during rapid automated pointer dispatch and
+PNG capture; the same mobile run returned to 60 FPS for Jump and Pulse evidence.

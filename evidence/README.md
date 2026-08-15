@@ -98,3 +98,13 @@ They are review artefacts, not third-party source material.
   sequence, showing knee/torso absorption and a short snow-powder burst.
 - `motion-landing-rite-complete-1182x749.png` — complete deterministic route
   after the landing-response uniform and particle pass, with clean browser logs.
+- `mobile-controls-idle-480x659.png` — narrow-viewport composition with both
+  translucent touch clusters, safe footer spacing, and a 60 FPS idle reading.
+- `mobile-controls-ride-480x659.png` — touch-driven ride and carve state with
+  shared board orientation, rider pose, and desktop-equivalent movement logic.
+- `mobile-controls-jump-480x659.png` — onscreen Jump at speed with visible
+  board-to-snow separation and the controls still clear of the rider.
+- `mobile-controls-pulse-480x659.png` — onscreen Ice Pulse with projectile ring,
+  snow crater, residual light, and a 60 FPS warmed reading.
+- `mobile-controls-desktop-rite-1182x749.png` — desktop 3/3 route after the
+  responsive input change, confirming the controls remain visually absent.

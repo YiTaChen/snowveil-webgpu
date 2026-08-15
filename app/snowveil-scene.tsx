@@ -115,6 +115,7 @@ export function SnowveilScene() {
     const beaconActive = [false, false, false];
     const pressedKeys = new Set<string>();
     const keyPulseUntil = new Map<string, number>();
+    const activeControlPointers = new Map<number, string>();
 
     const angleDelta = (target: number, current: number) =>
       Math.atan2(Math.sin(target - current), Math.cos(target - current));
@@ -184,29 +185,60 @@ export function SnowveilScene() {
       }
     };
 
-    const onKeyDown = (event: KeyboardEvent) => {
+    const unlockAudio = () => {
       void audio.unlock().then((enabled) => {
         setAudioReady(true);
         setAudioEnabled(enabled);
       });
-      if (["ArrowUp", "ArrowDown", "ArrowLeft", "ArrowRight", "Space"].includes(event.code)) {
-        event.preventDefault();
-      }
-      pressedKeys.add(event.code);
-      keyPulseUntil.set(event.code, performance.now() + 145);
-      if (event.code === "Space" && !event.repeat && jumpHeight <= 0.001) {
+    };
+
+    const pressInput = (code: string, repeat = false) => {
+      pressedKeys.add(code);
+      keyPulseUntil.set(code, performance.now() + 145);
+      if (code === "Space" && !repeat && jumpHeight <= 0.001) {
         takeoffSlopeX = playerSlopeX;
         takeoffSlopeZ = playerSlopeZ;
         jumpVelocity = 3.85;
         audio.jump();
       }
-      if (event.code === "KeyE" && !event.repeat) {
+      if (code === "KeyE" && !repeat) {
         castIcePulse();
       }
     };
 
+    const onKeyDown = (event: KeyboardEvent) => {
+      unlockAudio();
+      if (["ArrowUp", "ArrowDown", "ArrowLeft", "ArrowRight", "Space"].includes(event.code)) {
+        event.preventDefault();
+      }
+      pressInput(event.code, event.repeat);
+    };
+
     const onKeyUp = (event: KeyboardEvent) => {
       pressedKeys.delete(event.code);
+    };
+
+    const touchControls = Array.from(
+      document.querySelectorAll<HTMLButtonElement>("[data-snowveil-key]"),
+    );
+    const onControlPointerDown = (event: PointerEvent) => {
+      event.preventDefault();
+      const button = event.currentTarget as HTMLButtonElement;
+      const code = button.dataset.snowveilKey;
+      if (!code) return;
+      unlockAudio();
+      activeControlPointers.set(event.pointerId, code);
+      button.dataset.active = "true";
+      button.setPointerCapture(event.pointerId);
+      pressInput(code);
+    };
+    const onControlPointerEnd = (event: PointerEvent) => {
+      const button = event.currentTarget as HTMLButtonElement;
+      const code = activeControlPointers.get(event.pointerId);
+      if (!code) return;
+      activeControlPointers.delete(event.pointerId);
+      pressedKeys.delete(code);
+      button.dataset.active = "false";
     };
 
     canvas.addEventListener("pointerdown", onPointerDown);
@@ -216,6 +248,12 @@ export function SnowveilScene() {
     canvas.addEventListener("wheel", onWheel, { passive: false });
     window.addEventListener("keydown", onKeyDown);
     window.addEventListener("keyup", onKeyUp);
+    for (const control of touchControls) {
+      control.addEventListener("pointerdown", onControlPointerDown);
+      control.addEventListener("pointerup", onControlPointerEnd);
+      control.addEventListener("pointercancel", onControlPointerEnd);
+      control.addEventListener("lostpointercapture", onControlPointerEnd);
+    }
 
     async function start() {
       try {
@@ -934,6 +972,12 @@ export function SnowveilScene() {
       canvas.removeEventListener("wheel", onWheel);
       window.removeEventListener("keydown", onKeyDown);
       window.removeEventListener("keyup", onKeyUp);
+      for (const control of touchControls) {
+        control.removeEventListener("pointerdown", onControlPointerDown);
+        control.removeEventListener("pointerup", onControlPointerEnd);
+        control.removeEventListener("pointercancel", onControlPointerEnd);
+        control.removeEventListener("lostpointercapture", onControlPointerEnd);
+      }
       audio.dispose();
       audioControllerRef.current = null;
       if (evidenceMode) {
@@ -949,10 +993,46 @@ export function SnowveilScene() {
         ref={canvasRef}
         className="snowveil__canvas"
         data-ready={sceneState === "ready"}
-        aria-label="Interactive procedural snow landscape. Accelerate with W, carve with A and D, brake with S, jump with Space, cast with E, drag to orbit, and scroll to change distance."
+        aria-label="Interactive procedural snow landscape. Accelerate with W, carve with A and D, brake with S, jump with Space, cast with E, or use the onscreen touch controls. Drag to orbit and scroll to change distance."
       />
 
       <div className="snowveil__veil" aria-hidden="true" />
+
+      <nav
+        className="snowveil__touch-controls"
+        data-visible={sceneState === "ready"}
+        hidden={sceneState !== "ready"}
+        aria-label="Snowboard touch controls"
+      >
+        <div className="snowveil__touch-steer">
+          <button type="button" data-snowveil-key="KeyA" aria-label="Carve left">
+            <span aria-hidden="true">‹</span>
+            <small>Carve</small>
+          </button>
+          <button type="button" data-snowveil-key="KeyW" aria-label="Accelerate">
+            <span aria-hidden="true">↑</span>
+            <small>Ride</small>
+          </button>
+          <button type="button" data-snowveil-key="KeyD" aria-label="Carve right">
+            <span aria-hidden="true">›</span>
+            <small>Carve</small>
+          </button>
+          <button type="button" data-snowveil-key="KeyS" aria-label="Brake">
+            <span aria-hidden="true">—</span>
+            <small>Brake</small>
+          </button>
+        </div>
+        <div className="snowveil__touch-actions">
+          <button type="button" data-snowveil-key="Space" aria-label="Jump">
+            <span aria-hidden="true">↥</span>
+            <small>Jump</small>
+          </button>
+          <button type="button" data-snowveil-key="KeyE" aria-label="Cast Ice Pulse">
+            <span aria-hidden="true">✦</span>
+            <small>Pulse</small>
+          </button>
+        </div>
+      </nav>
 
       <header className="snowveil__brand" aria-label="Snowveil">
         <span className="snowveil__mark" aria-hidden="true" />
@@ -1020,7 +1100,7 @@ export function SnowveilScene() {
             <strong>{sceneState === "unsupported" ? "WebGPU required" : "Scene unavailable"}</strong>
             <span>
               {sceneState === "unsupported"
-                ? "Snowveil needs a WebGPU-capable desktop browser and a recent GPU."
+                ? "Snowveil needs a WebGPU-capable browser and a recent GPU."
                 : message}
             </span>
           </div>
