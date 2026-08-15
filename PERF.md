@@ -150,3 +150,23 @@ their small or absent gain did not justify the visual or sampling reduction.
 
 This materially improves the native evidence path but does not declare fixed
 1440p release-ready; 22–26 FPS remains below the release target.
+
+## 2026-08-14 — snowboard-causality interaction review
+
+Environment: active in-app Chromium tab with native WebGPU, 1182×749 CSS pixels,
+dynamic resolution enabled. Each row is a real keyboard-driven state captured
+after the three-quarter chase-camera correction.
+
+| Review state | Observed HUD | Result |
+| --- | ---: | --- |
+| nose-first glide at 4.6 m/s | 51 FPS · P95 33.4 ms · 1% 29 | retained |
+| sustained carve at 4.9 m/s | 44 FPS · P95 33.9 ms · 1% 29 | retained; capture overhead present |
+| crosswise brake at 1.0 m/s | 44 FPS · P95 33.8 ms · 1% 29 | retained |
+| moving Space jump at 4.3 m/s | 45 FPS · P95 33.6 ms · 1% 29 | retained |
+| completed deterministic route | 45 FPS · P95 33.9 ms · 1% 29 | retained functional regression |
+
+The controller and camera pass adds no render pipeline or texture allocation.
+The lower figures occurred while browser automation was actively taking PNG
+captures and remain inside the earlier interaction range; they are not presented
+as a 60 FPS release pass. The full route completed all three sigils and the
+browser log contained no warning or WebGPU error.

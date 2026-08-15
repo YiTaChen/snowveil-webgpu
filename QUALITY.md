@@ -208,6 +208,15 @@ at 22–26 FPS on the test machine.
 
 ### 2026-08-14 — snowboard motion-causality correction
 
+Evidence:
+
+- three-quarter idle composition: [`evidence/motion-base-1182x749.png`](./evidence/motion-base-1182x749.png)
+- nose-first glide at 4.6 m/s: [`evidence/motion-glide-1182x749.png`](./evidence/motion-glide-1182x749.png)
+- direction change and torso read at 4.9 m/s: [`evidence/motion-carve-1182x749.png`](./evidence/motion-carve-1182x749.png)
+- crosswise edge-stop at 1.0 m/s: [`evidence/motion-brake-1182x749.png`](./evidence/motion-brake-1182x749.png)
+- moving Space jump at 4.3 m/s: [`evidence/motion-jump-1182x749.png`](./evidence/motion-jump-1182x749.png)
+- full three-sigil regression: [`evidence/motion-rite-complete-1182x749.png`](./evidence/motion-rite-complete-1182x749.png)
+
 The prior board orientation is rejected even though its silhouette passed the
 earlier art checkpoint. The new controller was browser-tested as one causal
 sequence: repeated W input reached 5.4 m/s; repeated S input rotated toward a
@@ -221,3 +230,11 @@ elliptical contact shadow, base/edge pressure, and persistent deformation. This
 closes the basic direction/contact inconsistency. It does not claim a rigid-body
 snowboard simulator: terrain slope does not yet contribute gravity, and the
 compact procedural rider still has no production skeletal rig.
+
+The first corrected capture was also rejected because an axis-aligned chase
+camera compressed the real sideways stance into a narrow silhouette. The
+retained three-quarter default camera leaves the physics unchanged while making
+the board nose, crosswise brake, and upper-body counter-rotation legible. The
+four interaction captures above are unmodified viewport screenshots from the
+running WebGPU build; the complete route ended at `Veil stabilized` with no
+browser warning, AudioContext error, or WebGPU validation error.

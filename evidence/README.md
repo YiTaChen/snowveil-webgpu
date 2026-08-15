@@ -50,3 +50,15 @@ They are review artefacts, not third-party source material.
   terrain-shadow result at 26 FPS.
 - `performance-rite-after-2560x1440.png` — completed fixed-1440p route with the
   retained shadow path, audio enabled, and synchronized finale at 22 FPS.
+- `motion-base-1182x749.png` — retained three-quarter default camera that keeps
+  the snowboard stance and blade axis legible at rest.
+- `motion-glide-1182x749.png` — real W-input glide at 4.6 m/s with the blade's
+  long axis leading along the trajectory.
+- `motion-carve-1182x749.png` — real W+D carve at 4.9 m/s showing direction,
+  edge load, upper-body counter-rotation, and a curved persistent track.
+- `motion-brake-1182x749.png` — real S-input edge-stop at 1.0 m/s with the blade
+  rotated across the travel direction and its contact band narrowed.
+- `motion-jump-1182x749.png` — real Space input while moving at 4.3 m/s, with a
+  visible board-to-snow gap and no airborne stamp.
+- `motion-rite-complete-1182x749.png` — end-to-end `?demo` regression after the
+  motion correction, ending at `Veil stabilized` without browser warnings.

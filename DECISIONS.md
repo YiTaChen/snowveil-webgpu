@@ -71,8 +71,9 @@ and supports lean and cloth motion, but its final character-art gate remains ope
 
 ## 2026-08-13 — Ice Pulse shares snow simulation history
 
-Space casts the original Ice Pulse interaction at a point ahead and to the
-rider's right. The compute pass presses a shallow centre into the snow and lifts
+At this checkpoint, Space cast the original Ice Pulse interaction at a point
+ahead and to the rider's right. The later snowboard-causality pass moved Ice
+Pulse to E and reserved Space for jumping. The compute pass presses a shallow centre into the snow and lifts
 an annular displacement ridge. The green channel of the existing deformation
 history stores a slowly fading procedural frost residue, so a cast remains
 visually verifiable after the emissive projectile and screen-space energy ring
@@ -271,3 +272,10 @@ Their footprint is a pointed 1.88-by-0.44-metre ellipse when flat, narrows and
 shifts toward the engaged edge while carving or braking, and disappears while
 airborne. Space therefore becomes a real ballistic jump with takeoff/landing
 sound and a gap in persistent snow history; Ice Pulse moves to E.
+
+The first browser capture after this correction exposed a presentation problem:
+the physically correct sideways snowboard stance collapsed into a beacon-like
+silhouette when the chase camera sat exactly on the travel axis. The retained
+0.45-radian three-quarter chase angle does not change movement physics; it makes
+the board axis, lower-body stance, and upper-body counter-rotation readable in
+one default view while preserving manual orbit control.

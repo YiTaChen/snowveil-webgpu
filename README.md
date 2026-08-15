@@ -72,6 +72,9 @@ Original project code is released under the [MIT License](./LICENSE).
 9. Release audit — starter-only database and styling scaffolds removed, direct
    packages upgraded, social metadata verified, production audit at zero, and
    third-party licence/security records captured.
+10. Snowboard causality pass — nose-first glide, direction-aware torso twist,
+    edge-loaded elliptical snow contact, crosswise braking, and Space jump are
+    verified from the running build.
 
 The current build is a polished playable vertical slice, not a claim of a full
 AAA production or a hundred-million-particle physical simulation. See

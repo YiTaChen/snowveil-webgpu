@@ -60,7 +60,9 @@ export function SnowveilScene() {
     let fpsStarted = lastFrame;
     let fpsFrames = 0;
     const frameTimes: number[] = [];
-    let yaw = 0;
+    // A three-quarter chase view keeps the nose-first board axis and the
+    // rider's counter-rotated upper body legible at the same time.
+    let yaw = 0.45;
     let pitch = 0.02;
     let distance = 5.9;
     let renderScale = 1.0;
