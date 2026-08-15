@@ -219,3 +219,24 @@ The fixed baseline-to-retained comparison improves displayed steady FPS by about
 absolute 8-bit-channel difference and 0.154% of channels differing by more than
 eight levels. Independently timed particles and post-process grain are included.
 Fixed 1440p remains a still-review target rather than a 60 FPS release claim.
+
+## 2026-08-14 — rejected HDR/normal candidates and landing-response cost
+
+Environment: one native-WebGPU in-app Chromium tab. The two native-resolution
+candidates were reloaded back-to-back with an actual 2560×1440 canvas.
+
+| Review state | Observed HUD | Result |
+| --- | ---: | --- |
+| `rgba16float` HDR target | 44 FPS · P95 33.7 ms · 1% 29 | retained compatibility path |
+| packed `rg11b10ufloat` HDR target | 44 FPS · P95 33.7 ms · 1% 29 | rejected; no measured gain |
+| vertex terrain normal baseline | 43 FPS · P95 33.5 ms · 1% 30 | retained |
+| fragment-derivative terrain normal | 42 FPS · P95 33.7 ms · 1% 29 | rejected |
+| moving jump/landing capture, 1182×749 | 44–50 FPS · P95 33.4–33.9 ms | retained under repeated PNG capture |
+| completed route after landing pass, 1182×749 | 51 FPS · P95 33.6 ms · 1% 29 | retained functional capture |
+
+The packed-HDR pair differed by 0.255% mean absolute 8-bit channel value in the
+same visible crop and had no pixels differing by more than 16 levels, but equal
+frame rate means that small precision trade does not buy performance here. Both
+experiments were fully reverted. The retained landing response adds one uniform
+vector and evaluates its 24-particle burst only while impact exceeds 0.012; it
+does not allocate a new texture, buffer, draw, or compute pass.

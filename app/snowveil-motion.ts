@@ -12,3 +12,11 @@ export function snowGravityAcceleration(slopeAlongTravel: number) {
 export function downhillSpeedHeadroom(slopeAlongTravel: number) {
   return Math.max(0, -slopeAlongTravel) * 5.2;
 }
+
+export function landingImpactForVelocity(verticalVelocity: number) {
+  return Math.min(Math.max(-verticalVelocity / 4.8, 0), 1);
+}
+
+export function decayLandingCompression(compression: number, delta: number) {
+  return compression * Math.exp(-Math.max(delta, 0) * 9.5);
+}

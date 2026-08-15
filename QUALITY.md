@@ -288,3 +288,26 @@ well below one percent and the default composition retains its snow relief,
 low-sun modelling, atmospheric depth, and character contact. The complete route
 still reaches `Veil stabilized`; browser logs contain no warning, AudioContext
 error, WGSL compile error, or WebGPU validation error.
+
+### 2026-08-14 — causal jump arc and landing-impact checkpoint
+
+Evidence:
+
+- velocity-shaped airborne pose: [`evidence/motion-jump-arc-1182x749.png`](./evidence/motion-jump-arc-1182x749.png)
+- first grounded impact frame: [`evidence/motion-landing-impact-1182x749.png`](./evidence/motion-landing-impact-1182x749.png)
+- complete route after the animation change: [`evidence/motion-landing-rite-complete-1182x749.png`](./evidence/motion-landing-rite-complete-1182x749.png)
+
+The earlier jump proved a board-to-snow gap but used one height-driven crouch for
+the entire flight. The retained pair comes from one real 4.5–6.0 m/s input
+sequence. Signed vertical velocity changes the board/body attitude between
+takeoff and descent. On the first grounded frame the boots stay with the blade,
+the knees and torso absorb impact, and a short low snow burst appears beside the
+contact area; it is absent from the airborne frame.
+
+Five consecutive frames around touchdown were inspected to reject a persistent
+or floating spray. The burst is visible only at initial contact and decays with
+the same tested compression envelope. The deterministic route still reaches
+`Veil stabilized`, and browser logs contain no audio, WGSL, WebGPU validation,
+or uncaptured-device error. This closes the rigid vertical-translation defect;
+it remains a compact procedural part rig rather than a production motion-capture
+or skeletal-animation claim.

@@ -13,7 +13,13 @@ import { snowHeightAt, snowSurfaceAt } from "./snowveil-terrain";
 import { createRiderGeometry } from "./snowveil-rider-geometry";
 import { createBeaconGeometry } from "./snowveil-beacon-geometry";
 import { createSnowveilAudio, type SnowveilAudio } from "./snowveil-audio";
-import { downhillSpeedHeadroom, slopeAlongHeading, snowGravityAcceleration } from "./snowveil-motion";
+import {
+  decayLandingCompression,
+  downhillSpeedHeadroom,
+  landingImpactForVelocity,
+  slopeAlongHeading,
+  snowGravityAcceleration,
+} from "./snowveil-motion";
 
 type SceneState = "loading" | "ready" | "unsupported" | "error";
 
@@ -97,6 +103,7 @@ export function SnowveilScene() {
     let steerVisual = 0;
     let jumpHeight = 0;
     let jumpVelocity = 0;
+    let landingCompression = 0;
     let spellAge = 100;
     let completionAge = 100;
     let activatedCount = 0;
@@ -417,7 +424,7 @@ export function SnowveilScene() {
 
         const uniformBuffer = activeDevice.createBuffer({
           label: "Snowveil frame uniforms",
-          size: 144,
+          size: 160,
           usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST,
         });
         const skyBindGroup = activeDevice.createBindGroup({
@@ -487,7 +494,7 @@ export function SnowveilScene() {
         const deformationInterval = 1 / 30;
         let deformationAccumulator = deformationInterval;
         let snowHistoryTouched = false;
-        const uniforms = new Float32Array(36);
+        const uniforms = new Float32Array(40);
 
         const terrainSegments = 352;
         const terrainVertexCount = (terrainSegments + 1) * (terrainSegments + 1);
@@ -615,6 +622,7 @@ export function SnowveilScene() {
           const elapsed = (now - started) / 1000;
           const frameTime = Math.min(now - lastFrame, 100);
           const delta = Math.min(frameTime / 1000, 0.05);
+          landingCompression = decayLandingCompression(landingCompression, delta);
           lastFrame = now;
           fpsFrames += 1;
           frameTimes.push(frameTime);
@@ -718,6 +726,7 @@ export function SnowveilScene() {
             jumpVelocity -= 10.8 * delta;
             jumpHeight += jumpVelocity * delta;
             if (jumpHeight <= 0) {
+              landingCompression = Math.max(landingCompression, landingImpactForVelocity(jumpVelocity));
               jumpHeight = 0;
               jumpVelocity = 0;
               if (wasAirborne) audio.land();
@@ -817,6 +826,10 @@ export function SnowveilScene() {
           uniforms[33] = visualSlopeZ;
           uniforms[34] = previousStampX;
           uniforms[35] = previousStampZ;
+          uniforms[36] = landingCompression;
+          uniforms[37] = jumpVelocity;
+          uniforms[38] = 0;
+          uniforms[39] = 0;
           activeDevice.queue.writeBuffer(uniformBuffer, 0, uniforms);
           if (!groundedForSnow || shouldUpdateSnowHistory) {
             previousStampX = playerX;

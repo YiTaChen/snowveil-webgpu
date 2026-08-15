@@ -327,3 +327,25 @@ terrain geometry, and material response are unchanged. The fixed-camera image
 difference is 0.163% mean absolute 8-bit channel value, including independently
 timed particles and grain, while the same-session idle result rises from 21 FPS
 to a 28 FPS steady capture. No third-party asset or code was introduced.
+
+## 2026-08-14 — Jump animation carries vertical cause into landing response
+
+The ballistic controller already separated the board from the snow, but the
+rider shader used only jump height. The same crouch and fixed air rotation were
+therefore applied through ascent, apex, descent, and touchdown. The retained
+motion uniform adds signed vertical velocity and a short landing-compression
+envelope without changing the trajectory itself.
+
+Upward velocity now gives the body and board a restrained takeoff attitude;
+downward velocity blends toward a landing-ready stance. Downward impact velocity
+drives knee and torso compression, then decays exponentially without overshoot.
+A deterministic 24-particle screen-space snow burst shares that envelope, so it
+appears only at contact and does not create an airborne trail. Board geometry,
+cloth, particle code, and timing remain project-authored.
+
+Two performance experiments were rejected before this animation pass. A packed
+`rg11b10ufloat` HDR target matched `rgba16float` at 44 FPS in a back-to-back
+2560×1440 run and added a feature-negotiation path, so the renderer keeps the
+more widely supported 16-bit target. Reconstructing the terrain normal from
+fragment derivatives measured 42 FPS against a 43 FPS vertex-normal baseline;
+the original dense-mesh normal path is retained.

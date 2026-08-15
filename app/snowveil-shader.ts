@@ -9,6 +9,7 @@ struct Globals {
   beaconC: vec4<f32>,
   objective: vec4<f32>,
   terrain: vec4<f32>,
+  motion: vec4<f32>,
 };
 
 @group(0) @binding(0) var<uniform> globals: Globals;
@@ -132,6 +133,42 @@ fn riderSpray(uv: vec2<f32>, time: f32, speed: f32) -> f32 {
   return result;
 }
 
+fn landingBurst(uv: vec2<f32>, impact: f32) -> f32 {
+  if (impact < 0.012) {
+    return 0.0;
+  }
+  let aspect = globals.viewport.x / max(globals.viewport.y, 1.0);
+  let point = (uv - vec2<f32>(0.5, 0.405)) * vec2<f32>(aspect, 1.0);
+  if (length(point) > 0.48) {
+    return 0.0;
+  }
+  let age = saturate(-log(max(impact, 0.001)) / 4.8);
+  let plumeScale = vec2<f32>(0.065 + age * 0.19, 0.026 + age * 0.075);
+  let plumeLift = -age * 0.055 + age * age * 0.035;
+  let leftPlume = (point - vec2<f32>(-age * 0.09, plumeLift)) / plumeScale;
+  let rightPlume = (point - vec2<f32>(age * 0.09, plumeLift)) / plumeScale;
+  let powderCloud =
+    (exp(-dot(leftPlume, leftPlume) * 1.7) + exp(-dot(rightPlume, rightPlume) * 1.7)) *
+    impact *
+    (1.0 - age) *
+    0.16;
+  var result = powderCloud;
+  for (var particle = 0; particle < 24; particle = particle + 1) {
+    let id = f32(particle);
+    let random = hash22(vec2<f32>(id * 19.17 + 5.3, id * 7.91 + 21.6));
+    let side = random.x * 2.0 - 1.0;
+    let origin = vec2<f32>(side * 0.055, 0.012);
+    let velocity = vec2<f32>(side * (0.16 + random.y * 0.24), -(0.075 + random.x * 0.16));
+    let gravity = vec2<f32>(0.0, age * age * (0.11 + random.y * 0.08));
+    let particlePosition = origin + velocity * age + gravity;
+    let size = mix(0.009, 0.0025, age) * (0.72 + random.y * 0.5);
+    let flakeOffset = point - particlePosition;
+    let flake = 1.0 - smoothstep(size * 0.22, size, length(vec2<f32>(flakeOffset.x * 0.78, flakeOffset.y * 1.42)));
+    result = result + flake * (1.0 - age) * impact;
+  }
+  return result;
+}
+
 fn spellBurst(uv: vec2<f32>, pulse: f32) -> f32 {
   if (pulse < 0.01) {
     return 0.0;
@@ -185,8 +222,9 @@ fn fsSnowOverlay(input: SkyVertexOut) -> @location(0) vec4<f32> {
   let flake = foregroundSnow(input.uv, globals.viewport.z);
   let grounded = 1.0 - smoothstep(0.015, 0.09, globals.objective.w);
   let spray = riderSpray(input.uv, globals.viewport.z, globals.reserved.w * grounded);
+  let landing = landingBurst(input.uv, globals.motion.x);
   let spell = spellBurst(input.uv, globals.weather.z);
-  let alpha = saturate(flake * 0.42 + spray * 0.48 + spell * 0.68);
+  let alpha = saturate(flake * 0.42 + spray * 0.48 + landing * 0.62 + spell * 0.68);
   let color = mix(vec3<f32>(0.78, 0.89, 0.96), vec3<f32>(0.18, 0.76, 1.0) * 2.4, saturate(spell * 1.8));
   return vec4<f32>(color, alpha);
 }
@@ -664,7 +702,13 @@ fn vsPlayer(input: PlayerVertexIn) -> PlayerVertexOut {
   let skid = saturate(abs(skidAngle) / 1.570796);
   let carve = clamp(globals.objective.y, -1.0, 1.0) * motion;
   let airborne = smoothstep(0.015, 0.18, jumpHeight);
-  let compression = motion * (0.12 + abs(carve) * 0.28 + skid * 0.22) + airborne * 0.48;
+  let takeoff = saturate(globals.motion.y / 3.85) * airborne;
+  let descent = saturate(-globals.motion.y / 4.4) * airborne;
+  let landing = globals.motion.x;
+  let compression =
+    motion * (0.12 + abs(carve) * 0.28 + skid * 0.22) +
+    airborne * (0.18 + descent * 0.14) +
+    landing * 0.82;
   let bob = sin(time * (4.2 + motion * 1.8)) * motion * (1.0 - airborne) * 0.006;
   var local = input.position;
   var localNormal = normalize(input.normal);
@@ -724,8 +768,9 @@ fn vsPlayer(input: PlayerVertexIn) -> PlayerVertexOut {
   }
   if (part != 11u && airborne > 0.001) {
     let airPivot = vec3<f32>(0.0, 0.42, -0.04);
-    local = airPivot + rotateZ(local - airPivot, airborne * 0.075);
-    localNormal = rotateZ(localNormal, airborne * 0.075);
+    let airPitch = takeoff * 0.065 - descent * 0.048;
+    local = airPivot + rotateZ(local - airPivot, airPitch);
+    localNormal = rotateZ(localNormal, airPitch);
   }
 
   let modelYaw = select(boardYaw, travelHeading, part == 11u);

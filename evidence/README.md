@@ -92,3 +92,9 @@ They are review artefacts, not third-party source material.
   disabled; the orbit frame is diagnostic rather than a composition gate.
 - `performance-vertex-shadow-rite-1182x749.png` — completed three-sigil route
   after both retained optimisations, ending at `Veil stabilized` without errors.
+- `motion-jump-arc-1182x749.png` — moving Space jump with signed vertical
+  velocity shaping the airborne board/body attitude and a clear snow gap.
+- `motion-landing-impact-1182x749.png` — first grounded frame from the same
+  sequence, showing knee/torso absorption and a short snow-powder burst.
+- `motion-landing-rite-complete-1182x749.png` — complete deterministic route
+  after the landing-response uniform and particle pass, with clean browser logs.

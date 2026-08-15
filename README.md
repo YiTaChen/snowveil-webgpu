@@ -87,6 +87,9 @@ Original project code is released under the [MIT License](./LICENSE).
     grounded frames, airborne travel leaves no false groove, untouched history
     decays at 30 Hz, and the unchanged six-sample terrain shadow runs on the
     dense terrain vertices for a measured native-1440p gain.
+13. Jump-response pass — signed vertical velocity shapes takeoff and descent,
+    impact velocity drives a tested no-overshoot landing compression, and a
+    short original snow burst marks only the grounded contact frame.
 
 The current build is a polished playable vertical slice, not a claim of a full
 AAA production or a hundred-million-particle physical simulation. See

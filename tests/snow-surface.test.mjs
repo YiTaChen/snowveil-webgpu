@@ -2,7 +2,9 @@ import assert from "node:assert/strict";
 import test from "node:test";
 
 import {
+  decayLandingCompression,
   downhillSpeedHeadroom,
+  landingImpactForVelocity,
   slopeAlongHeading,
   snowGravityAcceleration,
 } from "../app/snowveil-motion.ts";
@@ -31,4 +33,16 @@ test("the same slope accelerates downhill and resists uphill travel", () => {
   assert.ok(snowGravityAcceleration(uphillGrade) < -1.5);
   assert.ok(downhillSpeedHeadroom(downhillGrade) > 0.75);
   assert.equal(downhillSpeedHeadroom(uphillGrade), 0);
+});
+
+test("landing response follows downward impact and decays without overshoot", () => {
+  assert.equal(landingImpactForVelocity(2), 0);
+  assert.equal(landingImpactForVelocity(-2.4), 0.5);
+  assert.equal(landingImpactForVelocity(-9.6), 1);
+
+  const firstFrame = decayLandingCompression(1, 1 / 60);
+  const laterFrame = decayLandingCompression(firstFrame, 1 / 60);
+  assert.ok(firstFrame < 1 && firstFrame > 0);
+  assert.ok(laterFrame < firstFrame && laterFrame > 0);
+  assert.equal(decayLandingCompression(0.7, -1), 0.7);
 });
