@@ -148,6 +148,10 @@ Original project code is released under the [MIT License](./LICENSE).
     persistent deformation as the board, preserve camera parallax, and obey the
     scene depth buffer. A 12-workgroup GPU placement pass evaluates terrain once
     per particle before a single four-vertex instanced draw.
+27. Bounded snow-load pass — the continuous swept elliptical contact now maps
+    speed to a saturated 2.2–7.8-centimetre compression depth and a restrained
+    0.4–1.8-centimetre edge ridge. Fast carving keeps one joined, tapered wake
+    without converting metres per second into half-metre periodic trenches.
 
 The current build is a polished playable vertical slice, not a claim of a full
 AAA production or a hundred-million-particle physical simulation. See

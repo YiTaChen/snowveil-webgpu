@@ -847,7 +847,14 @@ fn updateSnow(@builtin(global_invocation_id) invocation: vec3<u32>) {
       (1.0 - smoothstep(0.18, 0.245, abs(lateral - edgeSign * 0.025))) * endFade;
     let edgeRidge = mix(twinRidge, singleRidge, edgeAmount);
     let pressure = mix(0.72, 1.18, max(edgeAmount, skid));
-    let stamped = (-0.072 * compressed * pressure + 0.025 * edgeRidge) * speed * grounded;
+    // Rider weight creates a shallow base print; speed adds compaction but must
+    // saturate instead of turning metres per second directly into metres of
+    // displacement. This keeps a fast swept contact continuous without carving
+    // half-metre trenches or regularly repeated walls of snow.
+    let speedLoad = smoothstep(0.05, 5.5, speed);
+    let compressionDepth = mix(0.022, 0.078, speedLoad);
+    let ridgeHeight = mix(0.004, 0.018, speedLoad);
+    let stamped = (-compressionDepth * compressed * pressure + ridgeHeight * edgeRidge) * grounded;
     if (stamped < 0.0) {
       deformation = min(deformation, stamped);
     } else if (deformation > -0.018) {

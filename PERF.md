@@ -508,3 +508,22 @@ claim that older number. The controlled 768-versus-64 comparison instead shows
 that the established terrain, HDR resolve, and 3.69-million-pixel path dominate
 the fixed-scale limit. Normal play retains adaptive resolution and remains near
 the display's 60 FPS cap.
+
+## 2026-08-15 — bounded snow-load cost
+
+The track correction replaces one raw multiply with one `smoothstep` and two
+scalar `mix` operations inside the existing local snow-history compute path. It
+adds no dispatch, pass, sample, texture, buffer, geometry, particle, or CPU
+allocation.
+
+| Same-session state | Observed HUD | Result |
+| --- | ---: | --- |
+| active deterministic route, 1182×749 | 60 FPS · P95 17.6 ms · 1% 57 · 100% | retained |
+| completed three-sigil route, 1182×749 | 60 FPS · P95 17.6 ms · 1% 56 · 100% | retained |
+| true 2560×1440 WebGPU target, 1280×720 presentation | 60 FPS · P95 17.3 ms · 1% 57 · 100% | retained in this session |
+
+The calibrated target evidence is labelled at the exporter's actual 1280×720
+pixel dimensions. The page allocates and shades its fixed 2560×1440 WebGPU
+backing target in `?capture`, confirmed by the existing capture contract; the
+downsample is not described as a native-size screenshot. Browser diagnostics
+contained no warning, WGSL, WebGPU validation, or uncaptured-device error.

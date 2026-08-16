@@ -672,3 +672,32 @@ This passes the requested spatial-weather quality gate without claiming a
 volumetric fluid solver. The existing full-screen atmosphere still supplies
 very distant snowfall; the new near/mid field supplies real world position,
 terrain attachment, parallax, and occlusion.
+
+### 2026-08-15 — bounded continuous snow-track checkpoint
+
+Evidence:
+
+- pre-correction comparison: [`evidence/spindrift-final-1182x749.jpg`](./evidence/spindrift-final-1182x749.jpg)
+- retained active route: [`evidence/snow-track-saturated-after-1182x749.jpg`](./evidence/snow-track-saturated-after-1182x749.jpg)
+- real crosswise brake: [`evidence/snow-track-brake-after-1182x749.jpg`](./evidence/snow-track-brake-after-1182x749.jpg)
+- real Space jump: [`evidence/snow-track-jump-after-1182x749.jpg`](./evidence/snow-track-jump-after-1182x749.jpg)
+- completed three-sigil route: [`evidence/snow-track-route-complete-1182x749.jpg`](./evidence/snow-track-route-complete-1182x749.jpg)
+- calibrated target downsample: [`evidence/snow-track-target-1280x720.jpg`](./evidence/snow-track-target-1280x720.jpg)
+
+The before frame exposes the scale failure: raw speed inflated each compute
+stamp into deep, evenly repeated walls. The retained active frame reaches 6.4
+m/s while leaving a joined shallow wake with the original long-tip taper and
+edge response. The actual S frame keeps the snowboard visibly crosswise at 2.0
+m/s; the Space frame reports `AIR 0.7 m` and leaves a contact gap rather than an
+airborne groove. The automated route still stabilizes all three sigils.
+
+Normal and completed 1182×749 checks report 60 FPS, P95 17.6 ms, and 100% RES.
+The calibrated 1280×720 export reports 60 FPS, P95 17.3 ms, and 100% RES while
+the page shades its true 2560×1440 WebGPU backing target. Diagnostics contain
+no warning or error. Twenty-two tests cover the saturated depth/ridge curves,
+the absence of raw-speed displacement, tapered shared contact, board/travel
+causality, Space jumping, rendering, geometry, cloth, audio, and world weather.
+
+This closes the periodic trench defect without claiming granular snow fracture
+or an offline material simulation. All visible snow, terrain, character,
+effects, code, and evidence remain original procedural project output.

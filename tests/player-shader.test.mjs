@@ -46,6 +46,10 @@ test("terrain and history use the same tapered snowboard contact", () => {
     assert.match(shader, /let tipTaper = sqrt\(max\(1\.0 - contactLong \* contactLong, 0\.0\)\)/);
     assert.match(shader, /max\(contactWidth \* tipTaper, 0\.012\)/);
   }
+  assert.match(snowveilDeformationShader, /let speedLoad = smoothstep\(0\.05, 5\.5, speed\)/);
+  assert.match(snowveilDeformationShader, /let compressionDepth = mix\(0\.022, 0\.078, speedLoad\)/);
+  assert.match(snowveilDeformationShader, /let ridgeHeight = mix\(0\.004, 0\.018, speedLoad\)/);
+  assert.doesNotMatch(snowveilDeformationShader, /\) \* speed \* grounded/);
 });
 
 test("powder spray is driven by edge load and actual board skid", () => {

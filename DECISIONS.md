@@ -682,3 +682,21 @@ fixed 2560×1440 reading by no more than run-to-run variance, confirming that
 the remaining high-resolution limit is the established dense terrain and HDR
 pixel path rather than this field. No sprite, image, scan, simulation cache,
 video frame, texture, model, or third-party effect was used.
+
+## 2026-08-15 — Track displacement represents load, not travel speed
+
+The swept contact kernel was already continuous and tapered correctly, but its
+deformation amplitude multiplied the entire stamp by raw speed in metres per
+second. At 6–7 m/s that turned a nominal 7.2-centimetre depression and
+2.5-centimetre ridge into roughly half-metre trenches and regularly repeated
+walls. The resulting zigzag was a scale error, not evidence that more samples,
+particles, smoothing, or texture detail were needed.
+
+The retained model maps speed through `smoothstep(0.05, 5.5, speed)`. Snow
+compression saturates between 2.2 and 7.8 centimetres, while displaced edge
+snow saturates between 0.4 and 1.8 centimetres; the existing 0.72–1.18 pressure
+term still responds to edge load and skid. The same swept long ellipse,
+tip taper, grounded mask, and 1536² persistent history remain in place, so a
+fast carve produces one shallow continuous band and Space still produces a real
+gap. No blur pass, trail mesh, decal, texture, scan, footage, model, or external
+asset was added.

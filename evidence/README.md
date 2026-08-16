@@ -238,3 +238,15 @@ They are review artefacts, not third-party source material.
 - `spindrift-final-target-1280x720.jpg` — complete calibrated exporter output;
   the file is an honest 1280×720 JPEG while the running page reports its
   2560×1440 WebGPU backing target, 100% render scale, and fixed-scale telemetry.
+- `snow-track-saturated-after-1182x749.jpg` — retained 6.4 m/s route after raw
+  speed is replaced by bounded compaction and ridge curves; the contact remains
+  joined while the former periodic trench walls are absent.
+- `snow-track-brake-after-1182x749.jpg` — real S input with the board crosswise
+  to travel at 2.0 m/s, preserving visible skid causality and shallow contact.
+- `snow-track-jump-after-1182x749.jpg` — real Space input with `AIR 0.7 m` and a
+  visible board-to-snow gap instead of a false airborne stamp.
+- `snow-track-route-complete-1182x749.jpg` — full deterministic route with all
+  sigils resonant, 60 FPS, P95 17.6 ms, and 100% RES.
+- `snow-track-target-1280x720.jpg` — honest 1280×720 exporter output while the
+  capture path shades its fixed 2560×1440 WebGPU target; active route telemetry
+  reports 60 FPS, P95 17.3 ms, and 100% RES.
