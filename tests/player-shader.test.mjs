@@ -5,6 +5,7 @@ import {
   snowveilDeformationShader,
   snowveilPlayerShader,
   snowveilSkyShader,
+  snowveilSpindriftShader,
   snowveilTerrainShader,
 } from "../app/snowveil-shader.ts";
 
@@ -25,6 +26,18 @@ test("player shader gates casting and retains state-specific athletic loading", 
   assert.match(snowveilPlayerShader, /fn clothFlowAt\(chain: vec4<f32>, amount: f32\)/);
   assert.match(snowveilPlayerShader, /clothFlowAt\(globals\.clothFlowX, tail\)/);
   assert.match(snowveilPlayerShader, /part == 6u \|\| part == 26u/);
+});
+
+test("world spindrift follows rendered terrain and preserves depth parallax", () => {
+  assert.match(snowveilSpindriftShader, /@compute @workgroup_size\(64\)/);
+  assert.match(snowveilSpindriftShader, /@builtin\(instance_index\) instanceIndex: u32/);
+  assert.match(snowveilSpindriftShader, /let ground = terrainHeight\(worldXZ\)/);
+  assert.match(snowveilSpindriftShader, /particleCentersWrite\[index\] = vec4<f32>\(center, cycleFade \* edgeFade\)/);
+  assert.match(snowveilSpindriftShader, /let centerPacket = particleCenters\[instanceIndex\]/);
+  assert.match(snowveilSpindriftShader, /textureSampleLevel\(deformationMap, deformationSampler, uv, 0\.0\)\.r/);
+  assert.match(snowveilSpindriftShader, /let anchor = floor\(globals\.reserved\.xy \/ 8\.0\) \* 8\.0/);
+  assert.match(snowveilSpindriftShader, /let widthAxis = normalize\(broadside \+ cameraRight \* 0\.075\)/);
+  assert.match(snowveilSpindriftShader, /let distanceFade = smoothstep\(0\.8, 2\.0, distance\)/);
 });
 
 test("terrain and history use the same tapered snowboard contact", () => {

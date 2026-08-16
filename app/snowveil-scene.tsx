@@ -7,6 +7,7 @@ import {
   snowveilPlayerShader,
   snowveilPostShader,
   snowveilSkyShader,
+  snowveilSpindriftShader,
   snowveilTerrainShader,
 } from "./snowveil-shader";
 import { snowHeightAt, snowSurfaceAt } from "./snowveil-terrain";
@@ -315,6 +316,10 @@ export function SnowveilScene() {
           label: "Snowveil original procedural terrain shader",
           code: snowveilTerrainShader,
         });
+        const spindriftShaderModule = activeDevice.createShaderModule({
+          label: "Snowveil world-space spindrift shader",
+          code: snowveilSpindriftShader,
+        });
         const postShaderModule = activeDevice.createShaderModule({
           label: "Snowveil HDR post shader",
           code: snowveilPostShader,
@@ -335,6 +340,7 @@ export function SnowveilScene() {
         const [
           skyCompilation,
           terrainCompilation,
+          spindriftCompilation,
           postCompilation,
           playerCompilation,
           beaconCompilation,
@@ -342,6 +348,7 @@ export function SnowveilScene() {
         ] = await Promise.all([
             skyShaderModule.getCompilationInfo(),
             terrainShaderModule.getCompilationInfo(),
+            spindriftShaderModule.getCompilationInfo(),
             postShaderModule.getCompilationInfo(),
             playerShaderModule.getCompilationInfo(),
             beaconShaderModule.getCompilationInfo(),
@@ -350,6 +357,7 @@ export function SnowveilScene() {
         const shaderErrors = [
           ...skyCompilation.messages,
           ...terrainCompilation.messages,
+          ...spindriftCompilation.messages,
           ...postCompilation.messages,
           ...playerCompilation.messages,
           ...beaconCompilation.messages,
@@ -395,6 +403,37 @@ export function SnowveilScene() {
             depthWriteEnabled: false,
             depthCompare: "always",
           },
+        });
+
+        const spindriftPipeline = activeDevice.createRenderPipeline({
+          label: "Snowveil world-space spindrift pipeline",
+          layout: "auto",
+          vertex: { module: spindriftShaderModule, entryPoint: "vsSpindrift" },
+          fragment: {
+            module: spindriftShaderModule,
+            entryPoint: "fsSpindrift",
+            targets: [
+              {
+                format: sceneFormat,
+                blend: {
+                  color: { srcFactor: "src-alpha", dstFactor: "one-minus-src-alpha" },
+                  alpha: { srcFactor: "one", dstFactor: "one-minus-src-alpha" },
+                },
+              },
+            ],
+          },
+          primitive: { topology: "triangle-strip", cullMode: "none" },
+          depthStencil: {
+            format: "depth24plus",
+            depthWriteEnabled: false,
+            depthCompare: "less",
+          },
+        });
+
+        const spindriftComputePipeline = activeDevice.createComputePipeline({
+          label: "Snowveil world-space spindrift placement pipeline",
+          layout: "auto",
+          compute: { module: spindriftShaderModule, entryPoint: "updateSpindrift" },
         });
 
         const terrainPipeline = activeDevice.createRenderPipeline({
@@ -506,6 +545,12 @@ export function SnowveilScene() {
           size: 208,
           usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST,
         });
+        const spindriftParticleCount = 768;
+        const spindriftParticleBuffer = activeDevice.createBuffer({
+          label: "Snowveil computed world-space spindrift centers",
+          size: spindriftParticleCount * 16,
+          usage: GPUBufferUsage.STORAGE,
+        });
         const skyBindGroup = activeDevice.createBindGroup({
           layout: skyPipeline.getBindGroupLayout(0),
           entries: [{ binding: 0, resource: { buffer: uniformBuffer } }],
@@ -558,6 +603,24 @@ export function SnowveilScene() {
               { binding: 0, resource: { buffer: uniformBuffer } },
               { binding: 1, resource: view },
               { binding: 2, resource: deformationSampler },
+            ],
+          }),
+        );
+        const spindriftBindGroup = activeDevice.createBindGroup({
+          layout: spindriftPipeline.getBindGroupLayout(0),
+          entries: [
+            { binding: 0, resource: { buffer: uniformBuffer } },
+            { binding: 3, resource: { buffer: spindriftParticleBuffer } },
+          ],
+        });
+        const spindriftComputeBindGroups = deformationViews.map((view) =>
+          activeDevice.createBindGroup({
+            layout: spindriftComputePipeline.getBindGroupLayout(0),
+            entries: [
+              { binding: 0, resource: { buffer: uniformBuffer } },
+              { binding: 1, resource: view },
+              { binding: 2, resource: deformationSampler },
+              { binding: 4, resource: { buffer: spindriftParticleBuffer } },
             ],
           }),
         );
@@ -1037,6 +1100,13 @@ export function SnowveilScene() {
             deformationPass.end();
             deformationReadIndex = deformationWriteIndex;
           }
+          const spindriftPlacementPass = encoder.beginComputePass({
+            label: "Snowveil world-space spindrift placement",
+          });
+          spindriftPlacementPass.setPipeline(spindriftComputePipeline);
+          spindriftPlacementPass.setBindGroup(0, spindriftComputeBindGroups[deformationReadIndex]);
+          spindriftPlacementPass.dispatchWorkgroups(Math.ceil(spindriftParticleCount / 64));
+          spindriftPlacementPass.end();
           const pass = encoder.beginRenderPass({
             colorAttachments: [
               {
@@ -1071,6 +1141,9 @@ export function SnowveilScene() {
           pass.setVertexBuffer(0, beaconVertexBuffer);
           pass.setIndexBuffer(beaconIndexBuffer, "uint32");
           pass.drawIndexed(beaconGeometry.indices.length, beaconPositions.length);
+          pass.setPipeline(spindriftPipeline);
+          pass.setBindGroup(0, spindriftBindGroup);
+          pass.draw(4, spindriftParticleCount);
           pass.setPipeline(snowOverlayPipeline);
           pass.setBindGroup(0, snowOverlayBindGroup);
           pass.draw(3);

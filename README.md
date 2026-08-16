@@ -143,6 +143,11 @@ Original project code is released under the [MIT License](./LICENSE).
     turn world wind, rider velocity, and carve inertia into delayed cape and
     scarf motion; a dedicated cape-edge part keeps the dark trim attached while
     the existing single rider draw and procedural material remain intact.
+26. Terrain-coupled spindrift pass — 768 original world-space snow ribbons move
+    through a rider-centred volume, follow the same procedural terrain and
+    persistent deformation as the board, preserve camera parallax, and obey the
+    scene depth buffer. A 12-workgroup GPU placement pass evaluates terrain once
+    per particle before a single four-vertex instanced draw.
 
 The current build is a polished playable vertical slice, not a claim of a full
 AAA production or a hundred-million-particle physical simulation. See

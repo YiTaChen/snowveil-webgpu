@@ -654,3 +654,31 @@ without moving the visually similar but static belt and chest harness. The
 uniform buffer grows by 32 bytes, but no vertex, index, draw, render pass,
 pipeline, texture, storage buffer, animation clip, model, or external asset is
 added.
+
+## 2026-08-15 — Ground wind belongs to the world, not the screen
+
+The remaining atmospheric snow was largely evaluated in full-screen passes.
+It could suggest weather, but camera orbit did not reveal spatial separation
+and the flakes could not disappear behind a dune, track lip, rider, or beacon.
+The first world-space candidate was rejected for being too faint. A denser
+candidate was also rejected because equal-width short dashes read as scratches
+painted on the snow surface.
+
+The retained field uses 768 deterministic world-space centres in a wrapped
+32×24-metre volume around the rider. A small compute dispatch evaluates the
+same procedural terrain and 1536² deformation history once per particle, then
+stores its centre and life/edge fade in a 12 KiB buffer. The render stage reads
+that buffer, forms one soft camera-facing ribbon along the established world
+wind, applies near/far and forward-scatter fades, and submits one four-vertex
+triangle-strip instance per centre with depth writes disabled and `less` depth
+testing enabled. Terrain, rider, beacons, and accumulated snow therefore
+occlude the field naturally while orbiting the camera exposes real parallax.
+
+Recomputing the full terrain independently at every quad vertex was rejected:
+six vertices repeated identical height work for each particle. The retained
+compute/render split performs the expensive placement once and shares it across
+four vertices. A diagnostic reduction from 768 particles to 64 changed the
+fixed 2560×1440 reading by no more than run-to-run variance, confirming that
+the remaining high-resolution limit is the established dense terrain and HDR
+pixel path rather than this field. No sprite, image, scan, simulation cache,
+video frame, texture, model, or third-party effect was used.

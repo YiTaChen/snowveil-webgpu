@@ -641,3 +641,34 @@ geometry attachment, shader routing, movement, contact, audio, and rendering.
 This closes the looping-cloth defect without claiming a full finite-element
 fabric solver. The rider remains a compact procedural hierarchy rather than a
 conventional skinned production character or facial-animation system.
+
+### 2026-08-15 — world-space spindrift checkpoint
+
+Evidence:
+
+- active route and terrain depth: [`evidence/spindrift-final-1182x749.jpg`](./evidence/spindrift-final-1182x749.jpg)
+- alternate orbit inspection: [`evidence/world-spindrift-orbit-1182x749.jpg`](./evidence/world-spindrift-orbit-1182x749.jpg)
+- complete calibrated target export: [`evidence/spindrift-final-target-1280x720.jpg`](./evidence/spindrift-final-target-1280x720.jpg)
+
+The first implementation failed the visual gate because it was almost
+imperceptible. Raising density and shortening every ribbon produced an evenly
+spaced scratch pattern and was also rejected. The retained field is sparser,
+longer, softer, and concentrated in the lowest 1.45 metres above the rendered
+snow. It follows the fixed katabatic wind without sharing a screen-space phase.
+Camera orbit changes its overlap, while the depth buffer removes particles
+behind the rider, beacons, dune crests, and displaced track lips.
+
+At 1182×749 the active route reports 58 FPS, P95 17.7 ms, and 100% RES. The
+single-tab calibrated stress path reports 39 FPS, P95 34.1 ms, 1% low 29, and
+100% RES while a read-only inspection confirms the 2560×1440 WebGPU backing
+target. The exporter returns a complete 1280×720 JPEG, so the evidence file is
+labelled at that real exported size rather than presented as a native still.
+Diagnostics from the final audit contain no warning, WGSL, WebGPU validation,
+or device error. Twenty-two tests cover placement, depth/render topology,
+terrain/deformation parity, snowboard causality, jumping, cloth, audio, and the
+rest of the playable route.
+
+This passes the requested spatial-weather quality gate without claiming a
+volumetric fluid solver. The existing full-screen atmosphere still supplies
+very distant snowfall; the new near/mid field supplies real world position,
+terrain attachment, parallax, and occlusion.

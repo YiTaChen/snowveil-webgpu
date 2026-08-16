@@ -483,3 +483,28 @@ The current browser exporter returns the complete `?capture` composition at
 presentation backed by a 2560×1440 WebGPU target. That downsample is labelled at
 its exported size; the 2073×1440 large-view crops used for telemetry are not
 presented as native-resolution visual proof.
+
+## 2026-08-15 — terrain-coupled spindrift cost
+
+The retained weather field adds one 12-workgroup compute dispatch, one 12 KiB
+storage buffer, and one depth-tested instanced draw. The compute stage evaluates
+the existing terrain/deformation height once for each of 768 centres. The draw
+uses four triangle-strip vertices per centre and no vertex buffer, texture,
+sprite, upload stream, or per-frame CPU allocation.
+
+| Same-session state | Observed HUD | Result |
+| --- | ---: | --- |
+| repeated terrain height in every quad vertex | 39 FPS · P95 34.0 ms · 1% 29 · 100% | rejected architecture |
+| compute-shared centres, 768 particles, 1182×749 | 58 FPS · P95 17.7 ms · 1% 30 · 100% | retained interactive path |
+| compute-shared centres, 768 particles, true 2560×1440 target | 39 FPS · P95 34.1 ms · 1% 29 · 100% | fixed-scale stress limit |
+| diagnostic 64-particle true 2560×1440 target | 39 FPS · P95 34.1 ms · 1% 20 · 100% | particle count was not the pixel bottleneck |
+
+The final target measurement used one active WebGPU tab; a two-tab run fell to
+30 FPS and was discarded as GPU contention rather than application telemetry.
+The browser exported the complete composition at 1280×720 while DOM inspection
+confirmed a 2560×1440 backing canvas. Absolute readings from the prior day's
+46–48 FPS session were not reproduced in this session, so this record does not
+claim that older number. The controlled 768-versus-64 comparison instead shows
+that the established terrain, HDR resolve, and 3.69-million-pixel path dominate
+the fixed-scale limit. Normal play retains adaptive resolution and remains near
+the display's 60 FPS cap.

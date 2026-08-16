@@ -594,6 +594,191 @@ fn fsTerrain(input: TerrainVertexOut) -> @location(0) vec4<f32> {
 }
 `;
 
+export const snowveilSpindriftShader = /* wgsl */ `
+${sharedUniforms}
+
+@group(0) @binding(1) var deformationMap: texture_2d<f32>;
+@group(0) @binding(2) var deformationSampler: sampler;
+@group(0) @binding(3) var<storage, read> particleCenters: array<vec4<f32>>;
+@group(0) @binding(4) var<storage, read_write> particleCentersWrite: array<vec4<f32>>;
+
+struct SpindriftVertexOut {
+  @builtin(position) position: vec4<f32>,
+  @location(0) local: vec2<f32>,
+  @location(1) color: vec3<f32>,
+  @location(2) opacity: f32,
+};
+
+fn saturate(value: f32) -> f32 {
+  return clamp(value, 0.0, 1.0);
+}
+
+fn hash12(point: vec2<f32>) -> f32 {
+  let p = fract(vec3<f32>(point.xyx) * vec3<f32>(0.1031, 0.1030, 0.0973));
+  let q = p + dot(p, p.yzx + vec3<f32>(33.33));
+  return fract((q.x + q.y) * q.z);
+}
+
+fn hash22(point: vec2<f32>) -> vec2<f32> {
+  return vec2<f32>(hash12(point + 17.17), hash12(point + 91.73));
+}
+
+fn noise2(point: vec2<f32>) -> f32 {
+  let cell = floor(point);
+  let local = fract(point);
+  let blend = local * local * (3.0 - 2.0 * local);
+  let a = hash12(cell);
+  let b = hash12(cell + vec2<f32>(1.0, 0.0));
+  let c = hash12(cell + vec2<f32>(0.0, 1.0));
+  let d = hash12(cell + vec2<f32>(1.0, 1.0));
+  return mix(mix(a, b, blend.x), mix(c, d, blend.x), blend.y);
+}
+
+fn fbm(point: vec2<f32>) -> f32 {
+  var p = point;
+  var amplitude = 0.5;
+  var result = 0.0;
+  for (var octave = 0; octave < 4; octave = octave + 1) {
+    result = result + noise2(p) * amplitude;
+    p = mat2x2<f32>(1.67, 1.16, -1.16, 1.67) * p;
+    amplitude = amplitude * 0.48;
+  }
+  return result;
+}
+
+fn outcropField(point: vec2<f32>) -> f32 {
+  let outcropA = exp(-length((point - vec2<f32>(-12.0, -24.0)) * vec2<f32>(0.34, 0.19)) * 1.7);
+  let outcropB = exp(-length((point - vec2<f32>(19.0, -33.0)) * vec2<f32>(0.29, 0.16)) * 1.8);
+  return max(outcropA, outcropB);
+}
+
+fn snowDeformation(point: vec2<f32>) -> f32 {
+  let uv = point / 128.0 + 0.5;
+  if (uv.x <= 0.0 || uv.y <= 0.0 || uv.x >= 1.0 || uv.y >= 1.0) {
+    return 0.0;
+  }
+  return textureSampleLevel(deformationMap, deformationSampler, uv, 0.0).r;
+}
+
+fn terrainHeight(point: vec2<f32>) -> f32 {
+  let wind = normalize(vec2<f32>(0.82, 0.57));
+  let across = vec2<f32>(-wind.y, wind.x);
+  let alongWind = dot(point, wind);
+  let crossWind = dot(point, across);
+  let broadWarp = (fbm(point * 0.019 + vec2<f32>(4.0, -7.0)) - 0.5) * 8.0;
+  let broad = sin(crossWind * 0.075 + broadWarp) * 1.08;
+  let longSwell = sin(crossWind * 0.028 - alongWind * 0.012 + 1.7) * 0.84;
+  let driftNoise = fbm(vec2<f32>(crossWind * 0.105, alongWind * 0.031));
+  let drifts = (driftNoise - 0.48) * 1.22;
+  let ridgeBase = sin(crossWind * 0.67 + noise2(point * 0.11) * 2.0);
+  let ridges = ridgeBase * 0.045;
+  let heroDistance = length((point - vec2<f32>(-1.5, -11.0)) * vec2<f32>(0.65, 0.34));
+  let heroDune = exp(-heroDistance * 0.1) * 1.82;
+  let foregroundDip = -exp(-length((point - vec2<f32>(2.8, -1.5)) * vec2<f32>(0.32, 0.9))) * 0.48;
+  let radius = length(point);
+  let angle = atan2(point.y, point.x);
+  let mountainProfile = 8.0 + sin(angle * 3.7 + 0.6) * 2.2 + sin(angle * 8.3 - 1.2) * 1.25 + noise2(point * 0.027 + 31.0) * 4.2;
+  let farRise = smoothstep(38.0, 62.0, radius) * (1.0 - smoothstep(62.0, 78.0, radius)) * mountainProfile * 0.42;
+  let outcrop = outcropField(point);
+  let outcropLift = smoothstep(0.12, 0.58, outcrop) * 1.55 + smoothstep(0.46, 0.78, outcrop) * 0.32;
+  return -0.72 + broad + longSwell + drifts + ridges + heroDune + foregroundDip + farRise + outcropLift + snowDeformation(point);
+}
+
+@compute @workgroup_size(64)
+fn updateSpindrift(@builtin(global_invocation_id) invocation: vec3<u32>) {
+  if (invocation.x >= 768u) {
+    return;
+  }
+  let index = invocation.x;
+  let id = f32(index);
+  let randomA = hash22(vec2<f32>(id * 0.7549 + 13.7, id * 1.327 + 41.2));
+  let randomB = hash22(vec2<f32>(id * 2.117 + 71.9, id * 0.439 + 8.3));
+  let wind = normalize(vec2<f32>(0.82, 0.57));
+  let age = fract(globals.viewport.z * mix(0.055, 0.115, randomA.x) + randomA.y * 8.0);
+  let span = vec2<f32>(32.0, 24.0);
+  let anchor = floor(globals.reserved.xy / 8.0) * 8.0;
+  let seededOffset = (randomA * 2.0 - 1.0) * span * 0.5;
+  let travelled = wind * ((age - 0.5) * mix(13.0, 22.0, randomB.x));
+  let wrappedOffset = fract((seededOffset + travelled) / span + 0.5) * span - span * 0.5;
+  let worldXZ = anchor + wrappedOffset;
+  let fall = fract(randomB.y + 1.0 - age * mix(0.62, 0.92, randomA.y));
+  let ground = terrainHeight(worldXZ);
+  let center = vec3<f32>(worldXZ.x, ground + 0.055 + fall * fall * 1.4, worldXZ.y);
+  let cycleFade = smoothstep(0.02, 0.13, age) * (1.0 - smoothstep(0.82, 0.99, age));
+  let volumeEdge = max(abs(wrappedOffset.x) / (span.x * 0.5), abs(wrappedOffset.y) / (span.y * 0.5));
+  let edgeFade = 1.0 - smoothstep(0.78, 1.0, volumeEdge);
+  particleCentersWrite[index] = vec4<f32>(center, cycleFade * edgeFade);
+}
+
+@vertex
+fn vsSpindrift(
+  @builtin(vertex_index) vertexIndex: u32,
+  @builtin(instance_index) instanceIndex: u32
+) -> SpindriftVertexOut {
+  var output: SpindriftVertexOut;
+  let corners = array<vec2<f32>, 4>(
+    vec2<f32>(-1.0, -1.0),
+    vec2<f32>(1.0, -1.0),
+    vec2<f32>(-1.0, 1.0),
+    vec2<f32>(1.0, 1.0)
+  );
+  let corner = corners[vertexIndex];
+  let id = f32(instanceIndex);
+  let randomA = hash22(vec2<f32>(id * 0.7549 + 13.7, id * 1.327 + 41.2));
+  let randomB = hash22(vec2<f32>(id * 2.117 + 71.9, id * 0.439 + 8.3));
+  let wind = normalize(vec2<f32>(0.82, 0.57));
+  let centerPacket = particleCenters[instanceIndex];
+  let center = centerPacket.xyz;
+
+  let cameraTarget = vec3<f32>(globals.reserved.x, globals.weather.y + 1.05, globals.reserved.y);
+  let orbit = vec3<f32>(
+    sin(globals.camera.x) * globals.camera.z,
+    2.0 + globals.camera.y * 7.0,
+    cos(globals.camera.x) * globals.camera.z
+  );
+  let cameraPosition = cameraTarget + orbit;
+  let cameraForward = normalize(cameraTarget - cameraPosition);
+  let cameraRight = normalize(cross(cameraForward, vec3<f32>(0.0, 1.0, 0.0)));
+  let cameraUp = normalize(cross(cameraRight, cameraForward));
+  let toCamera = normalize(cameraPosition - center);
+  let longAxis = normalize(vec3<f32>(wind.x, 0.035 + randomB.y * 0.025, wind.y));
+  let broadside = cross(toCamera, longAxis);
+  let widthAxis = normalize(broadside + cameraRight * 0.075);
+  let flakeLength = mix(0.12, 0.42, randomB.x);
+  let flakeWidth = mix(0.016, 0.042, randomA.y);
+  let worldPosition = center + longAxis * corner.x * flakeLength + widthAxis * corner.y * flakeWidth;
+  let relative = worldPosition - cameraPosition;
+  let viewX = dot(relative, cameraRight);
+  let viewY = dot(relative, cameraUp);
+  let viewZ = dot(relative, cameraForward);
+  let focal = 1.0 / globals.camera.w;
+  let aspect = globals.viewport.x / max(globals.viewport.y, 1.0);
+  let near = 0.08;
+  let far = 220.0;
+  let clipZ = (far / (far - near)) * viewZ - (near * far / (far - near));
+
+  let distance = length(relative);
+  let distanceFade = smoothstep(0.8, 2.0, distance) * (1.0 - smoothstep(18.0, 27.0, distance));
+  let sunDirection = normalize(vec3<f32>(0.44, 0.205, -0.874));
+  let forwardScatter = pow(saturate(dot(toCamera, sunDirection)), 8.0);
+
+  output.position = vec4<f32>(viewX * focal / aspect, viewY * focal, clipZ, viewZ);
+  output.local = corner;
+  output.color = mix(vec3<f32>(0.72, 0.86, 0.96), vec3<f32>(1.15, 0.82, 0.58), forwardScatter);
+  output.opacity = centerPacket.w * distanceFade * mix(0.1, 0.28, randomA.x) * (1.0 + forwardScatter * 2.2);
+  return output;
+}
+
+@fragment
+fn fsSpindrift(input: SpindriftVertexOut) -> @location(0) vec4<f32> {
+  let ellipse = length(vec2<f32>(input.local.x * 0.34, input.local.y));
+  let body = exp(-ellipse * ellipse * 4.6);
+  let core = exp(-ellipse * ellipse * 14.0);
+  let alpha = saturate(body * input.opacity);
+  return vec4<f32>(input.color * (0.92 + core * 0.42), alpha);
+}
+`;
+
 export const snowveilDeformationShader = /* wgsl */ `
 ${sharedUniforms}
 

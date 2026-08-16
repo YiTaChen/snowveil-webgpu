@@ -229,3 +229,12 @@ They are review artefacts, not third-party source material.
 - `cloth-airflow-target-1280x720.png` — complete-frame exporter output while
   `?capture` reports a 1280×720 CSS presentation and true 2560×1440 WebGPU
   target; retained at the honest exported dimensions.
+- `spindrift-final-1182x749.jpg` — retained 768-particle world-space field on
+  the active deterministic route, showing terrain depth, the joined board wake,
+  and the normal near-60 FPS interaction path.
+- `world-spindrift-orbit-1182x749.jpg` — alternate camera orbit confirming that
+  the low wind ribbons change world overlap rather than remaining attached to
+  the screen.
+- `spindrift-final-target-1280x720.jpg` — complete calibrated exporter output;
+  the file is an honest 1280×720 JPEG while the running page reports its
+  2560×1440 WebGPU backing target, 100% render scale, and fixed-scale telemetry.
