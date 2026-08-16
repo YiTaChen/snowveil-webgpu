@@ -569,3 +569,22 @@ as an honestly labelled 1280×720 JPEG. The 44 FPS reading lies within the
 project's recent 39–49 FPS fixed-target range; no same-state before/after claim
 is made. Normal adaptive play remains display-capped at 60 FPS. Final browser
 diagnostics contained no warning, WGSL, WebGPU validation, or device error.
+
+## 2026-08-15 — release-candidate matrix
+
+The final audit uses the pinned `vinext 1.0.0-beta.6` production graph. The
+first production measurement was discarded after detecting concurrent WebGPU
+tabs; the retained route below ran alone in a clean tab.
+
+| Release state | Observed HUD | Result |
+| --- | ---: | --- |
+| desktop production, 1280×720 | 60 FPS · P95 17.6 ms · 100% | retained |
+| mobile jump/action, 480×659 | 60 FPS · 100% | retained; compact HUD |
+| completed production route, 1280×720 | 60 FPS · P95 17.4 ms · 1% 57 · 100% | retained; all sigils |
+| fixed 2560×1440 backing target, 1280×720 export | 44 FPS · P95 33.6 ms · 1% 29 · 100% | visual-review stress target |
+
+The production route reports no browser warning, WGSL validation error, or
+uncaptured device error. Dynamic resolution is available during ordinary play,
+but the retained route recovered to and held 100% after GPU contention was
+removed. The fixed target remains a truthful quality boundary, not a 60 FPS
+native-1440p performance claim.

@@ -746,3 +746,21 @@ three body height bands, widens their penumbra, fades energy toward the long
 low-sun tip, and reduces direct-light occlusion. No new draw, render pass,
 pipeline, texture, buffer, bind group, sample, geometry, asset, or per-frame CPU
 allocation was added.
+
+## 2026-08-15 — Release acceptance requires the shipped graph and narrow UI
+
+The release audit found that the established scene and controller passed, but
+the full dependency graph still inherited two high-severity parser findings
+through `vinext 1.0.0-beta.2`. The compatible current line is retained rather
+than force-downgraded: `vinext 1.0.0-beta.6` and its required
+`@vitejs/plugin-rsc 0.5.34` peer are pinned exactly. That graph removes
+`image-size 2.0.2`, returns both npm audits to zero, and passes the same build,
+tests, and browser route as the preceding renderer.
+
+At 480×659, the desktop percentile string crossed behind the touch controls.
+Mobile now keeps a compact FPS/render-scale pill above those controls while the
+desktop retains P95 and one-percent-low telemetry. A `?fallback` QA switch
+exercises the exact WebGPU-unavailable branch; it deliberately renders an honest
+compatibility message instead of substituting a visually unrelated fallback
+scene. Neither change alters the simulation, shader, desktop composition, or
+normal feature detection.

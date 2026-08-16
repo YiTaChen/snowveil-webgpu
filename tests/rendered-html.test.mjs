@@ -53,4 +53,18 @@ test("Space drives a physical airborne state instead of a secondary action", asy
   assert.match(sceneSource, /jumpVelocity = 3\.85/);
   assert.match(sceneSource, /jumpVelocity -= 10\.8 \* delta/);
   assert.match(sceneSource, /AIR \$\{jumpHeight\.toFixed\(1\)\} m/);
+  assert.match(sceneSource, /const fallbackMode = query\.has\("fallback"\)/);
+  assert.match(sceneSource, /if \(fallbackMode \|\| !webgpu\)/);
+});
+
+test("mobile telemetry stays above controls and omits desktop-only percentiles", async () => {
+  const [sceneSource, cssSource] = await Promise.all([
+    readFile(new URL("../app/snowveil-scene.tsx", import.meta.url), "utf8"),
+    readFile(new URL("../app/globals.css", import.meta.url), "utf8"),
+  ]);
+
+  assert.match(sceneSource, /window\.innerWidth <= 720/);
+  assert.match(sceneSource, /\? `\$\{fps\} FPS · \$\{resolution\}`/);
+  assert.match(cssSource, /bottom: calc\(max\(18px, env\(safe-area-inset-bottom\)\) \+ 116px\)/);
+  assert.match(cssSource, /max-width: calc\(100% - 32px\)/);
 });

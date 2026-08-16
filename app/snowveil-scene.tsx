@@ -56,6 +56,7 @@ export function SnowveilScene() {
     const evidenceMode = query.has("evidence");
     const captureMode = query.has("capture");
     const demoMode = query.has("demo");
+    const fallbackMode = query.has("fallback");
     const requestedRenderScale = Number(query.get("renderScale"));
     const fixedRenderScale =
       Number.isFinite(requestedRenderScale) && requestedRenderScale > 0
@@ -70,7 +71,7 @@ export function SnowveilScene() {
       document.documentElement.dataset.snowveilCapture = "true";
     }
     const webgpu = navigator.gpu;
-    if (!webgpu) {
+    if (fallbackMode || !webgpu) {
       queueMicrotask(() => {
         if (!disposed) setSceneState("unsupported");
       });
@@ -784,7 +785,11 @@ export function SnowveilScene() {
             const p99 = sortedFrameTimes[Math.min(sortedFrameTimes.length - 1, Math.floor(sortedFrameTimes.length * 0.99))];
             const lowOnePercent = Math.round(1000 / Math.max(p99, 0.01));
             if (fpsRef.current) {
-              fpsRef.current.textContent = `${fps} FPS · P95 ${p95.toFixed(1)} ms · 1% ${lowOnePercent} · ${Math.round(renderScale * 100)}% RES`;
+              const resolution = `${Math.round(renderScale * 100)}% RES`;
+              fpsRef.current.textContent =
+                window.innerWidth <= 720
+                  ? `${fps} FPS · ${resolution}`
+                  : `${fps} FPS · P95 ${p95.toFixed(1)} ms · 1% ${lowOnePercent} · ${resolution}`;
             }
             if (!evidenceMode && !captureMode && fixedRenderScale === undefined) {
               renderScale = nextRenderScale(renderScale, fps, p95);

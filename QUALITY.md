@@ -767,3 +767,30 @@ offset, all beacon projections, direct-light integration, movement, contact,
 spell, cloth, audio, weather, and rendering. Retained-browser diagnostics are
 free of warning or error. This adds physically coherent grounding without
 claiming a cascaded production shadow system, and without importing any asset.
+
+### 2026-08-15 — release-candidate acceptance
+
+Evidence:
+
+- desktop production: [`evidence/release-candidate-production-1280x720.jpg`](./evidence/release-candidate-production-1280x720.jpg)
+- completed production route: [`evidence/release-candidate-production-route-1280x720.jpg`](./evidence/release-candidate-production-route-1280x720.jpg)
+- mobile idle and action: [`evidence/release-candidate-mobile-480x659.jpg`](./evidence/release-candidate-mobile-480x659.jpg), [`evidence/release-candidate-mobile-action-480x659.jpg`](./evidence/release-candidate-mobile-action-480x659.jpg)
+- honest compatibility branch: [`evidence/release-candidate-fallback-1182x749.jpg`](./evidence/release-candidate-fallback-1182x749.jpg)
+- calibrated 2560×1440 target: [`evidence/release-candidate-target-1280x720.jpg`](./evidence/release-candidate-target-1280x720.jpg)
+
+This dated checkpoint supersedes the earlier open vertical-slice release notes.
+The upgraded 1280×720 production graph completes the real three-sigil route
+with `Veil stabilized` at 60 FPS, P95 17.4 ms, one-percent low 57, 100% render scale, and
+no browser warning or error. The 480×659 action frame exposes the same real
+accelerate/jump controls while keeping live telemetry readable above the glass
+control cluster. The forced fallback frame executes the normal unsupported-
+WebGPU branch and does not disguise missing capability with a substitute image.
+
+The calibrated still path presents 1280×720 while allocating and shading its
+fixed 2560×1440 WebGPU backing canvas. It reports 44 FPS, P95 33.6 ms, and 100%
+render scale, so it remains an honestly measured visual-review target rather
+than a native-1440p 60 FPS claim. Together with the original procedural asset
+record, zero-vulnerability full and production audits, production build, and 25
+automated tests, this closes the release-candidate quality gate for the polished
+playable vertical slice. It does not reclassify the project as a full AAA game,
+granular snow solver, or production skeletal-animation system.

@@ -419,10 +419,20 @@ canvas {
   .snowveil__footer {
     left: 50%;
     right: auto;
-    bottom: calc(max(18px, env(safe-area-inset-bottom)) + 86px);
+    bottom: calc(max(18px, env(safe-area-inset-bottom)) + 116px);
     transform: translateX(-50%);
-    gap: 10px;
+    gap: 8px;
+    width: max-content;
+    max-width: calc(100% - 32px);
+    justify-content: center;
+    padding: 6px 10px;
+    border: 1px solid rgba(215, 239, 250, 0.12);
+    border-radius: 999px;
+    background: rgba(5, 18, 28, 0.16);
+    font-size: 7px;
+    letter-spacing: 0.11em;
     white-space: nowrap;
+    backdrop-filter: blur(8px);
   }
 
   .snowveil__footer > span:first-child {

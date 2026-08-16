@@ -51,6 +51,8 @@ export to contain the complete frame instead of a top-left crop.
 For repeatable physics review, `?slope=downhill` and `?slope=uphill` place the
 rider on the same local grade with opposite headings; they use the normal
 controller and renderer rather than a separate animation.
+Append `?fallback` to exercise the exact non-WebGPU compatibility branch during
+release QA; it does not render a substitute scene.
 
 ## Originality and licensing
 
@@ -160,7 +162,12 @@ Original project code is released under the [MIT License](./LICENSE).
     board-yaw, airborne-height, and three-beacon silhouettes through the dense
     terrain vertices. Cool penumbra and height-based tail fade ground moving and
     jumping forms without a shadow map or another render pass.
+30. Release-candidate acceptance — exact build-tool pins remove the final npm
+    security findings; desktop, touch, fallback, full-route, and calibrated
+    2560×1440-target checks pass in retained browsers; the production server
+    completes all three sigils at 60 FPS, P95 17.4 ms, and 100% render scale.
 
 The current build is a polished playable vertical slice, not a claim of a full
 AAA production or a hundred-million-particle physical simulation. See
+[RELEASE.md](./RELEASE.md) for the final acceptance matrix, and
 [PERF.md](./PERF.md) and [QUALITY.md](./QUALITY.md) for measured limits.

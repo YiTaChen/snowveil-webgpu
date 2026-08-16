@@ -27,7 +27,7 @@ resolved versions and package metadata remain authoritative in
 | `@types/react` | 19.2.14 | MIT |
 | `@types/react-dom` | 19.2.3 | MIT |
 | `@vitejs/plugin-react` | 6.0.2 | MIT |
-| `@vitejs/plugin-rsc` | 0.5.26 | MIT |
+| `@vitejs/plugin-rsc` | 0.5.34 | MIT |
 | `@webgpu/types` | 0.1.71 | BSD-3-Clause |
 | `eslint` | 9.39.4 | MIT |
 | `eslint-plugin-jsx-a11y` | 6.10.2 | MIT |
@@ -37,7 +37,7 @@ resolved versions and package metadata remain authoritative in
 | `react-server-dom-webpack` | 19.2.8 | MIT |
 | `typescript` | 5.9.3 | Apache-2.0 |
 | `typescript-eslint` | 8.59.3 | MIT |
-| `vinext` | 1.0.0-beta.2 | MIT |
+| `vinext` | 1.0.0-beta.6 | MIT |
 | `vite` | 8.2.1 | MIT |
 | `wrangler` | 4.123.0 | MIT OR Apache-2.0 |
 
@@ -59,13 +59,8 @@ Notable non-MIT build components include:
 
 ## Security audit snapshot
 
-On 2026-08-14, `npm audit --omit=dev` reported zero production
-vulnerabilities. The full audit reported two high-severity findings with one
-root cause: `vinext` currently resolves `image-size <= 2.0.2`, whose ICNS, JXL,
-or HEIF dimension parsing can loop indefinitely on malicious input.
-
-Snowveil exposes no upload endpoint and does not pass untrusted images to that
-parser. Its only public bitmap is the project-owned PNG social card. The npm
-suggested forced remediation would replace `vinext 1.0.0-beta.2` with the
-incompatible `0.0.45`, so it is deliberately not applied. Update this record and
-upgrade as soon as the active vinext line accepts a patched `image-size` release.
+On 2026-08-15, both `npm audit` and `npm audit --omit=dev` reported zero
+vulnerabilities. `vinext 1.0.0-beta.6` removes the formerly vulnerable
+`image-size 2.0.2` dependency. Its required peer update is pinned alongside it
+as `@vitejs/plugin-rsc 0.5.34`; the upgraded graph passes the production build,
+the full automated suite, and retained-browser release QA.

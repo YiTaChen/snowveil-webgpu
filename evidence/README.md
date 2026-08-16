@@ -276,3 +276,21 @@ They are review artefacts, not third-party source material.
 - `actor-shadow-target-1280x720.jpg` — honest 1280×720 exporter output from the
   6.8 m/s route while WebGPU shades its true 2560×1440 backing target; telemetry
   reports 44 FPS, P95 33.5 ms, and 100% RES.
+- `release-candidate-desktop-1280x720.jpg` — upgraded-graph desktop regression
+  at 60 FPS, P95 17.5 ms, and 100% RES.
+- `release-candidate-mobile-480x659.jpg` — narrow touch layout with all six
+  accessible controls and the compact telemetry pill clear of the footer.
+- `release-candidate-mobile-action-480x659.jpg` — actual touch acceleration and
+  jump at 3.9 m/s and `AIR 0.6 m`, with 60 FPS and 100% RES visible.
+- `release-candidate-fallback-1182x749.jpg` — the exact WebGPU-unavailable
+  branch exercised through the QA query; no substitute scene is rendered.
+- `release-candidate-route-1182x749.jpg` — upgraded development-graph route
+  completion with all sigils resonant, 60 FPS, and 100% RES.
+- `release-candidate-target-1280x720.jpg` — honest 1280×720 export while the
+  calibrated path shades a true 2560×1440 backing target at 44 FPS, P95 33.6
+  ms, and 100% RES.
+- `release-candidate-production-1280x720.jpg` — production-server
+  visual regression with the full desktop interface intact.
+- `release-candidate-production-route-1280x720.jpg` — retained single-tab
+  production route completion at 60 FPS, P95 17.4 ms, one-percent low 57, and
+  100% RES, with clean browser diagnostics.
