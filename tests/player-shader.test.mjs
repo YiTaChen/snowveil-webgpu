@@ -73,3 +73,16 @@ test("Ice Pulse is projected between the casting hand and world impact", () => {
   assert.doesNotMatch(snowveilSkyShader, /uv - vec2<f32>\(0\.543, 0\.58\)/);
   assert.match(snowveilPlayerShader, /let spellSpin = time \* 0\.72 \+ spellPhase \* 2\.6/);
 });
+
+test("low sun projects rider, board, and beacons onto the snow", () => {
+  assert.match(snowveilTerrainShader, /@location\(5\) actorShadow: f32/);
+  assert.match(snowveilTerrainShader, /let legSample = shadowSegmentSample\(/);
+  assert.match(snowveilTerrainShader, /let torsoSample = shadowSegmentSample\(/);
+  assert.match(snowveilTerrainShader, /let headSample = shadowSegmentSample\(/);
+  assert.match(snowveilTerrainShader, /let boardYaw = globals\.objective\.x/);
+  assert.match(snowveilTerrainShader, /boardCenter - boardForward \* 0\.79/);
+  for (const beacon of ["beaconA", "beaconB", "beaconC"]) {
+    assert.match(snowveilTerrainShader, new RegExp(`beaconCastShadow\\(point, globals\\.${beacon}, shadowSlope\\)`));
+  }
+  assert.match(snowveilTerrainShader, /input\.terrainShadow \* \(1\.0 - input\.actorShadow \* 0\.55\)/);
+});

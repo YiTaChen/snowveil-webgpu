@@ -156,6 +156,10 @@ Original project code is released under the [MIT License](./LICENSE).
     travel-oriented impact projection connect through a short curved frost
     filament; six broken world-space arcs, nine asymmetric crystal splinters,
     and the persistent snow crater replace the former fixed screen-space ring.
+29. Sun-coupled actor-shadow pass — the low sun now projects segmented rider,
+    board-yaw, airborne-height, and three-beacon silhouettes through the dense
+    terrain vertices. Cool penumbra and height-based tail fade ground moving and
+    jumping forms without a shadow map or another render pass.
 
 The current build is a polished playable vertical slice, not a claim of a full
 AAA production or a hundred-million-particle physical simulation. See

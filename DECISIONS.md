@@ -723,3 +723,26 @@ that radius, uses uneven five-lobe fracture, fades before the physical crown,
 and leaves the crater rather than a floating ring as the long-lived result. No
 new render pass, pipeline, bind group, texture, sample, model, decal, sprite,
 footage, scan, animation clip, or external asset was added.
+
+## 2026-08-15 — The low sun must ground actors as well as terrain
+
+Terrain self-shadowing already followed the low sun, but the rider, snowboard,
+and three frost beacons contributed only local contact darkening. Their absence
+was visible in the idle baseline: nearby landforms cast directional shade while
+the moving character appeared placed above the snow. A conventional shadow map
+was rejected because it would add a depth texture, caster pass, pipeline state,
+resolution policy, filtering path, and another native-1440p bottleneck.
+
+The retained analytic path runs on the existing 288² terrain vertices. The same
+world sun projects overlapping leg, torso, and head height segments; the board
+uses its real asymmetric yaw, and jump height shifts both the board and body
+projection away from the airborne rider. Each beacon contributes a tapered
+height segment. One interpolated actor-shadow scalar then attenuates only warm
+direct light, leaving blue sky and snow bounce inside the penumbra.
+
+The first candidate was rejected because a single broad body capsule produced a
+dark tower-shaped shadow across the frame. The retained version narrows the
+three body height bands, widens their penumbra, fades energy toward the long
+low-sun tip, and reduces direct-light occlusion. No new draw, render pass,
+pipeline, texture, buffer, bind group, sample, geometry, asset, or per-frame CPU
+allocation was added.

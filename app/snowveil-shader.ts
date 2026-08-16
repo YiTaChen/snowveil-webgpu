@@ -379,6 +379,7 @@ struct TerrainVertexOut {
   @location(2) viewDirection: vec3<f32>,
   @location(3) viewDistance: f32,
   @location(4) terrainShadow: f32,
+  @location(5) actorShadow: f32,
 };
 
 fn saturate(value: f32) -> f32 {
@@ -484,6 +485,75 @@ fn softShadow(position: vec3<f32>, sunDirection: vec3<f32>) -> f32 {
   return saturate(shade * 0.55 + 0.4);
 }
 
+fn shadowSegmentSample(point: vec2<f32>, start: vec2<f32>, end: vec2<f32>) -> vec2<f32> {
+  let segment = end - start;
+  let amount = clamp(dot(point - start, segment) / max(dot(segment, segment), 0.000001), 0.0, 1.0);
+  return vec2<f32>(length(point - mix(start, end, amount)), amount);
+}
+
+fn beaconCastShadow(point: vec2<f32>, beacon: vec4<f32>, shadowSlope: vec2<f32>) -> f32 {
+  let base = beacon.xz - shadowSlope * 0.06;
+  let tip = beacon.xz - shadowSlope * 2.08;
+  let sample = shadowSegmentSample(point, base, tip);
+  let silhouette = mix(0.25, 0.08, sample.y) + sin(sample.y * 3.141592) * 0.055;
+  let softness = 0.15 + sample.y * 0.17;
+  return (1.0 - smoothstep(silhouette, silhouette + softness, sample.x)) * mix(0.84, 0.26, sample.y);
+}
+
+fn actorCastShadow(point: vec2<f32>, sunDirection: vec3<f32>) -> f32 {
+  let shadowSlope = sunDirection.xz / max(sunDirection.y, 0.05);
+  let player = globals.reserved.xy;
+  let jumpHeight = globals.objective.w;
+  let legSample = shadowSegmentSample(
+    point,
+    player - shadowSlope * (jumpHeight + 0.1),
+    player - shadowSlope * (jumpHeight + 0.76)
+  );
+  let legWidth = 0.12 + sin(legSample.y * 3.141592) * 0.07;
+  let legs =
+    (1.0 - smoothstep(legWidth, legWidth + 0.17 + jumpHeight * 0.08, legSample.x)) *
+    mix(0.95, 0.65, legSample.y);
+  let torsoSample = shadowSegmentSample(
+    point,
+    player - shadowSlope * (jumpHeight + 0.56),
+    player - shadowSlope * (jumpHeight + 1.47)
+  );
+  let torsoWidth = 0.2 + sin(torsoSample.y * 3.141592) * 0.09;
+  let torso =
+    (1.0 - smoothstep(torsoWidth, torsoWidth + 0.2 + jumpHeight * 0.08, torsoSample.x)) *
+    mix(0.86, 0.4, torsoSample.y);
+  let headSample = shadowSegmentSample(
+    point,
+    player - shadowSlope * (jumpHeight + 1.35),
+    player - shadowSlope * (jumpHeight + 1.78)
+  );
+  let headWidth = 0.13 + sin(headSample.y * 3.141592) * 0.045;
+  let head =
+    (1.0 - smoothstep(headWidth, headWidth + 0.22 + jumpHeight * 0.09, headSample.x)) *
+    mix(0.54, 0.2, headSample.y);
+  let rider = max(legs, max(torso, head));
+
+  let boardYaw = globals.objective.x;
+  let boardForward = vec2<f32>(cos(boardYaw), sin(boardYaw));
+  let boardCenter = player - shadowSlope * (jumpHeight + 0.07);
+  let boardSample = shadowSegmentSample(
+    point,
+    boardCenter - boardForward * 0.79,
+    boardCenter + boardForward * 0.98
+  );
+  let boardSoftness = 0.12 + jumpHeight * 0.1;
+  let board = 1.0 - smoothstep(0.085, 0.085 + boardSoftness, boardSample.x);
+
+  let beacons = max(
+    beaconCastShadow(point, globals.beaconA, shadowSlope),
+    max(
+      beaconCastShadow(point, globals.beaconB, shadowSlope),
+      beaconCastShadow(point, globals.beaconC, shadowSlope)
+    )
+  );
+  return max(rider, max(board * 0.52, beacons * 0.62));
+}
+
 @vertex
 fn vsTerrain(input: TerrainVertexIn) -> TerrainVertexOut {
   var output: TerrainVertexOut;
@@ -526,6 +596,7 @@ fn vsTerrain(input: TerrainVertexIn) -> TerrainVertexOut {
   output.viewDirection = cameraPosition - worldPosition;
   output.viewDistance = viewDistance;
   output.terrainShadow = terrainShadow;
+  output.actorShadow = actorCastShadow(worldXZ, sunDirection);
   return output;
 }
 
@@ -599,7 +670,7 @@ fn fsTerrain(input: TerrainVertexOut) -> @location(0) vec4<f32> {
   );
 
   let direct = saturate(dot(normal, sunDirection));
-  let shadow = input.terrainShadow;
+  let shadow = input.terrainShadow * (1.0 - input.actorShadow * 0.55);
 
   let wrapped = saturate((dot(normal, sunDirection) + 0.3) / 1.3);
   let halfway = normalize(sunDirection + viewDirection);

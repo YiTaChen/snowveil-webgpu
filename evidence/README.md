@@ -262,3 +262,17 @@ They are review artefacts, not third-party source material.
 - `ice-pulse-target-1280x720.jpg` — honest 1280×720 exporter output during an
   active cast while the page shades a true 2560×1440 WebGPU backing target;
   telemetry reports 49 FPS, P95 33.7 ms, and 100% RES.
+- `actor-shadow-before-1280x720.jpg` — honestly labelled idle baseline before
+  actors contribute to the low-sun terrain lighting; only contact darkening is
+  visible.
+- `actor-shadow-after-1182x749.jpg` — retained segmented rider, board, and beacon
+  penumbra after rejecting the first broad tower-shaped candidate.
+- `actor-shadow-ride-1182x749.jpg` — real 6.2 m/s carve with the projected board
+  component following its actual yaw, at 60 FPS and 100% RES.
+- `actor-shadow-air-1182x749.jpg` — real Space jump at `AIR 0.6 m`; rider and
+  board separate from the snow while their softened projection remains on it.
+- `actor-shadow-route-complete-1182x749.jpg` — completed three-sigil regression
+  at 60 FPS, P95 17.5 ms, and 100% RES.
+- `actor-shadow-target-1280x720.jpg` — honest 1280×720 exporter output from the
+  6.8 m/s route while WebGPU shades its true 2560×1440 backing target; telemetry
+  reports 44 FPS, P95 33.5 ms, and 100% RES.

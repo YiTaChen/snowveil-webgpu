@@ -548,3 +548,24 @@ The fixed-target page was inspected as a 1280×720 presentation backed by a
 This does not claim native-size 60 FPS. Browser diagnostics after the retained
 normal, close, moving, route, and target checks contained no warning, WGSL,
 WebGPU validation, or uncaptured-device error.
+
+## 2026-08-15 — sun-coupled actor-shadow cost
+
+Rider, board, jump, and beacon projections are evaluated on the existing dense
+terrain vertices, beside the retained six-sample terrain self-shadow. The
+fragment stage receives one additional interpolated scalar and one multiply.
+There is no shadow map, depth prepass, caster draw, render target, texture,
+sampler, buffer, dispatch, bind group, upload, or CPU allocation.
+
+| Same-session state | Observed HUD | Result |
+| --- | ---: | --- |
+| real 6.2 m/s carve, 1182×749 | 60 FPS · P95 17.5 ms · 1% 56 · 100% | retained |
+| real Space jump at AIR 0.6 m, 1182×749 | 60 FPS · P95 17.5 ms · 1% 56 · 100% | retained |
+| completed three-sigil route, 1182×749 | 60 FPS · P95 17.5 ms · 1% 57 · 100% | retained |
+| 6.8 m/s route, true 2560×1440 target | 44 FPS · P95 33.5 ms · 1% 30 · 100% | fixed-scale stress limit |
+
+The calibrated target remains a true 2560×1440 WebGPU backing canvas exported
+as an honestly labelled 1280×720 JPEG. The 44 FPS reading lies within the
+project's recent 39–49 FPS fixed-target range; no same-state before/after claim
+is made. Normal adaptive play remains display-capped at 60 FPS. Final browser
+diagnostics contained no warning, WGSL, WebGPU validation, or device error.

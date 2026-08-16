@@ -735,3 +735,35 @@ This replaces the remaining fixed-screen spell marker with original
 world-coupled interaction without claiming volumetric refraction or fluid
 fracture. No third-party visual, audio, code, model, texture, animation, or
 footage entered the project.
+
+### 2026-08-15 — sun-coupled actor-shadow checkpoint
+
+Evidence:
+
+- no-actor-shadow baseline: [`evidence/actor-shadow-before-1280x720.jpg`](./evidence/actor-shadow-before-1280x720.jpg)
+- retained idle long shadow: [`evidence/actor-shadow-after-1182x749.jpg`](./evidence/actor-shadow-after-1182x749.jpg)
+- real 6.2 m/s carve: [`evidence/actor-shadow-ride-1182x749.jpg`](./evidence/actor-shadow-ride-1182x749.jpg)
+- real Space jump at AIR 0.6 m: [`evidence/actor-shadow-air-1182x749.jpg`](./evidence/actor-shadow-air-1182x749.jpg)
+- completed route: [`evidence/actor-shadow-route-complete-1182x749.jpg`](./evidence/actor-shadow-route-complete-1182x749.jpg)
+- calibrated target downsample: [`evidence/actor-shadow-target-1280x720.jpg`](./evidence/actor-shadow-target-1280x720.jpg)
+
+The honestly labelled 1280×720 baseline has terrain shade and board contact
+darkening but no corresponding low-sun actor projection. A first analytic
+candidate was rejected because its
+single broad body capsule formed an opaque tower shadow. The retained idle
+frame shows a narrower cool penumbra whose leg, torso, and head energy fades
+toward the low-sun tip; the middle beacon follows the same world direction.
+
+During the measured carve, the board component rotates with the actual board
+yaw rather than velocity or camera. Space then reports `AIR 0.6 m`: the rider
+and board are visibly above the terrain while their softened shadow remains on
+the snow with a height-dependent gap. Contact deformation still stops while
+airborne. The complete route reaches `Veil stabilized` at 60 FPS, P95 17.5 ms,
+and 100% RES. The true 2560×1440 backing target reports 44 FPS, P95 33.5 ms,
+and 100% RES; its export is labelled at the actual 1280×720 dimensions.
+
+Twenty-four tests cover the three actor height bands, real board yaw, jump
+offset, all beacon projections, direct-light integration, movement, contact,
+spell, cloth, audio, weather, and rendering. Retained-browser diagnostics are
+free of warning or error. This adds physically coherent grounding without
+claiming a cascaded production shadow system, and without importing any asset.
