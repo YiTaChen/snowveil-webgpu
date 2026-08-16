@@ -62,3 +62,14 @@ test("powder spray is driven by edge load and actual board skid", () => {
   assert.match(snowveilSkyShader, /spray \* 1\.05/);
   assert.match(snowveilSkyShader, /vec3<f32>\(0\.42, 0\.64, 0\.8\)/);
 });
+
+test("Ice Pulse is projected between the casting hand and world impact", () => {
+  assert.match(snowveilSkyShader, /fn projectSpellPoint\(worldPosition: vec3<f32>\)/);
+  assert.match(snowveilSkyShader, /let sourceWorld = playerOrigin \+ rotateSpellLocal\([^\n]+globals\.objective\.x\);/);
+  assert.match(snowveilSkyShader, /let impactWorld = playerOrigin \+ rotateSpellLocal\([^\n]+globals\.reserved\.z\);/);
+  assert.match(snowveilSkyShader, /for \(var segment = 0; segment < 6; segment = segment \+ 1\)/);
+  assert.match(snowveilSkyShader, /let broken = smoothstep\(-0\.32, 0\.46, sin\(angle \* 7\.0/);
+  assert.match(snowveilSkyShader, /let radialFracture =/);
+  assert.doesNotMatch(snowveilSkyShader, /uv - vec2<f32>\(0\.543, 0\.58\)/);
+  assert.match(snowveilPlayerShader, /let spellSpin = time \* 0\.72 \+ spellPhase \* 2\.6/);
+});

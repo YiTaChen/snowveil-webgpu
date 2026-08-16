@@ -123,6 +123,94 @@ export function createRiderGeometry() {
     }
   };
 
+  const addArcTorus = (
+    center: Vec3,
+    majorRadius: number,
+    tubeRadius: number,
+    startAngle: number,
+    sweep: number,
+    part: number,
+  ) => {
+    const arcSegments = 18;
+    const tubeSegments = 6;
+    const base = vertices.length / 7;
+    for (let arc = 0; arc <= arcSegments; arc += 1) {
+      const theta = startAngle + (arc / arcSegments) * sweep;
+      const cosine = Math.cos(theta);
+      const sine = Math.sin(theta);
+      for (let tube = 0; tube <= tubeSegments; tube += 1) {
+        const phi = (tube / tubeSegments) * Math.PI * 2;
+        const tubeCosine = Math.cos(phi);
+        const tubeSine = Math.sin(phi);
+        const radius = majorRadius + tubeRadius * tubeCosine;
+        addVertex(
+          [center[0] + cosine * radius, center[1] + tubeSine * tubeRadius, center[2] + sine * radius],
+          normalize([cosine * tubeCosine, tubeSine, sine * tubeCosine]),
+          part,
+        );
+      }
+    }
+    const row = tubeSegments + 1;
+    for (let arc = 0; arc < arcSegments; arc += 1) {
+      for (let tube = 0; tube < tubeSegments; tube += 1) {
+        const topLeft = base + arc * row + tube;
+        const topRight = topLeft + 1;
+        const bottomLeft = topLeft + row;
+        const bottomRight = bottomLeft + 1;
+        indices.push(topLeft, bottomLeft, topRight, topRight, bottomLeft, bottomRight);
+      }
+    }
+  };
+
+  const addCrystalShard = (center: Vec3, direction: Vec3, length: number, width: number, part: number) => {
+    const axis = normalize(direction);
+    const reference: Vec3 = Math.abs(axis[1]) > 0.9 ? [1, 0, 0] : [0, 1, 0];
+    const tangent = normalize(cross(axis, reference));
+    const bitangent = normalize(cross(axis, tangent));
+    const baseCenter: Vec3 = [
+      center[0] - axis[0] * length * 0.32,
+      center[1] - axis[1] * length * 0.32,
+      center[2] - axis[2] * length * 0.32,
+    ];
+    const tip: Vec3 = [
+      center[0] + axis[0] * length * 0.68,
+      center[1] + axis[1] * length * 0.68,
+      center[2] + axis[2] * length * 0.68,
+    ];
+    const baseRing: Vec3[] = [];
+    for (let side = 0; side < 4; side += 1) {
+      const angle = (side / 4) * Math.PI * 2 + Math.PI * 0.25;
+      baseRing.push([
+        baseCenter[0] + tangent[0] * Math.cos(angle) * width + bitangent[0] * Math.sin(angle) * width,
+        baseCenter[1] + tangent[1] * Math.cos(angle) * width + bitangent[1] * Math.sin(angle) * width,
+        baseCenter[2] + tangent[2] * Math.cos(angle) * width + bitangent[2] * Math.sin(angle) * width,
+      ]);
+    }
+    for (let side = 0; side < 4; side += 1) {
+      const next = (side + 1) % 4;
+      const edge: Vec3 = [
+        baseRing[next][0] - baseRing[side][0],
+        baseRing[next][1] - baseRing[side][1],
+        baseRing[next][2] - baseRing[side][2],
+      ];
+      const toTip: Vec3 = [
+        tip[0] - baseRing[side][0],
+        tip[1] - baseRing[side][1],
+        tip[2] - baseRing[side][2],
+      ];
+      const normal = normalize(cross(edge, toTip));
+      const faceBase = vertices.length / 7;
+      addVertex(baseRing[side], normal, part);
+      addVertex(baseRing[next], normal, part);
+      addVertex(tip, normal, part);
+      indices.push(faceBase, faceBase + 1, faceBase + 2);
+    }
+    const capBase = vertices.length / 7;
+    const capNormal: Vec3 = [-axis[0], -axis[1], -axis[2]];
+    for (const point of baseRing) addVertex(point, capNormal, part);
+    indices.push(capBase, capBase + 2, capBase + 1, capBase, capBase + 3, capBase + 2);
+  };
+
   const addFaceRing = (
     center: Vec3,
     radius: [number, number],
@@ -442,7 +530,28 @@ export function createRiderGeometry() {
   addCapsule([-0.19, 1.27, -0.245], [0.075, 0.94, -0.315], 0.022, 10, 12);
   addCapsule([0.19, 1.27, -0.245], [-0.075, 0.94, -0.315], 0.022, 10, 12);
   addSphere([0, 1.08, -0.334], [0.052, 0.052, 0.024], 8, 16, 10);
-  addSphere([0.9, 0.88, -3.2], [0.155, 0.155, 0.155], 11, 24, 14);
+  // The Ice Pulse impact crown is authored as sparse world-space arcs and
+  // asymmetric crystal splinters around the existing energy core. It remains
+  // part of the single rider draw and uses no sprite, texture, or model asset.
+  const spellCenter: Vec3 = [0.9, 0.88, -3.2];
+  addSphere(spellCenter, [0.155, 0.155, 0.155], 11, 24, 14);
+  addArcTorus(spellCenter, 0.38, 0.018, -2.84, 1.34, 11);
+  addArcTorus(spellCenter, 0.38, 0.018, -1.2, 1.58, 11);
+  addArcTorus(spellCenter, 0.38, 0.018, 0.72, 1.23, 11);
+  addArcTorus(spellCenter, 0.56, 0.012, -2.18, 0.92, 11);
+  addArcTorus(spellCenter, 0.56, 0.012, -0.66, 1.08, 11);
+  addArcTorus(spellCenter, 0.56, 0.012, 1.05, 0.86, 11);
+  for (let shard = 0; shard < 9; shard += 1) {
+    const angle = (shard / 9) * Math.PI * 2 + 0.19;
+    const lift = 0.25 + ((shard * 5) % 7) * 0.055;
+    addCrystalShard(
+      spellCenter,
+      [Math.cos(angle), lift, Math.sin(angle)],
+      0.34 + ((shard * 3) % 5) * 0.045,
+      0.028 + (shard % 3) * 0.006,
+      11,
+    );
+  }
 
   return {
     vertices: new Float32Array(vertices),

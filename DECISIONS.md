@@ -700,3 +700,26 @@ tip taper, grounded mask, and 1536² persistent history remain in place, so a
 fast carve produces one shallow continuous band and Space still produces a real
 gap. No blur pass, trail mesh, decal, texture, scan, footage, model, or external
 asset was added.
+
+## 2026-08-15 — Ice Pulse connects an actual hand to an actual impact
+
+The previous Ice Pulse combined a depth-tested sphere and persistent snow
+crater with one fixed screen-space circle at `(0.543, 0.58)`. It remained near
+the rider even when the camera, board, and travel direction disagreed, so the
+most visible layer read as a HUD marker rather than a cast through the scene.
+
+The retained projection treats the two ends separately. The casting-hand anchor
+uses the current board/body yaw, while the three-metre impact uses travel yaw;
+both world positions are projected through the same chase camera as the scene.
+A six-segment curved filament joins them during the transfer. The impact keeps
+the existing depth-tested core and adds six deliberately incomplete torus arcs
+plus nine unequal four-sided crystal splinters inside the existing indexed rider
+draw. Its snow crater, pushed rim, and decaying cold residue still come from the
+1536² persistent deformation history.
+
+The first screen treatment was rejected because a large symmetric nine-ray
+corona expanded into a neon skill wheel. The retained overlay is roughly half
+that radius, uses uneven five-lobe fracture, fades before the physical crown,
+and leaves the crater rather than a floating ring as the long-lived result. No
+new render pass, pipeline, bind group, texture, sample, model, decal, sprite,
+footage, scan, animation clip, or external asset was added.

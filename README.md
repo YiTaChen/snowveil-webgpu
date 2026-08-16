@@ -152,6 +152,10 @@ Original project code is released under the [MIT License](./LICENSE).
     speed to a saturated 2.2–7.8-centimetre compression depth and a restrained
     0.4–1.8-centimetre edge ridge. Fast carving keeps one joined, tapered wake
     without converting metres per second into half-metre periodic trenches.
+28. Directional Ice Pulse pass — board-oriented hand projection and
+    travel-oriented impact projection connect through a short curved frost
+    filament; six broken world-space arcs, nine asymmetric crystal splinters,
+    and the persistent snow crater replace the former fixed screen-space ring.
 
 The current build is a polished playable vertical slice, not a claim of a full
 AAA production or a hundred-million-particle physical simulation. See

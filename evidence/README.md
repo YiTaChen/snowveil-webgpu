@@ -250,3 +250,15 @@ They are review artefacts, not third-party source material.
 - `snow-track-target-1280x720.jpg` — honest 1280×720 exporter output while the
   capture path shades its fixed 2560×1440 WebGPU target; active route telemetry
   reports 60 FPS, P95 17.3 ms, and 100% RES.
+- `ice-pulse-close-1182x749.jpg` — close inspection proving that the curved
+  transfer begins at the extended glove and ends at the depth-tested ice crown
+  above its own displaced snow crater.
+- `ice-pulse-directional-cast-1182x749.jpg` — real 5.8 m/s carve and cast with
+  board-oriented hand projection, travel-oriented impact, 60 FPS, and 100% RES.
+- `ice-pulse-residue-1182x749.jpg` — post-cast frame after the overlay fades,
+  retaining only the computed crater, pushed snow rim, and cold residue.
+- `ice-pulse-route-complete-1182x749.jpg` — complete deterministic route after
+  the spell change, at 60 FPS, P95 17.5 ms, and 100% RES.
+- `ice-pulse-target-1280x720.jpg` — honest 1280×720 exporter output during an
+  active cast while the page shades a true 2560×1440 WebGPU backing target;
+  telemetry reports 49 FPS, P95 33.7 ms, and 100% RES.

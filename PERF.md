@@ -527,3 +527,24 @@ pixel dimensions. The page allocates and shades its fixed 2560×1440 WebGPU
 backing target in `?capture`, confirmed by the existing capture contract; the
 downsample is not described as a native-size screenshot. Browser diagnostics
 contained no warning, WGSL, WebGPU validation, or uncaptured-device error.
+
+## 2026-08-15 — directional Ice Pulse cost
+
+The impact crown adds 942 vertices and 4,050 indices to the existing rider
+buffer, bringing the complete procedural rider/effect buffer to 13,979 vertices
+and 68,730 indices. It remains part of the same indexed rider draw. The
+hand-to-impact filament executes only while the existing full-screen snow
+overlay already runs, and it adds no draw, pass, texture, buffer, dispatch,
+bind group, upload, or per-frame CPU allocation.
+
+| Same-session state | Observed HUD | Result |
+| --- | ---: | --- |
+| real 5.8 m/s carve and cast, 1182×749 | 60 FPS · P95 17.5 ms · 1% 57 · 100% | retained |
+| completed three-sigil route, 1182×749 | 60 FPS · P95 17.5 ms · 1% 56 · 100% | retained |
+| active cast, true 2560×1440 target | 49 FPS · P95 33.7 ms · 1% 20 · 100% | fixed-scale stress limit |
+
+The fixed-target page was inspected as a 1280×720 presentation backed by a
+2560×1440 canvas, and its JPEG is labelled at the exporter's actual dimensions.
+This does not claim native-size 60 FPS. Browser diagnostics after the retained
+normal, close, moving, route, and target checks contained no warning, WGSL,
+WebGPU validation, or uncaptured-device error.

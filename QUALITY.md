@@ -701,3 +701,37 @@ causality, Space jumping, rendering, geometry, cloth, audio, and world weather.
 This closes the periodic trench defect without claiming granular snow fracture
 or an offline material simulation. All visible snow, terrain, character,
 effects, code, and evidence remain original procedural project output.
+
+### 2026-08-15 — directional Ice Pulse checkpoint
+
+Evidence:
+
+- rejected fixed-anchor baseline: [`evidence/interaction-ice-pulse-1182x749.jpg`](./evidence/interaction-ice-pulse-1182x749.jpg)
+- close hand-to-impact inspection: [`evidence/ice-pulse-close-1182x749.jpg`](./evidence/ice-pulse-close-1182x749.jpg)
+- real moving carve and cast: [`evidence/ice-pulse-directional-cast-1182x749.jpg`](./evidence/ice-pulse-directional-cast-1182x749.jpg)
+- post-cast snow response: [`evidence/ice-pulse-residue-1182x749.jpg`](./evidence/ice-pulse-residue-1182x749.jpg)
+- completed route: [`evidence/ice-pulse-route-complete-1182x749.jpg`](./evidence/ice-pulse-route-complete-1182x749.jpg)
+- calibrated target downsample: [`evidence/ice-pulse-target-1280x720.jpg`](./evidence/ice-pulse-target-1280x720.jpg)
+
+The baseline exposes the earlier fixed cyan circle. A first replacement was
+also rejected after its symmetric nine-way corona grew into a large neon skill
+wheel. The retained close frame proves that the curved filament begins at the
+extended glove and terminates at the depth-tested ice crown above its own snow
+crater. During the 5.8 m/s carve, hand projection follows board/body yaw while
+the impact continues along travel, so visible disagreement between board and
+velocity no longer detaches the cast.
+
+After the short energy transfer, the overlay disappears while the computed
+14-centimetre crater, pushed rim, and blue residue remain in the rendered snow.
+The complete deterministic route still stabilizes all three beacons at 60 FPS,
+P95 17.5 ms, and 100% RES. An active cast on the true 2560×1440 WebGPU backing
+target reports 49 FPS, P95 33.7 ms, and 100% RES; the evidence file is honestly
+labelled as the exporter's 1280×720 downsample. Diagnostics are free of warning
+or error, and twenty-three tests now cover projected spell endpoints, broken
+impact construction, snow contact, movement, jumping, cloth, audio, rendering,
+and world weather.
+
+This replaces the remaining fixed-screen spell marker with original
+world-coupled interaction without claiming volumetric refraction or fluid
+fracture. No third-party visual, audio, code, model, texture, animation, or
+footage entered the project.

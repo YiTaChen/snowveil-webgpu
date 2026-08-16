@@ -188,17 +188,106 @@ fn landingBurst(uv: vec2<f32>, impact: f32) -> f32 {
   return result;
 }
 
-fn spellBurst(uv: vec2<f32>, pulse: f32) -> f32 {
+fn rotateSpellLocal(point: vec3<f32>, angle: f32) -> vec3<f32> {
+  let cosine = cos(angle);
+  let sine = sin(angle);
+  return vec3<f32>(
+    point.x * cosine - point.z * sine,
+    point.y,
+    point.x * sine + point.z * cosine
+  );
+}
+
+fn projectSpellPoint(worldPosition: vec3<f32>) -> vec2<f32> {
+  let aspect = globals.viewport.x / max(globals.viewport.y, 1.0);
+  let cameraTarget = vec3<f32>(globals.reserved.x, globals.weather.y + 1.05, globals.reserved.y);
+  let orbit = vec3<f32>(
+    sin(globals.camera.x) * globals.camera.z,
+    2.0 + globals.camera.y * 7.0,
+    cos(globals.camera.x) * globals.camera.z
+  );
+  let cameraPosition = cameraTarget + orbit;
+  let forward = normalize(cameraTarget - cameraPosition);
+  let right = normalize(cross(forward, vec3<f32>(0.0, 1.0, 0.0)));
+  let up = normalize(cross(right, forward));
+  let relative = worldPosition - cameraPosition;
+  let viewZ = max(dot(relative, forward), 0.08);
+  let focal = 1.0 / globals.camera.w;
+  let ndc = vec2<f32>(
+    dot(relative, right) * focal / aspect,
+    dot(relative, up) * focal
+  ) / viewZ;
+  return ndc * 0.5 + 0.5;
+}
+
+fn spellSegment(point: vec2<f32>, start: vec2<f32>, end: vec2<f32>) -> vec2<f32> {
+  let line = end - start;
+  let amount = clamp(dot(point - start, line) / max(dot(line, line), 0.000001), 0.0, 1.0);
+  return vec2<f32>(length(point - mix(start, end, amount)), amount);
+}
+
+fn spellBurst(uv: vec2<f32>, pulse: f32) -> vec2<f32> {
   if (pulse < 0.01) {
-    return 0.0;
+    return vec2<f32>(0.0);
   }
   let aspect = globals.viewport.x / max(globals.viewport.y, 1.0);
-  let point = (uv - vec2<f32>(0.543, 0.58)) * vec2<f32>(aspect, 1.0);
-  let radius = length(point);
-  let ringRadius = 0.025 + (1.0 - pulse) * 0.105;
-  let ring = 1.0 - smoothstep(0.008, 0.024, abs(radius - ringRadius));
-  let core = 1.0 - smoothstep(0.0, 0.038, radius);
-  return (ring * 0.8 + core * pulse) * pulse;
+  let age = min(-log(max(pulse, 0.001)) / 2.7, 1.7);
+  let playerOrigin = vec3<f32>(
+    globals.reserved.x,
+    globals.weather.y + globals.objective.w,
+    globals.reserved.y
+  );
+  let sourceWorld = playerOrigin + rotateSpellLocal(vec3<f32>(0.83, 1.4, -0.68), globals.objective.x);
+  let impactWorld = playerOrigin + rotateSpellLocal(vec3<f32>(0.9, 0.88, -3.2), globals.reserved.z);
+  let source = projectSpellPoint(sourceWorld) * vec2<f32>(aspect, 1.0);
+  let impact = projectSpellPoint(impactWorld) * vec2<f32>(aspect, 1.0);
+  let point = uv * vec2<f32>(aspect, 1.0);
+  let path = impact - source;
+  let pathNormal = normalize(vec2<f32>(-path.y, path.x) + vec2<f32>(0.0001, 0.0));
+  let travelHead = saturate(age * 6.4);
+  var filament = 0.0;
+  var filamentCore = 0.0;
+  for (var segment = 0; segment < 6; segment = segment + 1) {
+    let startAmount = f32(segment) / 6.0;
+    let endAmount = f32(segment + 1) / 6.0;
+    let start = mix(source, impact, startAmount) + pathNormal * sin(startAmount * 3.141592) * 0.028;
+    let end = mix(source, impact, endAmount) + pathNormal * sin(endAmount * 3.141592) * 0.028;
+    let sample = spellSegment(point, start, end);
+    let segmentActive = 1.0 - smoothstep(travelHead, travelHead + 0.08, mix(startAmount, endAmount, sample.y));
+    filament = max(filament, (1.0 - smoothstep(0.002, 0.007, sample.x)) * segmentActive);
+    filamentCore = max(filamentCore, (1.0 - smoothstep(0.0005, 0.0024, sample.x)) * segmentActive);
+  }
+  let filamentEnvelope = smoothstep(0.012, 0.075, age) * (1.0 - smoothstep(0.38, 0.72, age));
+  filament = filament * filamentEnvelope;
+  filamentCore = filamentCore * filamentEnvelope;
+
+  let impactPoint = point - impact;
+  let ellipsePoint = impactPoint * vec2<f32>(1.0, 1.18);
+  let radius = length(ellipsePoint);
+  let angle = atan2(ellipsePoint.y, ellipsePoint.x);
+  let impactEnvelope = smoothstep(0.035, 0.12, age) * (1.0 - smoothstep(0.58, 0.98, age));
+  let ringRadius = 0.012 + age * 0.078;
+  let ringWidth = 0.0032 + age * 0.0042;
+  let broken = smoothstep(-0.32, 0.46, sin(angle * 7.0 + age * 17.0));
+  let outerRing =
+    (1.0 - smoothstep(ringWidth, ringWidth * 2.8, abs(radius - ringRadius))) *
+    mix(0.18, 1.0, broken);
+  let innerRing =
+    (1.0 - smoothstep(ringWidth * 0.7, ringWidth * 2.2, abs(radius - ringRadius * 0.58))) *
+    smoothstep(-0.55, 0.36, sin(angle * 5.0 - age * 11.0));
+  let crown =
+    pow(max(cos(angle * 5.0 + sin(angle * 2.0) * 0.72 - age * 4.0), 0.0), 24.0) *
+    smoothstep(ringRadius * 0.25, ringRadius * 0.78, radius) *
+    (1.0 - smoothstep(ringRadius * 0.78, ringRadius * 1.36, radius));
+  let radialFracture =
+    pow(abs(cos(angle * 2.5 + sin(angle * 3.0) * 0.35 + 0.42)), 42.0) *
+    smoothstep(0.008, ringRadius * 0.32, radius) *
+    (1.0 - smoothstep(ringRadius * 0.72, ringRadius * 1.15, radius));
+  let core =
+    (1.0 - smoothstep(0.0, 0.026 + age * 0.018, radius)) *
+    (1.0 - smoothstep(0.42, 0.9, age));
+  let impactEnergy = (outerRing * 0.58 + innerRing * 0.3 + crown * 0.62 + radialFracture * 0.38) * impactEnvelope;
+  return vec2<f32>(max(filament * 0.72, impactEnergy), max(filamentCore, core * pulse));
 }
 
 fn aces(color: vec3<f32>) -> vec3<f32> {
@@ -261,13 +350,14 @@ fn fsSnowOverlay(input: SkyVertexOut) -> @location(0) vec4<f32> {
   );
   let landing = landingBurst(input.uv, globals.motion.x);
   let spell = spellBurst(input.uv, globals.weather.z);
-  let alpha = saturate(flake * 0.56 + spray * 1.05 + landing * 0.62 + spell * 0.68);
+  let alpha = saturate(flake * 0.56 + spray * 1.05 + landing * 0.62 + spell.x * 0.66 + spell.y * 0.4);
   let powderColor = mix(
     vec3<f32>(0.78, 0.89, 0.96),
     vec3<f32>(0.42, 0.64, 0.8),
     saturate(spray * 1.8)
   );
-  let color = mix(powderColor, vec3<f32>(0.18, 0.76, 1.0) * 2.4, saturate(spell * 1.8));
+  var color = mix(powderColor, vec3<f32>(0.12, 0.68, 1.0) * 1.72, saturate(spell.x * 1.55));
+  color = color + vec3<f32>(0.72, 0.94, 1.0) * spell.y * 1.5;
   return vec4<f32>(color, alpha);
 }
 `;
@@ -1025,8 +1115,11 @@ fn vsPlayer(input: PlayerVertexIn) -> PlayerVertexOut {
   }
   if (part == 11u) {
     let spellCenter = vec3<f32>(0.9, 0.88, -3.2);
-    local = spellCenter + (local - spellCenter) * (0.3 + globals.weather.z * 0.7);
-    local.y = local.y + sin(time * 7.0) * 0.045;
+    let spellPhase = 1.0 - globals.weather.z;
+    let spellSpin = time * 0.72 + spellPhase * 2.6;
+    local = spellCenter + rotateY(local - spellCenter, spellSpin) * (0.22 + globals.weather.z * 0.78);
+    localNormal = rotateY(localNormal, spellSpin);
+    local.y = local.y + sin(time * 7.0 + length(local - spellCenter) * 13.0) * 0.032;
   }
   if (part == 1u) {
     let hem = 1.0 - saturate(local.y / 1.38);
@@ -1318,7 +1411,11 @@ fn fsPlayer(input: PlayerVertexOut) -> @location(0) vec4<f32> {
       discard;
     }
     let energyRim = pow(1.0 - saturate(dot(normal, viewDirection)), 2.0);
-    color = vec3<f32>(0.08, 0.64, 1.0) * (3.8 + energyRim * 4.5) * globals.weather.z;
+    let spellCenter = vec3<f32>(0.9, 0.88, -3.2);
+    let radial = length(input.localPosition - spellCenter);
+    let fracture = 0.5 + 0.5 * sin(radial * 47.0 - globals.viewport.z * 8.0);
+    color = mix(vec3<f32>(0.035, 0.44, 0.96), vec3<f32>(0.54, 0.94, 1.0), energyRim) *
+      (3.4 + energyRim * 4.2 + fracture * 0.65) * globals.weather.z;
   }
 
   let fog = smoothstep(18.0, 74.0, input.viewDistance);
