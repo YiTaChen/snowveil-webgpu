@@ -1660,6 +1660,120 @@ fn fsBeacon(input: BeaconVertexOut) -> @location(0) vec4<f32> {
 }
 `;
 
+export const snowveilBoundaryShader = /* wgsl */ `
+${sharedUniforms}
+
+struct BoundaryVertexIn {
+  @location(0) position: vec3<f32>,
+  @location(1) normal: vec3<f32>,
+  @location(2) part: f32,
+};
+
+struct BoundaryVertexOut {
+  @builtin(position) position: vec4<f32>,
+  @location(0) worldPosition: vec3<f32>,
+  @location(1) worldNormal: vec3<f32>,
+  @location(2) viewDirection: vec3<f32>,
+  @location(3) viewDistance: f32,
+  @location(4) @interpolate(flat) part: u32,
+};
+
+fn saturateBoundary(value: f32) -> f32 {
+  return clamp(value, 0.0, 1.0);
+}
+
+fn boundaryAtmosphere(direction: vec3<f32>, sunDirection: vec3<f32>) -> vec3<f32> {
+  let up = saturateBoundary(direction.y * 0.5 + 0.5);
+  let horizon = pow(1.0 - abs(direction.y), 4.0);
+  let sunAmount = saturateBoundary(dot(direction, sunDirection));
+  var color = mix(vec3<f32>(0.54, 0.67, 0.75), vec3<f32>(0.035, 0.115, 0.19), pow(up, 0.66));
+  color = color + vec3<f32>(0.3, 0.23, 0.16) * horizon * pow(sunAmount, 5.0);
+  color = color + vec3<f32>(1.0, 0.78, 0.51) * pow(sunAmount, 460.0) * 7.0;
+  return color;
+}
+
+@vertex
+fn vsBoundary(input: BoundaryVertexIn) -> BoundaryVertexOut {
+  var output: BoundaryVertexOut;
+  let worldPosition = input.position;
+  let cameraTarget = vec3<f32>(globals.reserved.x, globals.weather.y + 1.05, globals.reserved.y);
+  let orbit = vec3<f32>(
+    sin(globals.camera.x) * globals.camera.z,
+    2.0 + globals.camera.y * 7.0,
+    cos(globals.camera.x) * globals.camera.z
+  );
+  let cameraPosition = cameraTarget + orbit;
+  let forward = normalize(cameraTarget - cameraPosition);
+  let right = normalize(cross(forward, vec3<f32>(0.0, 1.0, 0.0)));
+  let up = normalize(cross(right, forward));
+  let relative = worldPosition - cameraPosition;
+  let viewX = dot(relative, right);
+  let viewY = dot(relative, up);
+  let viewZ = dot(relative, forward);
+  let focal = 1.0 / globals.camera.w;
+  let aspect = globals.viewport.x / max(globals.viewport.y, 1.0);
+  let near = 0.08;
+  let far = 220.0;
+  let clipZ = (far / (far - near)) * viewZ - (near * far / (far - near));
+
+  output.position = vec4<f32>(viewX * focal / aspect, viewY * focal, clipZ, viewZ);
+  output.worldPosition = worldPosition;
+  output.worldNormal = normalize(input.normal);
+  output.viewDirection = cameraPosition - worldPosition;
+  output.viewDistance = length(relative);
+  output.part = u32(round(input.part));
+  return output;
+}
+
+@fragment
+fn fsBoundary(input: BoundaryVertexOut) -> @location(0) vec4<f32> {
+  let normal = normalize(input.worldNormal);
+  let viewDirection = normalize(input.viewDirection);
+  let sunDirection = normalize(vec3<f32>(0.44, 0.205, -0.874));
+  let halfway = normalize(viewDirection + sunDirection);
+  let direct = saturateBoundary(dot(normal, sunDirection));
+  let rim = pow(1.0 - saturateBoundary(dot(normal, viewDirection)), 2.0);
+  let specular = pow(saturateBoundary(dot(normal, halfway)), 54.0);
+
+  var albedo = vec3<f32>(0.56, 0.055, 0.022);
+  var roughness = 0.7;
+  var visibilityLift = 0.0;
+  if (input.part == 1u) {
+    albedo = vec3<f32>(0.98, 0.47, 0.12);
+    roughness = 0.42;
+    visibilityLift = 0.12;
+  } else if (input.part == 2u) {
+    albedo = vec3<f32>(0.68, 0.08, 0.025);
+    roughness = 0.86;
+    visibilityLift = 0.035;
+  } else if (input.part == 3u) {
+    let frostWear = 0.88 + 0.12 * sin(input.worldPosition.y * 31.0 + input.worldPosition.x * 0.7);
+    albedo = vec3<f32>(0.82, 0.09, 0.028) * frostWear;
+    roughness = 0.78;
+    visibilityLift = 0.08;
+  } else if (input.part == 4u) {
+    albedo = vec3<f32>(0.64, 0.76, 0.82);
+    roughness = 0.92;
+  }
+
+  let coolAmbient = vec3<f32>(0.42, 0.58, 0.72) * (0.72 + saturateBoundary(normal.y) * 0.25);
+  let warmDirect = vec3<f32>(1.0, 0.72, 0.46) * (0.12 + direct * 1.15);
+  var color = albedo * (coolAmbient + warmDirect);
+  color = color + vec3<f32>(1.0, 0.2, 0.055) * visibilityLift;
+  color = color + vec3<f32>(0.44, 0.68, 0.82) * rim * 0.2;
+  color = color + vec3<f32>(1.0, 0.84, 0.64) * specular * (1.0 - roughness) * 0.45;
+
+  let rayDirection = -viewDirection;
+  let fog = smoothstep(25.0, 72.0, input.viewDistance);
+  let sky = boundaryAtmosphere(
+    normalize(vec3<f32>(rayDirection.x, max(rayDirection.y, 0.025), rayDirection.z)),
+    sunDirection
+  );
+  color = mix(color, sky, fog * 0.88);
+  return vec4<f32>(max(color, vec3<f32>(0.0)), 1.0);
+}
+`;
+
 export const snowveilPostShader = /* wgsl */ `
 ${sharedUniforms}
 

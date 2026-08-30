@@ -588,3 +588,25 @@ uncaptured device error. Dynamic resolution is available during ordinary play,
 but the retained route recovered to and held 100% after GPU contention was
 removed. The fixed target remains a truthful quality boundary, not a 60 FPS
 native-1440p performance claim.
+
+## 2026-08-30 — marked-slope boundary cost
+
+The static course edge contributes 7,488 vertices, 19,008 indices, and 6,336
+triangles in one indexed world draw. Its immutable vertex and index buffers total
+285,696 bytes. Forty-eight poles, six-segment rope spans, caps, reflector bands,
+and pennants are generated once during scene initialization; guidance evaluates
+one radial distance, dot product, and bounded heading correction per simulation
+step. There is no texture, sampler, compute dispatch, animation buffer, physics
+dependency, per-frame geometry rebuild, or allocation.
+
+| Clean single-tab state | Observed HUD | Result |
+| --- | ---: | --- |
+| completed three-sigil route, 1280×720 | 60 FPS · P95 17.5 ms · 1% 56 · 100% | retained; all sigils |
+| fixed 2560×1440 backing target, 1280×720 export | 50 FPS · P95 33.8 ms · 1% 29 · 100% | visual-review stress target |
+
+An earlier boundary-page observation was discarded after detecting a second
+live WebGPU tab, matching the release audit's contention rule. The retained
+measurements ran with the duplicate context closed. Browser diagnostics contain
+no warning, WGSL validation, WebGPU, or uncaptured-device error. The fixed target
+remains an honestly measured quality boundary rather than a native-size 60 FPS
+claim.

@@ -764,3 +764,27 @@ exercises the exact WebGPU-unavailable branch; it deliberately renders an honest
 compatibility message instead of substituting a visually unrelated fallback
 scene. Neither change alters the simulation, shader, desktop composition, or
 normal feature detection.
+
+## 2026-08-30 — The course edge must be visible before collision
+
+The playable area previously ended at an unmarked radial clamp. A rider could
+discover it only after momentum had already carried the board outward, and the
+hard position reset then left little room to understand or escape the contact.
+That was both a wayfinding defect and a control defect; adding only a brighter
+HUD warning would not have made the world boundary legible from a distance.
+
+The retained solution puts forty-eight original terrain-coupled poles at a
+51.6-metre fence radius, joins them with segmented sagging rope, and hangs one
+unequal pennant per span. Coral-orange bodies and warm reflector bands stay
+distinct against blue-white snow and atmospheric fog without becoming a glowing
+science-fiction barrier. The 43.5-metre approach ring exposes a small
+`Carve inward` status cue only while velocity points outward.
+
+Controller recovery is coupled to the same course geometry. Inside the warning
+ring, outward travel is progressively steered toward the local tangent and
+slightly reduced. A hard 50.2-metre crossing reflects heading inward while
+retaining 58% of speed; retreating motion is never modified. The invisible
+clamp, a solid wall, dense safety net, copied ski-resort signage, and an endless
+repeating barrier texture were rejected. The result adds one static indexed
+draw and no imported asset, texture, sample, physics package, or per-frame
+allocation.

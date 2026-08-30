@@ -54,6 +54,10 @@ controller and renderer rather than a separate animation.
 Append `?fallback` to exercise the exact non-WebGPU compatibility branch during
 release QA; it does not render a substitute scene.
 
+Append `?boundary` to begin beside the marked course edge, facing outward. This
+is the focused QA route for the rope-and-pole fence, proximity warning, and
+soft inward recovery.
+
 ## Originality and licensing
 
 No reference-project code or assets are copied into this repository. The current
@@ -166,6 +170,10 @@ Original project code is released under the [MIT License](./LICENSE).
     security findings; desktop, touch, fallback, full-route, and calibrated
     2560×1440-target checks pass in retained browsers; the production server
     completes all three sigils at 60 FPS, P95 17.4 ms, and 100% render scale.
+31. Marked-slope boundary pass — forty-eight terrain-coupled safety poles,
+    sagging rope spans, and pennants make the playable perimeter readable before
+    contact; a restrained HUD cue and tested tangential recovery replace the
+    trapping invisible radial clamp without importing an art asset.
 
 The current build is a polished playable vertical slice, not a claim of a full
 AAA production or a hundred-million-particle physical simulation. See

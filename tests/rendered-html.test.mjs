@@ -68,3 +68,18 @@ test("mobile telemetry stays above controls and omits desktop-only percentiles",
   assert.match(cssSource, /bottom: calc\(max\(18px, env\(safe-area-inset-bottom\)\) \+ 116px\)/);
   assert.match(cssSource, /max-width: calc\(100% - 32px\)/);
 });
+
+test("the running scene exposes a marked boundary probe and an accessible early warning", async () => {
+  const [sceneSource, cssSource] = await Promise.all([
+    readFile(new URL("../app/snowveil-scene.tsx", import.meta.url), "utf8"),
+    readFile(new URL("../app/globals.css", import.meta.url), "utf8"),
+  ]);
+
+  assert.match(sceneSource, /const boundaryProbe = query\.has\("boundary"\)/);
+  assert.match(sceneSource, /createSlopeBoundaryGeometry\(\)/);
+  assert.match(sceneSource, /resolveSlopeBoundary\(/);
+  assert.match(sceneSource, /<span>Slope boundary<\/span>/);
+  assert.match(sceneSource, /<strong>Carve inward<\/strong>/);
+  assert.match(cssSource, /--slope-boundary: #f2633f/);
+  assert.match(cssSource, /\.snowveil__boundary-warning\[data-visible="true"\]/);
+});

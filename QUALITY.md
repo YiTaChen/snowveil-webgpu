@@ -794,3 +794,41 @@ record, zero-vulnerability full and production audits, production build, and 25
 automated tests, this closes the release-candidate quality gate for the polished
 playable vertical slice. It does not reclassify the project as a full AAA game,
 granular snow solver, or production skeletal-animation system.
+
+### 2026-08-30 — marked-slope boundary checkpoint
+
+Evidence:
+
+- readable approach: [`evidence/slope-boundary-idle.png`](./evidence/slope-boundary-idle.png)
+- proximity cue: [`evidence/slope-boundary-warning.png`](./evidence/slope-boundary-warning.png)
+- inward recovery: [`evidence/slope-boundary-recovery.png`](./evidence/slope-boundary-recovery.png)
+- completed route: [`evidence/slope-boundary-route-complete.png`](./evidence/slope-boundary-route-complete.png)
+- calibrated target downsample: [`evidence/slope-boundary-target-1280x720.png`](./evidence/slope-boundary-target-1280x720.png)
+
+The 1280×720 approach frame proves that the warm coral rope, forty-eight poles,
+reflective bands, and alternating pennants separate from blue-white snow before
+the rider reaches the former invisible clamp. Terrain sampling keeps pole bases
+and rope height coherent over the perimeter's crests and troughs. The cue frame
+shows the restrained `Slope boundary · Carve inward` pill while outward motion
+is active; it stays above the rider and does not compete with ritual progress or
+control telemetry.
+
+Repeated outward acceleration exercised the warning-to-tangent transition. The
+recovery frame shows the board redirected along the fence, with the cue removed
+once motion no longer points outward. Pure controller tests additionally prove
+that a hard crossing reflects heading inward, retains forward motion, and leaves
+an already-retreating rider untouched. The deterministic route still reaches
+`Veil stabilized` at 60 FPS, P95 17.5 ms, one-percent low 56, and 100% render
+scale.
+
+The calibrated frame is an honestly labelled 1280×720 export while the page
+allocates and shades its fixed 2560×1440 WebGPU backing target. It reports 50
+FPS, P95 33.8 ms, one-percent low 29, and 100% render scale. Retained-browser
+diagnostics contain no warning, WGSL validation, WebGPU, or device error.
+Twenty-nine automated tests cover boundary topology and parts, finite geometry,
+fence/collision separation, early guidance, hard recovery, unaffected retreat,
+render contracts, interaction, and the existing world systems.
+
+All new world geometry, material logic, control response, UI, and evidence are
+original project output. No resort logo, sign system, model, texture, footage,
+scan, sample, animation, or other third-party art entered the build.

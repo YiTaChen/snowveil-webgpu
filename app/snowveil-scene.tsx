@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import {
+  snowveilBoundaryShader,
   snowveilBeaconShader,
   snowveilDeformationShader,
   snowveilPlayerShader,
@@ -13,6 +14,8 @@ import {
 import { snowHeightAt, snowSurfaceAt } from "./snowveil-terrain";
 import { createRiderGeometry } from "./snowveil-rider-geometry";
 import { createBeaconGeometry } from "./snowveil-beacon-geometry";
+import { createSlopeBoundaryGeometry } from "./snowveil-boundary-geometry";
+import { resolveSlopeBoundary } from "./snowveil-boundary";
 import { createSnowveilAudio, type SnowveilAudio } from "./snowveil-audio";
 import {
   decayLandingCompression,
@@ -40,6 +43,7 @@ export function SnowveilScene() {
   const speedRef = useRef<HTMLSpanElement>(null);
   const objectiveRef = useRef<HTMLSpanElement>(null);
   const promptRef = useRef<HTMLSpanElement>(null);
+  const boundaryRef = useRef<HTMLDivElement>(null);
   const audioControllerRef = useRef<SnowveilAudio | null>(null);
   const [sceneState, setSceneState] = useState<SceneState>("loading");
   const [message, setMessage] = useState("Preparing atmosphere");
@@ -57,6 +61,7 @@ export function SnowveilScene() {
     const captureMode = query.has("capture");
     const demoMode = query.has("demo");
     const fallbackMode = query.has("fallback");
+    const boundaryProbe = query.has("boundary");
     const requestedRenderScale = Number(query.get("renderScale"));
     const fixedRenderScale =
       Number.isFinite(requestedRenderScale) && requestedRenderScale > 0
@@ -100,7 +105,7 @@ export function SnowveilScene() {
     let previousX = 0;
     let previousY = 0;
     let playerX = 0;
-    let playerZ = hasSlopeProbe ? 0 : -4;
+    let playerZ = boundaryProbe ? -43.8 : hasSlopeProbe ? 0 : -4;
     let previousStampX = playerX;
     let previousStampZ = playerZ;
     let playerHeading = 0;
@@ -333,6 +338,10 @@ export function SnowveilScene() {
           label: "Snowveil original frost-sigil beacon shader",
           code: snowveilBeaconShader,
         });
+        const boundaryShaderModule = activeDevice.createShaderModule({
+          label: "Snowveil original marked-slope boundary shader",
+          code: snowveilBoundaryShader,
+        });
         const deformationShaderModule = activeDevice.createShaderModule({
           label: "Snowveil persistent snow deformation shader",
           code: snowveilDeformationShader,
@@ -345,6 +354,7 @@ export function SnowveilScene() {
           postCompilation,
           playerCompilation,
           beaconCompilation,
+          boundaryCompilation,
           deformationCompilation,
         ] = await Promise.all([
             skyShaderModule.getCompilationInfo(),
@@ -353,6 +363,7 @@ export function SnowveilScene() {
             postShaderModule.getCompilationInfo(),
             playerShaderModule.getCompilationInfo(),
             beaconShaderModule.getCompilationInfo(),
+            boundaryShaderModule.getCompilationInfo(),
             deformationShaderModule.getCompilationInfo(),
           ]);
         const shaderErrors = [
@@ -362,6 +373,7 @@ export function SnowveilScene() {
           ...postCompilation.messages,
           ...playerCompilation.messages,
           ...beaconCompilation.messages,
+          ...boundaryCompilation.messages,
           ...deformationCompilation.messages,
         ].filter((entry: { type: string }) => entry.type === "error");
         if (shaderErrors.length) {
@@ -535,6 +547,36 @@ export function SnowveilScene() {
           },
         });
 
+        const boundaryPipeline = activeDevice.createRenderPipeline({
+          label: "Snowveil marked-slope boundary pipeline",
+          layout: "auto",
+          vertex: {
+            module: boundaryShaderModule,
+            entryPoint: "vsBoundary",
+            buffers: [
+              {
+                arrayStride: 28,
+                attributes: [
+                  { shaderLocation: 0, offset: 0, format: "float32x3" },
+                  { shaderLocation: 1, offset: 12, format: "float32x3" },
+                  { shaderLocation: 2, offset: 24, format: "float32" },
+                ],
+              },
+            ],
+          },
+          fragment: {
+            module: boundaryShaderModule,
+            entryPoint: "fsBoundary",
+            targets: [{ format: sceneFormat }],
+          },
+          primitive: { topology: "triangle-list", cullMode: "none" },
+          depthStencil: {
+            format: "depth24plus",
+            depthWriteEnabled: true,
+            depthCompare: "less",
+          },
+        });
+
         const deformationPipeline = activeDevice.createComputePipeline({
           label: "Snowveil persistent snow compute pipeline",
           layout: "auto",
@@ -566,6 +608,10 @@ export function SnowveilScene() {
         });
         const beaconBindGroup = activeDevice.createBindGroup({
           layout: beaconPipeline.getBindGroupLayout(0),
+          entries: [{ binding: 0, resource: { buffer: uniformBuffer } }],
+        });
+        const boundaryBindGroup = activeDevice.createBindGroup({
+          layout: boundaryPipeline.getBindGroupLayout(0),
           entries: [{ binding: 0, resource: { buffer: uniformBuffer } }],
         });
         const postSampler = activeDevice.createSampler({
@@ -717,6 +763,20 @@ export function SnowveilScene() {
         });
         activeDevice.queue.writeBuffer(beaconVertexBuffer, 0, beaconGeometry.vertices);
         activeDevice.queue.writeBuffer(beaconIndexBuffer, 0, beaconGeometry.indices);
+
+        const boundaryGeometry = createSlopeBoundaryGeometry();
+        const boundaryVertexBuffer = activeDevice.createBuffer({
+          label: "Snowveil marked-slope boundary vertices",
+          size: boundaryGeometry.vertices.byteLength,
+          usage: GPUBufferUsage.VERTEX | GPUBufferUsage.COPY_DST,
+        });
+        const boundaryIndexBuffer = activeDevice.createBuffer({
+          label: "Snowveil marked-slope boundary indices",
+          size: boundaryGeometry.indices.byteLength,
+          usage: GPUBufferUsage.INDEX | GPUBufferUsage.COPY_DST,
+        });
+        activeDevice.queue.writeBuffer(boundaryVertexBuffer, 0, boundaryGeometry.vertices);
+        activeDevice.queue.writeBuffer(boundaryIndexBuffer, 0, boundaryGeometry.indices);
 
         let depthTexture: GPUTexture | undefined;
         let sceneColorTexture: GPUTexture | undefined;
@@ -913,12 +973,24 @@ export function SnowveilScene() {
 
           playerX += forwardX * playerSpeed * delta;
           playerZ += forwardZ * playerSpeed * delta;
-          const playerRadius = Math.hypot(playerX, playerZ);
-          if (playerRadius > 54) {
-            const boundaryScale = 54 / playerRadius;
-            playerX *= boundaryScale;
-            playerZ *= boundaryScale;
-            playerSpeed *= 0.35;
+          const boundaryResolution = resolveSlopeBoundary(
+            playerX,
+            playerZ,
+            playerHeading,
+            playerSpeed,
+            delta,
+          );
+          playerX = boundaryResolution.x;
+          playerZ = boundaryResolution.z;
+          playerHeading = boundaryResolution.heading;
+          playerSpeed = boundaryResolution.speed;
+          if (boundaryRef.current) {
+            const visible = boundaryResolution.approach > 0.08;
+            const visibleValue = visible ? "true" : "false";
+            if (boundaryRef.current.dataset.visible !== visibleValue) {
+              boundaryRef.current.dataset.visible = visibleValue;
+              boundaryRef.current.setAttribute("aria-hidden", visible ? "false" : "true");
+            }
           }
 
           const wasAirborne = jumpHeight > 0.001;
@@ -1136,6 +1208,11 @@ export function SnowveilScene() {
           pass.setVertexBuffer(0, terrainVertexBuffer);
           pass.setIndexBuffer(terrainIndexBuffer, "uint32");
           pass.drawIndexed(terrainIndices.length);
+          pass.setPipeline(boundaryPipeline);
+          pass.setBindGroup(0, boundaryBindGroup);
+          pass.setVertexBuffer(0, boundaryVertexBuffer);
+          pass.setIndexBuffer(boundaryIndexBuffer, "uint32");
+          pass.drawIndexed(boundaryGeometry.indices.length);
           pass.setPipeline(playerPipeline);
           pass.setBindGroup(0, playerBindGroup);
           pass.setVertexBuffer(0, riderVertexBuffer);
@@ -1222,7 +1299,7 @@ export function SnowveilScene() {
         ref={canvasRef}
         className="snowveil__canvas"
         data-ready={sceneState === "ready"}
-        aria-label="Interactive procedural snow landscape. Accelerate with W, carve with A and D, brake with S, jump with Space, cast with E, or use the onscreen touch controls. Drag to orbit and scroll to change distance."
+        aria-label="Interactive procedural snow landscape with marked rope-and-pole boundaries. Accelerate with W, carve with A and D, brake with S, jump with Space, cast with E, or use the onscreen touch controls. Drag to orbit and scroll to change distance."
       />
 
       <div className="snowveil__veil" aria-hidden="true" />
@@ -1280,6 +1357,18 @@ export function SnowveilScene() {
               Follow the blue light
             </span>
           </aside>
+
+          <div
+            ref={boundaryRef}
+            className="snowveil__boundary-warning"
+            data-visible="false"
+            role="status"
+            aria-live="polite"
+            aria-hidden="true"
+          >
+            <span>Slope boundary</span>
+            <strong>Carve inward</strong>
+          </div>
 
           {riteComplete && (
             <div className="snowveil__completion" role="status" aria-live="polite">

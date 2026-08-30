@@ -2,12 +2,21 @@ import assert from "node:assert/strict";
 import test from "node:test";
 
 import {
+  snowveilBoundaryShader,
   snowveilDeformationShader,
   snowveilPlayerShader,
   snowveilSkyShader,
   snowveilSpindriftShader,
   snowveilTerrainShader,
 } from "../app/snowveil-shader.ts";
+
+test("slope boundary uses world geometry, course colors, and atmospheric depth", () => {
+  assert.match(snowveilBoundaryShader, /fn vsBoundary\(input: BoundaryVertexIn\)/);
+  assert.match(snowveilBoundaryShader, /let worldPosition = input\.position/);
+  assert.match(snowveilBoundaryShader, /input\.part == 3u/);
+  assert.match(snowveilBoundaryShader, /vec3<f32>\(0\.82, 0\.09, 0\.028\)/);
+  assert.match(snowveilBoundaryShader, /let fog = smoothstep\(25\.0, 72\.0, input\.viewDistance\)/);
+});
 
 test("player shader gates casting and retains state-specific athletic loading", () => {
   assert.match(snowveilPlayerShader, /let castPose = smoothstep\([^\n]+globals\.weather\.z\);/);

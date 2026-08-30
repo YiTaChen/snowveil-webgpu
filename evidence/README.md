@@ -294,3 +294,16 @@ They are review artefacts, not third-party source material.
 - `release-candidate-production-route-1280x720.jpg` — retained single-tab
   production route completion at 60 FPS, P95 17.4 ms, one-percent low 57, and
   100% RES, with clean browser diagnostics.
+- `slope-boundary-idle.png` — 1280×720 approach view showing the complete warm
+  rope, terrain-coupled pole, reflector, snow-cap, and pennant language before
+  collision.
+- `slope-boundary-warning.png` — 1280×720 real outward input with the compact
+  `Carve inward` status cue visible while the marked fence stays legible.
+- `slope-boundary-recovery.png` — 1280×720 post-guidance view after repeated
+  outward acceleration has redirected the board along the perimeter and removed
+  the no-longer-relevant warning.
+- `slope-boundary-route-complete.png` — 1280×720 deterministic route regression
+  with `Veil stabilized`, 60 FPS, P95 17.5 ms, one-percent low 56, and 100% RES.
+- `slope-boundary-target-1280x720.png` — honest 1280×720 export while the fixed
+  page shades its true 2560×1440 WebGPU backing target at 50 FPS, P95 33.8 ms,
+  one-percent low 29, and 100% RES.
