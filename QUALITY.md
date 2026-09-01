@@ -832,3 +832,47 @@ render contracts, interaction, and the existing world systems.
 All new world geometry, material logic, control response, UI, and evidence are
 original project output. No resort logo, sign system, model, texture, footage,
 scan, sample, animation, or other third-party art entered the build.
+
+### 2026-09-01 — Downline reusable race-course checkpoint
+
+Evidence:
+
+- checker start and count-in: [`evidence/downline-start.png`](./evidence/downline-start.png)
+- mid-course sightline and goal readability: [`evidence/downline-descent.png`](./evidence/downline-descent.png)
+- completed result flow: [`evidence/downline-finish-menu.png`](./evidence/downline-finish-menu.png)
+- mobile start and controls: [`evidence/downline-mobile.png`](./evidence/downline-mobile.png)
+- mobile result layout: [`evidence/downline-mobile-result.png`](./evidence/downline-mobile-result.png)
+
+The retained start frame shows the actual rider held behind a two-row checker
+surface while the count-in remains visible. An early candidate let the white
+cells dissolve into the snow; the final mesh places all cells above a thin dark
+foundation with narrow grout gaps, keeping both colours legible without an image
+texture. Repeated coral poles, warm reflectors, ropes, and unequal pennants make
+both corridor edges readable from the start rather than only at collision.
+
+The descent frame is captured from the running WebGPU simulation at 9.3 m/s.
+Both checker flags, the cyan goal beam, finish line, and side markers are visible
+with 31 metres remaining, giving the rider time to align. The same snowboard
+heading, upper-body look, long tapered contact, persistent wake, Space jump,
+powder, cloth, and low-sun shadow systems remain active; there is no race-only
+character or substitute render.
+
+The end-to-end browser pass crossed the real finish at 00:07.33, retained the
+three-second result delay, opened the accessible result dialog, reloaded the
+course through `Retry course`, returned to the original hub through `Return to
+Frost Rite`, and entered Downline again through the hub's course switch. Browser
+diagnostics contained no warning, WGSL validation, WebGPU, or device error.
+At 480×659, the start, checker line, both side markers, six held touch controls,
+timer, and scene switch stay within the viewport. The completed result dialog
+stacks its two actions above the controls and reports 60 FPS at 100% render
+scale in the retained mobile frame.
+Thirty-five automated tests cover the course definition, progress/time rules,
+monotonic terrain, finish crossing, side guidance/recovery, finite indexed
+geometry, all eight course material parts, shared shader selection, rendered
+flow, and the existing world systems.
+
+The capture route intentionally holds a true 2560×1440 WebGPU backing target
+inside the 1280×720 exported frame. The mid-course stress reading was 41 FPS,
+P95 33.9 ms, one-percent low 20, and 100% render scale; ordinary play retains
+the established 84–100% adaptive-resolution path. This remains a quality-review
+limit rather than a native-1440p 60 FPS claim.

@@ -4,6 +4,8 @@
   --frost-blue: #91b6cf;
   --night-blue: #071522;
   --slope-boundary: #f2633f;
+  --race-blue: #2aa8d8;
+  --race-ink: #071017;
 }
 
 * {
@@ -290,6 +292,180 @@ canvas {
   outline-offset: 3px;
 }
 
+.snowveil__course-switch {
+  position: absolute;
+  top: clamp(66px, 7.2vw, 96px);
+  right: clamp(22px, 4vw, 58px);
+  z-index: 2;
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  padding: 8px 11px;
+  border: 1px solid rgba(127, 215, 247, 0.28);
+  border-radius: 999px;
+  background:
+    linear-gradient(120deg, rgba(65, 165, 201, 0.16), rgba(5, 20, 30, 0.18)),
+    rgba(5, 18, 28, 0.22);
+  color: rgba(226, 246, 253, 0.76);
+  font-size: 8px;
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+  text-shadow: 0 2px 14px rgba(2, 10, 16, 0.6);
+  backdrop-filter: blur(9px);
+  cursor: pointer;
+  transition:
+    border-color 180ms ease,
+    background 180ms ease,
+    transform 180ms ease;
+}
+
+.snowveil__course-switch:hover {
+  border-color: rgba(143, 226, 255, 0.5);
+  background: rgba(38, 126, 164, 0.25);
+  transform: translateY(-1px);
+}
+
+.snowveil__course-switch:focus-visible,
+.snowveil__race-menu button:focus-visible {
+  outline: 1px solid rgba(159, 226, 255, 0.86);
+  outline-offset: 3px;
+}
+
+.snowveil__race-overlay {
+  position: absolute;
+  top: 19%;
+  left: 50%;
+  z-index: 3;
+  display: grid;
+  justify-items: center;
+  gap: 7px;
+  min-width: 220px;
+  color: rgba(239, 250, 254, 0.94);
+  text-align: center;
+  text-transform: uppercase;
+  text-shadow:
+    0 3px 24px rgba(1, 8, 13, 0.74),
+    0 0 32px rgba(77, 202, 247, 0.2);
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+  transform: translate(-50%, 10px) scale(0.97);
+  transition:
+    opacity 180ms ease,
+    transform 260ms ease,
+    visibility 0s linear 260ms;
+}
+
+.snowveil__race-overlay[data-visible="true"] {
+  opacity: 1;
+  visibility: visible;
+  transform: translate(-50%, 0) scale(1);
+  transition-delay: 0s;
+}
+
+.snowveil__race-overlay span,
+.snowveil__race-overlay small {
+  color: rgba(187, 226, 242, 0.68);
+  font-size: 8px;
+  font-weight: 520;
+  letter-spacing: 0.26em;
+}
+
+.snowveil__race-overlay strong {
+  min-width: 150px;
+  padding: 4px 18px 6px;
+  border-block: 1px solid rgba(160, 226, 250, 0.22);
+  font-size: clamp(40px, 7vw, 82px);
+  font-weight: 260;
+  letter-spacing: 0.1em;
+  line-height: 1;
+}
+
+.snowveil__race-overlay[data-phase="finish"] strong {
+  color: rgba(239, 251, 255, 0.98);
+  font-size: clamp(30px, 5vw, 58px);
+  letter-spacing: 0.2em;
+}
+
+.snowveil__race-menu {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  z-index: 7;
+  width: min(420px, calc(100% - 40px));
+  display: grid;
+  justify-items: center;
+  gap: 12px;
+  padding: 30px 32px 28px;
+  border: 1px solid rgba(197, 231, 244, 0.2);
+  border-top-color: rgba(114, 213, 250, 0.54);
+  border-radius: 18px;
+  background:
+    linear-gradient(160deg, rgba(26, 67, 86, 0.44), rgba(4, 14, 22, 0.72)),
+    rgba(4, 15, 23, 0.76);
+  box-shadow:
+    0 30px 90px rgba(1, 7, 11, 0.5),
+    inset 0 1px rgba(255, 255, 255, 0.05);
+  text-align: center;
+  text-transform: uppercase;
+  backdrop-filter: blur(18px);
+  transform: translate(-50%, -50%);
+  animation: snowveil-race-menu-in 420ms cubic-bezier(0.2, 0.76, 0.22, 1) both;
+}
+
+.snowveil__race-menu > span,
+.snowveil__race-menu > small {
+  color: rgba(187, 224, 239, 0.66);
+  font-size: 8px;
+  letter-spacing: 0.24em;
+}
+
+.snowveil__race-menu > strong {
+  color: rgba(239, 250, 254, 0.96);
+  font-size: clamp(28px, 5vw, 48px);
+  font-weight: 300;
+  letter-spacing: 0.13em;
+  text-shadow: 0 0 30px rgba(78, 202, 246, 0.25);
+}
+
+.snowveil__race-menu > div {
+  width: 100%;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+  margin-top: 8px;
+}
+
+.snowveil__race-menu button {
+  min-height: 42px;
+  padding: 9px 12px;
+  border: 1px solid rgba(195, 231, 245, 0.2);
+  border-radius: 999px;
+  background: rgba(225, 244, 251, 0.06);
+  color: rgba(229, 245, 251, 0.78);
+  font-size: 8px;
+  letter-spacing: 0.13em;
+  text-transform: uppercase;
+  cursor: pointer;
+}
+
+.snowveil__race-menu button:first-child {
+  border-color: rgba(103, 211, 250, 0.48);
+  background: rgba(45, 154, 197, 0.2);
+  color: rgba(241, 251, 255, 0.94);
+}
+
+@keyframes snowveil-race-menu-in {
+  from {
+    opacity: 0;
+    transform: translate(-50%, calc(-50% + 14px)) scale(0.98);
+  }
+  to {
+    opacity: 1;
+    transform: translate(-50%, -50%) scale(1);
+  }
+}
+
 .snowveil__completion {
   position: absolute;
   top: 22%;
@@ -467,6 +643,25 @@ canvas {
   .snowveil__boundary-warning {
     top: 134px;
   }
+
+  .snowveil__course-switch {
+    top: 64px;
+    right: 22px;
+    max-width: 154px;
+    font-size: 7px;
+  }
+
+  .snowveil__race-overlay {
+    top: 24%;
+  }
+
+  .snowveil__race-menu {
+    padding: 25px 22px 22px;
+  }
+
+  .snowveil__race-menu > div {
+    grid-template-columns: 1fr;
+  }
 }
 
 @media (pointer: coarse), (max-width: 720px) {
@@ -615,6 +810,13 @@ canvas {
 
 @media (prefers-reduced-motion: reduce) {
   .snowveil__canvas {
+    transition: none;
+  }
+
+  .snowveil__race-menu,
+  .snowveil__race-overlay,
+  .snowveil__course-switch {
+    animation: none;
     transition: none;
   }
 

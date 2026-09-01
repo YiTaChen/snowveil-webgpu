@@ -788,3 +788,35 @@ clamp, a solid wall, dense safety net, copied ski-resort signage, and an endless
 repeating barrier texture were rejected. The result adds one static indexed
 draw and no imported asset, texture, sample, physics package, or per-frame
 allocation.
+
+## 2026-09-01 — Race courses are data, not duplicate scenes
+
+A second copied scene loop would initially be faster to sketch, but every later
+discipline would then fork the WebGPU render graph, movement fixes, snow
+deformation, camera, input, HUD, audio, and accessibility behavior. That would
+make the existing quality work diverge and turn a new route into a regression
+risk across several thousand lines of unrelated code.
+
+The retained architecture keeps one `SnowveilScene`. `SnowveilCourse` data owns
+the route identity, start, finish, width, safety inset, and result delay;
+course-specific helpers own progress, finish crossing, formatting, and corridor
+recovery. Terrain accepts an explicit mode and blends one monotonic groomed fall
+line into the same surrounding mountain. A shared procedural geometry builder
+now supplies panels and tapered tubes to both the established circular boundary
+and the Downline course, so poles, rope, and future gates do not require another
+mesh toolkit.
+
+The Downline experience contributes only a start/finish course mesh and a small
+`countdown → racing → finish → menu` state machine. Rider geometry, snowboard
+causality, Space jump, dynamic snow history, powder, cloth, spindrift, shadows,
+post-processing, controls, synthesized audio, and accessibility remain the same
+systems. Query and in-world buttons select the course without instantiating a
+second renderer. The first-frame clock arming deliberately starts only after GPU
+initialization, preventing adapter latency from consuming the count-in.
+
+The retained visual language uses original coral boundary hardware and simple
+black/white checks with a thin dark foundation so white cells remain readable
+against snow. Real resort logos, copied signs, downloaded flag textures, and
+third-party course models were rejected. The course adds one static indexed draw,
+one shared uniform vector, and no image, texture, sample, animation, physics
+dependency, or per-frame geometry allocation.

@@ -4,6 +4,7 @@ export type SnowveilAudio = {
   cast: () => void;
   jump: () => void;
   land: () => void;
+  finishRace: () => void;
   activateBeacon: (index: number, final: boolean) => void;
   setMotion: (
     speed: number,
@@ -192,6 +193,12 @@ export function createSnowveilAudio(): SnowveilAudio {
         burst.connect(filter).connect(gain).connect(master);
         burst.start(now, 0.82, 0.18);
       }
+    },
+    finishRace() {
+      if (!context || !master || context.state !== "running" || !enabled) return;
+      playTone(196, 392, 0.46, 0.052, "triangle");
+      playTone(294, 588, 0.62, 0.04, "sine", 0.08);
+      playTone(392, 784, 0.82, 0.03, "sine", 0.16);
     },
     activateBeacon(index, final) {
       if (activeBeacons.has(index)) return;

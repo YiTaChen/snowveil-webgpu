@@ -58,6 +58,13 @@ Append `?boundary` to begin beside the marked course edge, facing outward. This
 is the focused QA route for the rope-and-pole fence, proximity warning, and
 soft inward recovery.
 
+Append `?course=downline` to enter the first reusable race course, a 62-metre
+straight descent with a rendered checker start, marked side ropes, a checker
+goal line, finish gate, flags, live timer, three-second result reveal, retry,
+and return-to-Frost-Rite flow. `?course=downline&demo` runs the same course and
+physics with deterministic acceleration for end-to-end QA; it does not replace
+the actual start, finish, collision, or timing rules.
+
 ## Originality and licensing
 
 No reference-project code or assets are copied into this repository. The current
@@ -174,6 +181,11 @@ Original project code is released under the [MIT License](./LICENSE).
     sagging rope spans, and pennants make the playable perimeter readable before
     contact; a restrained HUD cue and tested tangential recovery replace the
     trapping invisible radial clamp without importing an art asset.
+32. Reusable race-course pass — one data-defined Downline course reuses the
+    established renderer, rider, snow, physics, camera, controls, audio, and HUD;
+    only its groomed fall line, corridor boundary, checker gates, race timing,
+    and result flow are course-specific, establishing the extension point for
+    later race disciplines without a second scene implementation.
 
 The current build is a polished playable vertical slice, not a claim of a full
 AAA production or a hundred-million-particle physical simulation. See

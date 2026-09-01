@@ -48,7 +48,9 @@ function fbm(x: number, y: number) {
   return result;
 }
 
-export function snowHeightAt(x: number, z: number) {
+export type SnowTerrainMode = "rite" | "downline";
+
+function baseSnowHeightAt(x: number, z: number) {
   const windX = 0.82 / Math.hypot(0.82, 0.57);
   const windZ = 0.57 / Math.hypot(0.82, 0.57);
   const acrossX = -windZ;
@@ -84,18 +86,42 @@ export function snowHeightAt(x: number, z: number) {
   return -0.72 + broad + longSwell + drifts + ridges + heroDune + foregroundDip + farRise + outcropLift;
 }
 
+/**
+ * Blend an authored, consistently descending piste into the existing snow
+ * world. The surrounding mountain field stays untouched, while the central
+ * corridor becomes a reusable race-grade terrain profile.
+ */
+export function snowHeightAt(x: number, z: number, mode: SnowTerrainMode = "rite") {
+  const baseHeight = baseSnowHeightAt(x, z);
+  if (mode !== "downline") return baseHeight;
+
+  const lateralBlend = 1 - smoothstep(8.2, 17.5, Math.abs(x));
+  const longitudinalBlend =
+    smoothstep(-45, -39, z) * (1 - smoothstep(36, 45, z));
+  const groomedUndulation =
+    Math.sin(x * 0.31 + z * 0.038) * 0.055 + Math.sin(x * 0.12 - z * 0.021) * 0.035;
+  const courseHeight = -0.68 + (z + 32) * 0.13 + groomedUndulation;
+  const blend = lateralBlend * longitudinalBlend;
+  return baseHeight + (courseHeight - baseHeight) * blend;
+}
+
 export type SnowSurface = {
   height: number;
   slopeX: number;
   slopeZ: number;
 };
 
-export function snowSurfaceAt(x: number, z: number, sampleRadius = 0.36): SnowSurface {
-  const height = snowHeightAt(x, z);
-  const left = snowHeightAt(x - sampleRadius, z);
-  const right = snowHeightAt(x + sampleRadius, z);
-  const back = snowHeightAt(x, z - sampleRadius);
-  const front = snowHeightAt(x, z + sampleRadius);
+export function snowSurfaceAt(
+  x: number,
+  z: number,
+  sampleRadius = 0.36,
+  mode: SnowTerrainMode = "rite",
+): SnowSurface {
+  const height = snowHeightAt(x, z, mode);
+  const left = snowHeightAt(x - sampleRadius, z, mode);
+  const right = snowHeightAt(x + sampleRadius, z, mode);
+  const back = snowHeightAt(x, z - sampleRadius, mode);
+  const front = snowHeightAt(x, z + sampleRadius, mode);
   const diameter = sampleRadius * 2;
 
   return {

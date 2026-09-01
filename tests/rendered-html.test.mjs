@@ -78,8 +78,26 @@ test("the running scene exposes a marked boundary probe and an accessible early 
   assert.match(sceneSource, /const boundaryProbe = query\.has\("boundary"\)/);
   assert.match(sceneSource, /createSlopeBoundaryGeometry\(\)/);
   assert.match(sceneSource, /resolveSlopeBoundary\(/);
-  assert.match(sceneSource, /<span>Slope boundary<\/span>/);
-  assert.match(sceneSource, /<strong>Carve inward<\/strong>/);
+  assert.match(sceneSource, /activeCourse \? "Course edge" : "Slope boundary"/);
+  assert.match(sceneSource, /activeCourse \? "Carve back" : "Carve inward"/);
   assert.match(cssSource, /--slope-boundary: #f2633f/);
   assert.match(cssSource, /\.snowveil__boundary-warning\[data-visible="true"\]/);
+});
+
+test("the scene routes into a reusable race course and exposes the complete result flow", async () => {
+  const [sceneSource, cssSource] = await Promise.all([
+    readFile(new URL("../app/snowveil-scene.tsx", import.meta.url), "utf8"),
+    readFile(new URL("../app/globals.css", import.meta.url), "utf8"),
+  ]);
+
+  assert.match(sceneSource, /getSnowveilCourse\(query\.get\("course"\)\)/);
+  assert.match(sceneSource, /createSnowveilCourseGeometry\(course\)/);
+  assert.match(sceneSource, /resolveCourseBoundary\(/);
+  assert.match(sceneSource, /crossedCourseFinish\(/);
+  assert.match(sceneSource, /Race Downline 01/);
+  assert.match(sceneSource, /Retry course/);
+  assert.match(sceneSource, /Return to Frost Rite/);
+  assert.match(sceneSource, /courseCountdownEndsAt === 0/);
+  assert.match(cssSource, /\.snowveil__race-overlay/);
+  assert.match(cssSource, /\.snowveil__race-menu/);
 });

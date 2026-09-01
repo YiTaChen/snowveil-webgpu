@@ -610,3 +610,30 @@ measurements ran with the duplicate context closed. Browser diagnostics contain
 no warning, WGSL validation, WebGPU, or uncaptured-device error. The fixed target
 remains an honestly measured quality boundary rather than a native-size 60 FPS
 claim.
+
+## 2026-09-01 — reusable Downline course cost
+
+Downline contributes 4,758 vertices, 11,472 indices, and 3,824 triangles in one
+static indexed world draw. Its immutable vertex and index buffers total 179,112
+bytes. The mesh contains both course-edge rope systems, checker foundations and
+cells, finish posts, beam, and flags. Geometry is built once at scene setup with
+the same panel/tube primitives now shared by the original circular fence.
+
+The terrain mode adds one bounded corridor blend to the existing CPU and WGSL
+height functions. Race progress, the timer, finish crossing, and side recovery
+use scalar state already present in the simulation loop. The shared global
+uniform grows by one 16-byte vector; there is no new render pass, texture,
+sampler, compute dispatch, animation buffer, physics dependency, per-frame mesh
+rebuild, or allocation.
+
+| Clean single-tab state | Observed HUD | Result |
+| --- | ---: | --- |
+| hub after race return, 1280×720 | 56 FPS · P95 17.7 ms · 1% 13 · 100% | shared-scene regression retained |
+| Downline count-in, 1280×720 | 55 FPS · P95 17.6 ms · 1% 12 · 100% | retained interactive start |
+| completed Downline result, 480×659 | 60 FPS · 100% | retained mobile layout |
+| Downline descent, fixed 2560×1440 backing target | 41 FPS · P95 33.9 ms · 1% 20 · 100% | visual-review stress target |
+
+The fixed target is exported at an honestly labelled 1280×720 while the page
+shades the true 2560×1440 backing canvas. Ordinary play keeps adaptive
+resolution enabled. Browser diagnostics across start, full race, result, retry,
+hub return, and hub-to-course switch contained no warning or GPU error.

@@ -307,3 +307,17 @@ They are review artefacts, not third-party source material.
 - `slope-boundary-target-1280x720.png` — honest 1280×720 export while the fixed
   page shades its true 2560×1440 WebGPU backing target at 50 FPS, P95 33.8 ms,
   one-percent low 29, and 100% RES.
+- `downline-start.png` — fixed-target 1280×720 start frame with the two-row
+  checker line, dark grout foundation, held rider, three-count overlay, and both
+  marked corridor edges visible before motion.
+- `downline-descent.png` — fixed-target 1280×720 running race at 9.3 m/s with
+  31 metres remaining; both checker flags, goal beam, finish line, side rope,
+  and rider travel silhouette remain readable in one frame.
+- `downline-finish-menu.png` — fixed-target 1280×720 completed course showing
+  the 00:07.33 result dialog, retry and hub-return actions, goal line, and
+  finish hardware from the same end-to-end run.
+- `downline-mobile.png` — 480×659 count-in with the checker line, corridor, HUD,
+  scene switch, and all six held touch controls inside the viewport.
+- `downline-mobile-result.png` — 480×659 completed result with vertically
+  stacked retry and hub-return actions clear of the touch controls, at 60 FPS
+  and 100% render scale.

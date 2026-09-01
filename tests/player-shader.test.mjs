@@ -16,6 +16,17 @@ test("slope boundary uses world geometry, course colors, and atmospheric depth",
   assert.match(snowveilBoundaryShader, /input\.part == 3u/);
   assert.match(snowveilBoundaryShader, /vec3<f32>\(0\.82, 0\.09, 0\.028\)/);
   assert.match(snowveilBoundaryShader, /let fog = smoothstep\(25\.0, 72\.0, input\.viewDistance\)/);
+  assert.match(snowveilBoundaryShader, /input\.part == 5u/);
+  assert.match(snowveilBoundaryShader, /input\.part == 6u/);
+  assert.match(snowveilBoundaryShader, /input\.part == 7u/);
+});
+
+test("shared GPU globals select the same groomed course terrain across render passes", () => {
+  for (const shader of [snowveilTerrainShader, snowveilSpindriftShader]) {
+    assert.match(shader, /globals\.course\.x/);
+    assert.match(shader, /let courseHeight = -0\.68 \+ \(point\.y \+ 32\.0\) \* 0\.13/);
+    assert.match(shader, /mix\(baseHeight, courseHeight, courseBlend\)/);
+  }
 });
 
 test("player shader gates casting and retains state-specific athletic loading", () => {

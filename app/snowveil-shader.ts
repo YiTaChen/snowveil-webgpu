@@ -13,6 +13,7 @@ struct Globals {
   pose: vec4<f32>,
   clothFlowX: vec4<f32>,
   clothFlowZ: vec4<f32>,
+  course: vec4<f32>,
 };
 
 @group(0) @binding(0) var<uniform> globals: Globals;
@@ -454,7 +455,16 @@ fn terrainBaseHeight(point: vec2<f32>) -> f32 {
   let farRise = smoothstep(38.0, 62.0, radius) * (1.0 - smoothstep(62.0, 78.0, radius)) * mountainProfile * 0.42;
   let outcrop = outcropField(point);
   let outcropLift = smoothstep(0.12, 0.58, outcrop) * 1.55 + smoothstep(0.46, 0.78, outcrop) * 0.32;
-  return -0.72 + broad + longSwell + drifts + ridges + heroDune + foregroundDip + farRise + outcropLift;
+  let baseHeight = -0.72 + broad + longSwell + drifts + ridges + heroDune + foregroundDip + farRise + outcropLift;
+  let lateralBlend = 1.0 - smoothstep(8.2, 17.5, abs(point.x));
+  let longitudinalBlend =
+    smoothstep(-45.0, -39.0, point.y) * (1.0 - smoothstep(36.0, 45.0, point.y));
+  let groomedUndulation =
+    sin(point.x * 0.31 + point.y * 0.038) * 0.055 +
+    sin(point.x * 0.12 - point.y * 0.021) * 0.035;
+  let courseHeight = -0.68 + (point.y + 32.0) * 0.13 + groomedUndulation;
+  let courseBlend = lateralBlend * longitudinalBlend * globals.course.x;
+  return mix(baseHeight, courseHeight, courseBlend);
 }
 
 fn terrainHeight(point: vec2<f32>) -> f32 {
@@ -551,7 +561,7 @@ fn actorCastShadow(point: vec2<f32>, sunDirection: vec3<f32>) -> f32 {
       beaconCastShadow(point, globals.beaconC, shadowSlope)
     )
   );
-  return max(rider, max(board * 0.52, beacons * 0.62));
+  return max(rider, max(board * 0.52, beacons * 0.62 * (1.0 - globals.course.x)));
 }
 
 @vertex
@@ -739,7 +749,11 @@ fn fsTerrain(input: TerrainVertexOut) -> @location(0) vec4<f32> {
       ritualSigil(input.worldPosition.xz, globals.beaconC)
     )
   );
-  snow = snow + vec3<f32>(0.035, 0.5, 1.0) * ritualMark * (0.2 + fresnel * 0.18);
+  snow = snow +
+    vec3<f32>(0.035, 0.5, 1.0) *
+    ritualMark *
+    (0.2 + fresnel * 0.18) *
+    (1.0 - globals.course.x);
   let rock = vec3<f32>(0.065, 0.105, 0.14) * (0.72 + warmSun * direct * shadow * 0.65) + vec3<f32>(0.12, 0.19, 0.25) * fresnel * 0.22;
   snow = mix(snow, rock, rockReveal * 0.78);
 
@@ -842,7 +856,16 @@ fn terrainHeight(point: vec2<f32>) -> f32 {
   let farRise = smoothstep(38.0, 62.0, radius) * (1.0 - smoothstep(62.0, 78.0, radius)) * mountainProfile * 0.42;
   let outcrop = outcropField(point);
   let outcropLift = smoothstep(0.12, 0.58, outcrop) * 1.55 + smoothstep(0.46, 0.78, outcrop) * 0.32;
-  return -0.72 + broad + longSwell + drifts + ridges + heroDune + foregroundDip + farRise + outcropLift + snowDeformation(point);
+  let baseHeight = -0.72 + broad + longSwell + drifts + ridges + heroDune + foregroundDip + farRise + outcropLift;
+  let lateralBlend = 1.0 - smoothstep(8.2, 17.5, abs(point.x));
+  let longitudinalBlend =
+    smoothstep(-45.0, -39.0, point.y) * (1.0 - smoothstep(36.0, 45.0, point.y));
+  let groomedUndulation =
+    sin(point.x * 0.31 + point.y * 0.038) * 0.055 +
+    sin(point.x * 0.12 - point.y * 0.021) * 0.035;
+  let courseHeight = -0.68 + (point.y + 32.0) * 0.13 + groomedUndulation;
+  let courseBlend = lateralBlend * longitudinalBlend * globals.course.x;
+  return mix(baseHeight, courseHeight, courseBlend) + snowDeformation(point);
 }
 
 @compute @workgroup_size(64)
@@ -1754,6 +1777,16 @@ fn fsBoundary(input: BoundaryVertexOut) -> @location(0) vec4<f32> {
   } else if (input.part == 4u) {
     albedo = vec3<f32>(0.64, 0.76, 0.82);
     roughness = 0.92;
+  } else if (input.part == 5u) {
+    albedo = vec3<f32>(0.012, 0.017, 0.021);
+    roughness = 0.82;
+  } else if (input.part == 6u) {
+    albedo = vec3<f32>(0.82, 0.9, 0.94);
+    roughness = 0.72;
+  } else if (input.part == 7u) {
+    albedo = vec3<f32>(0.02, 0.52, 0.78);
+    roughness = 0.5;
+    visibilityLift = 0.11;
   }
 
   let coolAmbient = vec3<f32>(0.42, 0.58, 0.72) * (0.72 + saturateBoundary(normal.y) * 0.25);

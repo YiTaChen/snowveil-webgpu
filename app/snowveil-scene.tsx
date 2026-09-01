@@ -11,11 +11,24 @@ import {
   snowveilSpindriftShader,
   snowveilTerrainShader,
 } from "./snowveil-shader";
-import { snowHeightAt, snowSurfaceAt } from "./snowveil-terrain";
+import {
+  snowHeightAt,
+  snowSurfaceAt,
+  type SnowTerrainMode,
+} from "./snowveil-terrain";
 import { createRiderGeometry } from "./snowveil-rider-geometry";
 import { createBeaconGeometry } from "./snowveil-beacon-geometry";
 import { createSlopeBoundaryGeometry } from "./snowveil-boundary-geometry";
 import { resolveSlopeBoundary } from "./snowveil-boundary";
+import { createSnowveilCourseGeometry } from "./snowveil-course-geometry";
+import {
+  courseDistanceRemaining,
+  crossedCourseFinish,
+  DOWNLINE_COURSE,
+  formatRaceTime,
+  getSnowveilCourse,
+  resolveCourseBoundary,
+} from "./snowveil-course";
 import { createSnowveilAudio, type SnowveilAudio } from "./snowveil-audio";
 import {
   decayLandingCompression,
@@ -36,6 +49,7 @@ import {
 } from "./snowveil-motion";
 
 type SceneState = "loading" | "ready" | "unsupported" | "error";
+type CourseRunPhase = "inactive" | "countdown" | "racing" | "finish" | "menu";
 
 export function SnowveilScene() {
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -44,12 +58,20 @@ export function SnowveilScene() {
   const objectiveRef = useRef<HTMLSpanElement>(null);
   const promptRef = useRef<HTMLSpanElement>(null);
   const boundaryRef = useRef<HTMLDivElement>(null);
+  const raceOverlayRef = useRef<HTMLDivElement>(null);
+  const raceCountdownRef = useRef<HTMLElement>(null);
+  const raceDetailRef = useRef<HTMLElement>(null);
   const audioControllerRef = useRef<SnowveilAudio | null>(null);
   const [sceneState, setSceneState] = useState<SceneState>("loading");
   const [message, setMessage] = useState("Preparing atmosphere");
   const [audioEnabled, setAudioEnabled] = useState(false);
   const [audioReady, setAudioReady] = useState(false);
   const [riteComplete, setRiteComplete] = useState(false);
+  const [activeCourseId, setActiveCourseId] = useState<string | null>(null);
+  const [raceResult, setRaceResult] = useState<number | null>(null);
+  const [raceMenuVisible, setRaceMenuVisible] = useState(false);
+
+  const activeCourse = getSnowveilCourse(activeCourseId);
 
   useEffect(() => {
     const canvas = canvasRef.current;
@@ -62,6 +84,12 @@ export function SnowveilScene() {
     const demoMode = query.has("demo");
     const fallbackMode = query.has("fallback");
     const boundaryProbe = query.has("boundary");
+    const course = getSnowveilCourse(query.get("course"));
+    const courseMode = course !== null;
+    const terrainMode: SnowTerrainMode = course?.terrainMode ?? "rite";
+    setActiveCourseId(course?.id ?? null);
+    setRaceMenuVisible(false);
+    setRaceResult(null);
     const requestedRenderScale = Number(query.get("renderScale"));
     const fixedRenderScale =
       Number.isFinite(requestedRenderScale) && requestedRenderScale > 0
@@ -104,14 +132,14 @@ export function SnowveilScene() {
     let dragging = false;
     let previousX = 0;
     let previousY = 0;
-    let playerX = 0;
-    let playerZ = boundaryProbe ? -43.8 : hasSlopeProbe ? 0 : -4;
+    let playerX = course?.startX ?? 0;
+    let playerZ = course?.startZ ?? (boundaryProbe ? -43.8 : hasSlopeProbe ? 0 : -4);
     let previousStampX = playerX;
     let previousStampZ = playerZ;
     let playerHeading = 0;
     let playerBoardYaw = snowboardTargetYaw(playerHeading, 0, 0);
     let playerSpeed = 0;
-    let playerSurface = snowSurfaceAt(playerX, playerZ);
+    let playerSurface = snowSurfaceAt(playerX, playerZ, 0.36, terrainMode);
     let playerSlopeX = playerSurface.slopeX;
     let playerSlopeZ = playerSurface.slopeZ;
     let visualSlopeX = playerSlopeX;
@@ -143,12 +171,27 @@ export function SnowveilScene() {
     let spellAge = 100;
     let completionAge = 100;
     let activatedCount = 0;
-    const beaconPositions = [
-      { x: -6.5, z: -14.5 },
-      { x: 12.5, z: -25.5 },
-      { x: -15.5, z: -36.5 },
-    ];
+    const beaconPositions = courseMode
+      ? [
+          { x: 999, z: 999 },
+          { x: 1003, z: 999 },
+          { x: 1007, z: 999 },
+        ]
+      : [
+          { x: -6.5, z: -14.5 },
+          { x: 12.5, z: -25.5 },
+          { x: -15.5, z: -36.5 },
+        ];
     const beaconActive = [false, false, false];
+    let courseRunPhase: CourseRunPhase = courseMode ? "countdown" : "inactive";
+    // Arm the start clock on the first rendered frame, after the GPU scene is
+    // ready. Slow adapter initialization must never consume the rider's count-in.
+    let courseCountdownEndsAt = 0;
+    let courseGoUntil = 0;
+    let courseStartedAt = 0;
+    let courseFinishedAt = 0;
+    let courseMenuAt = 0;
+    let previousCourseZ = playerZ;
     const pressedKeys = new Set<string>();
     const keyPulseUntil = new Map<string, number>();
     const activeControlPointers = new Map<number, string>();
@@ -229,6 +272,7 @@ export function SnowveilScene() {
     };
 
     const pressInput = (code: string, repeat = false) => {
+      if (courseMode && courseRunPhase !== "racing") return;
       pressedKeys.add(code);
       keyPulseUntil.set(code, performance.now() + 145);
       if (code === "Space" && !repeat && jumpHeight <= 0.001) {
@@ -585,7 +629,7 @@ export function SnowveilScene() {
 
         const uniformBuffer = activeDevice.createBuffer({
           label: "Snowveil frame uniforms",
-          size: 208,
+          size: 224,
           usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST,
         });
         const spindriftParticleCount = 768;
@@ -690,7 +734,7 @@ export function SnowveilScene() {
         const deformationRegionSize = 128;
         let deformationAccumulator = deformationInterval;
         let snowHistoryTouched = false;
-        const uniforms = new Float32Array(52);
+        const uniforms = new Float32Array(56);
 
         const terrainSegments = 288;
         const terrainVertexCount = (terrainSegments + 1) * (terrainSegments + 1);
@@ -764,14 +808,20 @@ export function SnowveilScene() {
         activeDevice.queue.writeBuffer(beaconVertexBuffer, 0, beaconGeometry.vertices);
         activeDevice.queue.writeBuffer(beaconIndexBuffer, 0, beaconGeometry.indices);
 
-        const boundaryGeometry = createSlopeBoundaryGeometry();
+        const boundaryGeometry = course
+          ? createSnowveilCourseGeometry(course)
+          : createSlopeBoundaryGeometry();
         const boundaryVertexBuffer = activeDevice.createBuffer({
-          label: "Snowveil marked-slope boundary vertices",
+          label: course
+            ? "Snowveil course marker vertices"
+            : "Snowveil marked-slope boundary vertices",
           size: boundaryGeometry.vertices.byteLength,
           usage: GPUBufferUsage.VERTEX | GPUBufferUsage.COPY_DST,
         });
         const boundaryIndexBuffer = activeDevice.createBuffer({
-          label: "Snowveil marked-slope boundary indices",
+          label: course
+            ? "Snowveil course marker indices"
+            : "Snowveil marked-slope boundary indices",
           size: boundaryGeometry.indices.byteLength,
           usage: GPUBufferUsage.INDEX | GPUBufferUsage.COPY_DST,
         });
@@ -858,6 +908,52 @@ export function SnowveilScene() {
             fpsFrames = 0;
           }
 
+          if (course && courseRunPhase === "countdown") {
+            if (courseCountdownEndsAt === 0) courseCountdownEndsAt = now + 3200;
+            const remaining = Math.max(0, courseCountdownEndsAt - now);
+            if (raceOverlayRef.current) {
+              raceOverlayRef.current.dataset.visible = "true";
+              raceOverlayRef.current.dataset.phase = "countdown";
+            }
+            if (raceCountdownRef.current) {
+              raceCountdownRef.current.textContent = `${Math.max(1, Math.ceil(remaining / 1000))}`;
+            }
+            if (raceDetailRef.current) {
+              raceDetailRef.current.textContent = "Hold the fall line";
+            }
+            playerSpeed = 0;
+            if (remaining <= 0) {
+              courseRunPhase = "racing";
+              courseStartedAt = now;
+              courseGoUntil = now + 850;
+              if (raceCountdownRef.current) raceCountdownRef.current.textContent = "RIDE";
+              if (raceDetailRef.current) raceDetailRef.current.textContent = "Clock running";
+            }
+          } else if (course && courseRunPhase === "racing") {
+            const showGo = now < courseGoUntil;
+            if (raceOverlayRef.current) {
+              raceOverlayRef.current.dataset.visible = showGo ? "true" : "false";
+              raceOverlayRef.current.dataset.phase = "go";
+            }
+          } else if (course && courseRunPhase === "finish") {
+            const menuRemaining = Math.max(0, courseMenuAt - now);
+            if (raceOverlayRef.current) {
+              raceOverlayRef.current.dataset.visible = "true";
+              raceOverlayRef.current.dataset.phase = "finish";
+            }
+            if (raceCountdownRef.current) {
+              raceCountdownRef.current.textContent = "GOAL";
+            }
+            if (raceDetailRef.current) {
+              raceDetailRef.current.textContent = `Results in ${Math.max(1, Math.ceil(menuRemaining / 1000))}`;
+            }
+            if (menuRemaining <= 0) {
+              courseRunPhase = "menu";
+              setRaceMenuVisible(true);
+              if (raceOverlayRef.current) raceOverlayRef.current.dataset.visible = "false";
+            }
+          }
+
           const manualSteer =
             (pressedKeys.has("KeyD") ||
             pressedKeys.has("ArrowRight") ||
@@ -885,21 +981,47 @@ export function SnowveilScene() {
             (keyPulseUntil.get("ArrowDown") ?? 0) > now
               ? 1
               : 0;
-          const demoTargetIndex = demoMode ? beaconActive.findIndex((isActive) => !isActive) : -1;
+          const riteDemoMode = demoMode && !courseMode;
+          const courseRaceActive = !course || courseRunPhase === "racing";
+          const courseDemoActive = Boolean(course && demoMode && courseRunPhase === "racing");
+          const demoTargetIndex = riteDemoMode
+            ? beaconActive.findIndex((isActive) => !isActive)
+            : -1;
           const demoTarget = demoTargetIndex >= 0 ? beaconPositions[demoTargetIndex] : null;
           const demoHeading = demoTarget
             ? Math.atan2(demoTarget.x - playerX, -(demoTarget.z - playerZ))
             : playerHeading;
-          const steerInput = demoTarget
-            ? Math.max(-1, Math.min(1, angleDelta(demoHeading, playerHeading) * 1.8))
-            : manualSteer;
-          const throttleInput = demoTarget ? 1 : demoMode ? 0 : manualThrottle;
-          const brakeInput = demoMode ? (demoTarget ? 0 : 1) : manualBrake;
-          const speedLimit = demoMode
-            ? 6.4
-            : pressedKeys.has("ShiftLeft") || pressedKeys.has("ShiftRight")
-              ? 8.4
-              : 5.4;
+          const courseDemoHeading = Math.max(-0.38, Math.min(0.38, -playerX * 0.075));
+          const steerInput = courseDemoActive
+            ? Math.max(-1, Math.min(1, angleDelta(courseDemoHeading, playerHeading) * 1.9))
+            : demoTarget
+              ? Math.max(-1, Math.min(1, angleDelta(demoHeading, playerHeading) * 1.8))
+              : courseRaceActive
+                ? manualSteer
+                : 0;
+          const throttleInput = courseDemoActive
+            ? 1
+            : demoTarget
+              ? 1
+              : riteDemoMode
+                ? 0
+                : courseRaceActive
+                  ? manualThrottle
+                  : 0;
+          const brakeInput = riteDemoMode
+            ? demoTarget
+              ? 0
+              : 1
+            : courseRaceActive
+              ? manualBrake
+              : 0;
+          const speedLimit = course
+            ? 8.6
+            : riteDemoMode
+              ? 6.4
+              : pressedKeys.has("ShiftLeft") || pressedKeys.has("ShiftRight")
+                ? 8.4
+                : 5.4;
           boardSkid += (brakeInput - boardSkid) * (1 - Math.exp(-delta * (brakeInput > 0 ? 11 : 6.5)));
           steerVisual += (steerInput - steerVisual) * (1 - Math.exp(-delta * 8.5));
           const groundedBeforeMotion = jumpHeight <= 0.018;
@@ -934,11 +1056,20 @@ export function SnowveilScene() {
           const forwardX = Math.sin(playerHeading);
           const forwardZ = -Math.cos(playerHeading);
           const slopeAlongTravel = slopeAlongHeading(playerSlopeX, playerSlopeZ, playerHeading);
-          const slopeGravity = groundedBeforeMotion ? snowGravityAcceleration(slopeAlongTravel) : 0;
-          const driveAcceleration = throttleInput * (demoMode ? 7.2 : 5.8) * (groundedBeforeMotion ? 1 : 0.12);
+          const slopeGravity =
+            groundedBeforeMotion && courseRaceActive
+              ? snowGravityAcceleration(slopeAlongTravel)
+              : 0;
+          const driveAcceleration =
+            throttleInput *
+            (course ? 6.4 : riteDemoMode ? 7.2 : 5.8) *
+            (groundedBeforeMotion ? 1 : 0.12);
           playerSpeed += (driveAcceleration + slopeGravity) * delta;
           const drag = groundedBeforeMotion
-            ? 0.24 + (throttleInput > 0 ? 0 : 0.52) + snowboardBrakeDrag(actualBoardSkid)
+            ? 0.24 +
+              (throttleInput > 0 ? 0 : 0.52) +
+              snowboardBrakeDrag(actualBoardSkid) +
+              (course && courseRunPhase !== "racing" && courseRunPhase !== "countdown" ? 2.6 : 0)
             : 0.08;
           const downhillHeadroom = groundedBeforeMotion ? downhillSpeedHeadroom(slopeAlongTravel) : 0;
           const speedCeiling = groundedBeforeMotion
@@ -971,15 +1102,25 @@ export function SnowveilScene() {
             delta,
           );
 
+          previousCourseZ = playerZ;
           playerX += forwardX * playerSpeed * delta;
           playerZ += forwardZ * playerSpeed * delta;
-          const boundaryResolution = resolveSlopeBoundary(
-            playerX,
-            playerZ,
-            playerHeading,
-            playerSpeed,
-            delta,
-          );
+          const boundaryResolution = course
+            ? resolveCourseBoundary(
+                course,
+                playerX,
+                playerZ,
+                playerHeading,
+                playerSpeed,
+                delta,
+              )
+            : resolveSlopeBoundary(
+                playerX,
+                playerZ,
+                playerHeading,
+                playerSpeed,
+                delta,
+              );
           playerX = boundaryResolution.x;
           playerZ = boundaryResolution.z;
           playerHeading = boundaryResolution.heading;
@@ -991,6 +1132,19 @@ export function SnowveilScene() {
               boundaryRef.current.dataset.visible = visibleValue;
               boundaryRef.current.setAttribute("aria-hidden", visible ? "false" : "true");
             }
+          }
+          if (
+            course &&
+            courseRunPhase === "racing" &&
+            crossedCourseFinish(course, previousCourseZ, playerZ)
+          ) {
+            courseRunPhase = "finish";
+            courseFinishedAt = now;
+            courseMenuAt = now + course.resultDelaySeconds * 1000;
+            const result = Math.max(0, courseFinishedAt - courseStartedAt);
+            setRaceResult(result);
+            audio.finishRace();
+            playerSpeed *= 0.72;
           }
 
           const wasAirborne = jumpHeight > 0.001;
@@ -1030,7 +1184,7 @@ export function SnowveilScene() {
                 ? `${playerSpeed.toFixed(1)} m/s · AIR ${jumpHeight.toFixed(1)} m`
                 : `${playerSpeed.toFixed(1)} m/s`;
           }
-          playerSurface = snowSurfaceAt(playerX, playerZ);
+          playerSurface = snowSurfaceAt(playerX, playerZ, 0.36, terrainMode);
           const slopeBlend = 1 - Math.exp(-delta * 7.5);
           playerSlopeX += (playerSurface.slopeX - playerSlopeX) * slopeBlend;
           playerSlopeZ += (playerSurface.slopeZ - playerSlopeZ) * slopeBlend;
@@ -1061,22 +1215,41 @@ export function SnowveilScene() {
               Math.hypot(previewImpactX - beacon.x, previewImpactZ - beacon.z),
             );
           }
-          if (demoMode && spellAge > 1.1 && nearestDormantDistance < 2.35) {
+          if (riteDemoMode && spellAge > 1.1 && nearestDormantDistance < 2.35) {
             castIcePulse();
           }
-          if (objectiveRef.current) {
-            objectiveRef.current.textContent =
-              activatedCount === beaconPositions.length
-                ? "Veil stabilized"
-                : `Frost sigils ${activatedCount} / ${beaconPositions.length}`;
-          }
-          if (promptRef.current) {
-            promptRef.current.textContent =
-              activatedCount === beaconPositions.length
-                ? "All sigils resonant"
-                : nearestDormantDistance < 2.6
-                  ? "E — awaken sigil"
-                  : "Follow the blue light";
+          if (course) {
+            const liveRaceTime =
+              courseStartedAt > 0
+                ? (courseFinishedAt || now) - courseStartedAt
+                : 0;
+            if (objectiveRef.current) {
+              objectiveRef.current.textContent =
+                courseRunPhase === "countdown"
+                  ? "Start gate"
+                  : formatRaceTime(liveRaceTime);
+            }
+            if (promptRef.current) {
+              promptRef.current.textContent =
+                courseRunPhase === "finish" || courseRunPhase === "menu"
+                  ? "Course complete"
+                  : `${Math.ceil(courseDistanceRemaining(course, playerZ))} m to goal`;
+            }
+          } else {
+            if (objectiveRef.current) {
+              objectiveRef.current.textContent =
+                activatedCount === beaconPositions.length
+                  ? "Veil stabilized"
+                  : `Frost sigils ${activatedCount} / ${beaconPositions.length}`;
+            }
+            if (promptRef.current) {
+              promptRef.current.textContent =
+                activatedCount === beaconPositions.length
+                  ? "All sigils resonant"
+                  : nearestDormantDistance < 2.6
+                    ? "E — awaken sigil"
+                    : "Follow the blue light";
+            }
           }
 
           uniforms[0] = canvas.width;
@@ -1126,7 +1299,9 @@ export function SnowveilScene() {
             const beacon = beaconPositions[index];
             const offset = 16 + index * 4;
             uniforms[offset] = beacon.x;
-            uniforms[offset + 1] = snowHeightAt(beacon.x, beacon.z) - 0.04;
+            uniforms[offset + 1] = course
+              ? -100
+              : snowHeightAt(beacon.x, beacon.z, terrainMode) - 0.04;
             uniforms[offset + 2] = beacon.z;
             uniforms[offset + 3] = beaconActive[index] ? 1 : 0;
           }
@@ -1148,6 +1323,10 @@ export function SnowveilScene() {
           uniforms[43] = landPose;
           uniforms.set(clothFlowX, 44);
           uniforms.set(clothFlowZ, 48);
+          uniforms[52] = course ? 1 : 0;
+          uniforms[53] = course?.startZ ?? 0;
+          uniforms[54] = course?.finishZ ?? 0;
+          uniforms[55] = course?.halfWidth ?? 0;
           activeDevice.queue.writeBuffer(uniformBuffer, 0, uniforms);
           if (!groundedForSnow || shouldUpdateSnowHistory) {
             previousStampX = playerX;
@@ -1222,7 +1401,9 @@ export function SnowveilScene() {
           pass.setBindGroup(0, beaconBindGroup);
           pass.setVertexBuffer(0, beaconVertexBuffer);
           pass.setIndexBuffer(beaconIndexBuffer, "uint32");
-          pass.drawIndexed(beaconGeometry.indices.length, beaconPositions.length);
+          if (!courseMode) {
+            pass.drawIndexed(beaconGeometry.indices.length, beaconPositions.length);
+          }
           pass.setPipeline(spindriftPipeline);
           pass.setBindGroup(0, spindriftBindGroup);
           pass.draw(4, spindriftParticleCount);
@@ -1299,7 +1480,7 @@ export function SnowveilScene() {
         ref={canvasRef}
         className="snowveil__canvas"
         data-ready={sceneState === "ready"}
-        aria-label="Interactive procedural snow landscape with marked rope-and-pole boundaries. Accelerate with W, carve with A and D, brake with S, jump with Space, cast with E, or use the onscreen touch controls. Drag to orbit and scroll to change distance."
+        aria-label="Interactive procedural snow landscape with marked rope-and-pole boundaries and an optional downhill race course. Accelerate with W, carve with A and D, brake with S, jump with Space, cast with E, or use the onscreen touch controls. Drag to orbit and scroll to change distance."
       />
 
       <div className="snowveil__veil" aria-hidden="true" />
@@ -1343,18 +1524,22 @@ export function SnowveilScene() {
       <header className="snowveil__brand" aria-label="Snowveil">
         <span className="snowveil__mark" aria-hidden="true" />
         <span className="snowveil__wordmark">Snowveil</span>
-        <span className="snowveil__status">Frost rite · WebGPU</span>
+        <span className="snowveil__status">
+          {activeCourse ? `${activeCourse.discipline} · WebGPU` : "Frost rite · WebGPU"}
+        </span>
       </header>
 
       {sceneState === "ready" && (
         <>
           <aside className="snowveil__objective" aria-live="polite">
-            <span className="snowveil__objective-label">Ritual</span>
+            <span className="snowveil__objective-label">
+              {activeCourse ? activeCourse.name : "Ritual"}
+            </span>
             <span ref={objectiveRef} className="snowveil__objective-state">
-              Frost sigils 0 / 3
+              {activeCourse ? "Start gate" : "Frost sigils 0 / 3"}
             </span>
             <span ref={promptRef} className="snowveil__objective-prompt">
-              Follow the blue light
+              {activeCourse ? "Stay between the markers" : "Follow the blue light"}
             </span>
           </aside>
 
@@ -1366,16 +1551,62 @@ export function SnowveilScene() {
             aria-live="polite"
             aria-hidden="true"
           >
-            <span>Slope boundary</span>
-            <strong>Carve inward</strong>
+            <span>{activeCourse ? "Course edge" : "Slope boundary"}</span>
+            <strong>{activeCourse ? "Carve back" : "Carve inward"}</strong>
           </div>
 
-          {riteComplete && (
+          {riteComplete && !activeCourse && (
             <div className="snowveil__completion" role="status" aria-live="polite">
               <span>Frost rite</span>
               <strong>Veil stabilized</strong>
               <small>Three sigils resonate</small>
             </div>
+          )}
+
+          {activeCourse && (
+            <div
+              ref={raceOverlayRef}
+              className="snowveil__race-overlay"
+              data-visible="false"
+              data-phase="countdown"
+              role="status"
+              aria-live="assertive"
+            >
+              <span>{activeCourse.name}</span>
+              <strong ref={raceCountdownRef}>3</strong>
+              <small ref={raceDetailRef}>Hold the fall line</small>
+            </div>
+          )}
+
+          {activeCourse && raceMenuVisible && raceResult !== null && (
+            <section
+              className="snowveil__race-menu"
+              role="dialog"
+              aria-modal="true"
+              aria-labelledby="snowveil-race-result"
+            >
+              <span>Course complete</span>
+              <strong id="snowveil-race-result">{formatRaceTime(raceResult)}</strong>
+              <small>{activeCourse.name} · clean finish</small>
+              <div>
+                <button
+                  type="button"
+                  onClick={() => {
+                    window.location.href = `${window.location.pathname}?course=${activeCourse.id}`;
+                  }}
+                >
+                  Retry course
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    window.location.href = window.location.pathname;
+                  }}
+                >
+                  Return to Frost Rite
+                </button>
+              </div>
+            </section>
           )}
 
           <button
@@ -1393,8 +1624,25 @@ export function SnowveilScene() {
             {audioEnabled ? "Audio on" : audioReady ? "Audio off" : "Enable audio"}
           </button>
 
+          <button
+            className="snowveil__course-switch"
+            type="button"
+            onClick={() => {
+              window.location.href = activeCourse
+                ? window.location.pathname
+                : `${window.location.pathname}?course=${DOWNLINE_COURSE.id}`;
+            }}
+          >
+            <span aria-hidden="true">{activeCourse ? "‹" : "↘"}</span>
+            {activeCourse ? "Frost Rite" : "Race Downline 01"}
+          </button>
+
           <footer className="snowveil__footer">
-            <span>W accelerate · A/D carve · S brake · Space jump · E pulse</span>
+            <span>
+              {activeCourse
+                ? "W accelerate · A/D carve · S brake · Space jump"
+                : "W accelerate · A/D carve · S brake · Space jump · E pulse"}
+            </span>
             <span className="snowveil__rule" aria-hidden="true" />
             <span ref={speedRef}>0.0 m/s</span>
             <span className="snowveil__rule" aria-hidden="true" />
