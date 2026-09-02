@@ -7,9 +7,10 @@ export function slopeAlongHeading(slopeX: number, slopeZ: number, heading: numbe
 export function snowboardTargetYaw(travelHeading: number, brakeAmount: number, steerAmount: number) {
   const brake = Math.max(0, Math.min(brakeAmount, 1));
   const steer = Math.max(-1, Math.min(steerAmount, 1));
-  // The board's local +X axis is its nose. It leads a normal carve by a small
-  // amount, but a brake pivots that long axis across the velocity vector.
-  return travelHeading - Math.PI / 2 + brake * Math.PI / 2 + steer * 0.18 * (1 - brake);
+  // The board's local +X axis is its nose. A committed edge needs enough lead
+  // to shape a real arc across the fall line; braking still pivots the long
+  // axis fully across the velocity vector instead of steering it.
+  return travelHeading - Math.PI / 2 + brake * Math.PI / 2 + steer * 0.32 * (1 - brake);
 }
 
 export function snowboardLongAxis(boardYaw: number) {
@@ -26,11 +27,31 @@ export function snowboardSkidAmount(boardYaw: number, travelHeading: number) {
 }
 
 export function snowboardTravelTurnRate(speed: number, brakeAmount: number) {
-  const normalizedSpeed = Math.max(0, Math.min(speed / 5.4, 1));
+  const normalizedSpeed = Math.max(0, Math.min(speed / 8.6, 1));
   const brake = Math.max(0, Math.min(brakeAmount, 1));
-  // The nose can pull the velocity into a carve, while an intentional
-  // crosswise skid preserves the old travel direction and sheds speed.
-  return (0.7 + normalizedSpeed * 3.8) * (1 - brake) * (1 - brake);
+  // A loaded edge pulls velocity into the board nose quickly enough for linked
+  // piste turns. An intentional crosswise skid preserves the old direction
+  // and sheds speed instead of becoming an overpowered brake-turn.
+  return (1 + normalizedSpeed * 4.75) * (1 - brake) * (1 - brake);
+}
+
+export function snowboardSteerResponseRate(currentSteer: number, targetSteer: number) {
+  const current = Math.max(-1, Math.min(currentSteer, 1));
+  const target = Math.max(-1, Math.min(targetSteer, 1));
+  const changingEdges =
+    Math.abs(current) > 0.08 &&
+    Math.abs(target) > 0.08 &&
+    Math.sign(current) !== Math.sign(target);
+
+  // Releasing one edge and establishing the other must be more immediate than
+  // continuing to load an established carve, or alternating input feels stuck.
+  return changingEdges ? 15 : 9.5;
+}
+
+export function snowboardLinkedTurnTarget(elapsedSeconds: number, lateralOffset: number) {
+  const elapsed = Math.max(elapsedSeconds, 0);
+  const centering = Math.max(-0.16, Math.min(-lateralOffset * 0.045, 0.16));
+  return Math.sin(elapsed * 1.75) * 0.58 + centering;
 }
 
 export function snowboardContactAxes(edgeAmount: number) {

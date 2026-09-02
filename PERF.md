@@ -637,3 +637,22 @@ The fixed target is exported at an honestly labelled 1280×720 while the page
 shades the true 2560×1440 backing canvas. Ordinary play keeps adaptive
 resolution enabled. Browser diagnostics across start, full race, result, retry,
 hub return, and hub-to-course switch contained no warning or GPU error.
+
+## 2026-09-01 — linked-turn controller cost
+
+The control correction changes scalar constants and adds one sign comparison
+when input changes edge. The deterministic acceptance route adds one sine and a
+bounded lateral-centering term per frame only when `linkedTurns` is explicitly
+present. Normal play adds no draw, render pass, texture, sampler, buffer,
+dispatch, geometry rebuild, dependency, or allocation.
+
+| Clean single-tab state | Observed HUD | Result |
+| --- | ---: | --- |
+| linked turn at 00:01.03, 1280×720 | 60 FPS · P95 17.4 ms · 100% | retained first arc |
+| linked turn at 00:02.19, 1280×720 | 60 FPS · P95 17.3 ms · 100% | retained edge change |
+| linked turn at 00:05.79, 1280×720 | 60 FPS · P95 17.2 ms · 1% 57 · 100% | retained late-course arc |
+| completed linked-turn route, 1280×720 | 59 FPS · P95 17.6 ms · 100% | retained result flow |
+
+Browser diagnostics were empty after the complete run. These are observed HUD
+readings from the ordinary adaptive path, not a claim that controller arithmetic
+improves GPU performance.

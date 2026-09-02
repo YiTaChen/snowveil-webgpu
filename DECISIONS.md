@@ -820,3 +820,35 @@ against snow. Real resort logos, copied signs, downloaded flag textures, and
 third-party course models were rejected. The course adds one static indexed draw,
 one shared uniform vector, and no image, texture, sample, animation, physics
 dependency, or per-frame geometry allocation.
+
+## 2026-09-01 — Linked turns must cross the fall line, not imitate lane changes
+
+AASI snowboard standards require a purposeful centre-of-mass move across the
+board that releases the old edge and engages the new one; its riding tasks also
+place carved and skidded turns across the fall line and assess repeated shapes
+inside a corridor. U.S. Ski & Snowboard's official Snowboard Turn Shape
+Progression provides the matching moving reference. PSIA alpine and Japanese
+national instruction were used only as secondary checks for smooth transition,
+edge loading, and continuous left-right positioning. No frame, footage, text,
+logo, model, texture, animation, or code from any source entered the project.
+
+The previous controller allowed only `0.18` radians of board-nose lead. Combined
+with its capped direction-follow rate, a 9.3 m/s Downline run had an approximate
+11-metre steady turn radius inside a 13.3-metre usable corridor. It could change
+lanes, but it could not comfortably complete alternating arcs. That matched the
+reported straight-chute feel and was rejected.
+
+The retained model raises committed carve lead to `0.32` radians, shapes
+direction following across the full 8.6 m/s designed input range, and releases
+to the opposite edge at a faster response rate than it continues loading the
+same edge. Full input now estimates a 4.7-metre high-speed radius while braking
+still drives a crosswise skid and suppresses carve redirection. The rider,
+upper-body look, contact ellipse, track, powder, and cloth continue to consume
+the same board and travel state, so the stronger turn remains visible rather
+than becoming a hidden lateral force.
+
+`?course=downline&linkedTurns` is a deterministic acceptance route, not a
+separate physics scene. It alternates a bounded target heading through the same
+input smoothing, board yaw, velocity following, terrain, boundary, and finish
+systems. A 120 Hz controller test proves both sides exceed 1.5 metres while the
+entire linked sequence stays inside the existing 6.65-metre half-corridor.

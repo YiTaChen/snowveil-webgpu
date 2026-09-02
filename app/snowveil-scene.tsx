@@ -43,6 +43,8 @@ import {
   slopeAlongHeading,
   snowboardBrakeDrag,
   snowboardSkidAmount,
+  snowboardLinkedTurnTarget,
+  snowboardSteerResponseRate,
   snowboardTargetYaw,
   snowboardTravelTurnRate,
   snowGravityAcceleration,
@@ -82,6 +84,7 @@ export function SnowveilScene() {
     const evidenceMode = query.has("evidence");
     const captureMode = query.has("capture");
     const demoMode = query.has("demo");
+    const linkedTurnsProbe = query.has("linkedTurns");
     const fallbackMode = query.has("fallback");
     const boundaryProbe = query.has("boundary");
     const course = getSnowveilCourse(query.get("course"));
@@ -984,6 +987,9 @@ export function SnowveilScene() {
           const riteDemoMode = demoMode && !courseMode;
           const courseRaceActive = !course || courseRunPhase === "racing";
           const courseDemoActive = Boolean(course && demoMode && courseRunPhase === "racing");
+          const linkedTurnsActive = Boolean(
+            course && linkedTurnsProbe && courseRunPhase === "racing",
+          );
           const demoTargetIndex = riteDemoMode
             ? beaconActive.findIndex((isActive) => !isActive)
             : -1;
@@ -992,22 +998,33 @@ export function SnowveilScene() {
             ? Math.atan2(demoTarget.x - playerX, -(demoTarget.z - playerZ))
             : playerHeading;
           const courseDemoHeading = Math.max(-0.38, Math.min(0.38, -playerX * 0.075));
-          const steerInput = courseDemoActive
-            ? Math.max(-1, Math.min(1, angleDelta(courseDemoHeading, playerHeading) * 1.9))
-            : demoTarget
-              ? Math.max(-1, Math.min(1, angleDelta(demoHeading, playerHeading) * 1.8))
-              : courseRaceActive
-                ? manualSteer
-                : 0;
-          const throttleInput = courseDemoActive
-            ? 1
-            : demoTarget
-              ? 1
-              : riteDemoMode
-                ? 0
-                : courseRaceActive
-                  ? manualThrottle
-                  : 0;
+          const linkedTurnHeading = snowboardLinkedTurnTarget(
+            courseStartedAt > 0 ? (now - courseStartedAt) / 1000 : 0,
+            playerX,
+          );
+          let steerInput = courseRaceActive ? manualSteer : 0;
+          let throttleInput = courseRaceActive ? manualThrottle : 0;
+          if (linkedTurnsActive) {
+            steerInput = Math.max(
+              -1,
+              Math.min(1, angleDelta(linkedTurnHeading, playerHeading) * 3.2),
+            );
+            throttleInput = 1;
+          } else if (courseDemoActive) {
+            steerInput = Math.max(
+              -1,
+              Math.min(1, angleDelta(courseDemoHeading, playerHeading) * 1.9),
+            );
+            throttleInput = 1;
+          } else if (demoTarget) {
+            steerInput = Math.max(
+              -1,
+              Math.min(1, angleDelta(demoHeading, playerHeading) * 1.8),
+            );
+            throttleInput = 1;
+          } else if (riteDemoMode) {
+            throttleInput = 0;
+          }
           const brakeInput = riteDemoMode
             ? demoTarget
               ? 0
@@ -1023,7 +1040,9 @@ export function SnowveilScene() {
                 ? 8.4
                 : 5.4;
           boardSkid += (brakeInput - boardSkid) * (1 - Math.exp(-delta * (brakeInput > 0 ? 11 : 6.5)));
-          steerVisual += (steerInput - steerVisual) * (1 - Math.exp(-delta * 8.5));
+          const steerResponseRate = snowboardSteerResponseRate(steerVisual, steerInput);
+          steerVisual +=
+            (steerInput - steerVisual) * (1 - Math.exp(-delta * steerResponseRate));
           const groundedBeforeMotion = jumpHeight <= 0.018;
           const targetBoardYaw = snowboardTargetYaw(playerHeading, boardSkid, steerVisual);
           playerBoardYaw += angleDelta(targetBoardYaw, playerBoardYaw) * (1 - Math.exp(-delta * 11));

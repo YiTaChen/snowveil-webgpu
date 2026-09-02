@@ -63,7 +63,10 @@ straight descent with a rendered checker start, marked side ropes, a checker
 goal line, finish gate, flags, live timer, three-second result reveal, retry,
 and return-to-Frost-Rite flow. `?course=downline&demo` runs the same course and
 physics with deterministic acceleration for end-to-end QA; it does not replace
-the actual start, finish, collision, or timing rules.
+the actual start, finish, collision, or timing rules. Use
+`?course=downline&linkedTurns` for the controller acceptance route: it runs the
+same physical rider through repeated left-right edge changes and full S-shaped
+turns rather than steering down the centre line.
 
 ## Originality and licensing
 
@@ -186,6 +189,10 @@ Original project code is released under the [MIT License](./LICENSE).
     only its groomed fall line, corridor boundary, checker gates, race timing,
     and result flow are course-specific, establishing the extension point for
     later race disciplines without a second scene implementation.
+33. Linked-turn control pass — a stronger but still carve-derived nose lead,
+    speed-shaped direction following, and faster opposite-edge release let the
+    rider cross the fall line repeatedly; a deterministic S-turn route verifies
+    the same controller inside the existing Downline corridor.
 
 The current build is a polished playable vertical slice, not a claim of a full
 AAA production or a hundred-million-particle physical simulation. See

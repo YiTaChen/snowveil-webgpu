@@ -876,3 +876,32 @@ inside the 1280×720 exported frame. The mid-course stress reading was 41 FPS,
 P95 33.9 ms, one-percent low 20, and 100% render scale; ordinary play retains
 the established 84–100% adaptive-resolution path. This remains a quality-review
 limit rather than a native-1440p 60 FPS claim.
+
+### 2026-09-01 — linked-turn controller checkpoint
+
+The official motion review and the implementation review found the same defect:
+the old 10.3-degree board lead could produce only shallow lane changes at race
+speed. The retained 18.3-degree edge commitment and speed-shaped direction
+following reduce the calculated 8.6 m/s full-carve radius from roughly 11 metres
+to 4.7 metres. Opposite input additionally receives a faster release response,
+so left-to-right transition does not spend most of the next turn unwinding the
+previous edge.
+
+A same-session captured-frame review sampled the real WebGPU route at race times
+00:01.03, 00:02.19, 00:03.41, and 00:05.79. Board nose, upper-body look,
+directional powder, and the persistent contact wake reverse together, and both
+side ropes remain ahead of the rider rather than becoming collision feedback.
+The route crossed the real finish at 00:08.09 and opened the established result
+dialog. Browser diagnostics contained no warning, WGSL validation, WebGPU, or
+device error.
+
+The ordinary 1280×720 presentation held 60 FPS with P95 between 17.2 and 17.6
+ms at 100% render scale during the sampled turns. Thirty-nine automated tests
+pass; the new integration test simulates 8.1 seconds at 120 Hz, crosses at least
+1.5 metres to both sides of the fall line, and remains within the existing
+6.65-metre usable half-width. This verifies a controllable linked-turn envelope,
+not a claim of a full musculoskeletal skier or deformable snowboard simulation.
+
+The formal skiing videos and guides were reference-only. All rendered frames,
+controller code, geometry, rider motion, tracks, particles, and audio remain
+original project output.

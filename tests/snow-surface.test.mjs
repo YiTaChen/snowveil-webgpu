@@ -14,7 +14,9 @@ import {
   snowboardBrakeDrag,
   snowboardContactAxes,
   snowboardLongAxis,
+  snowboardLinkedTurnTarget,
   snowboardSkidAmount,
+  snowboardSteerResponseRate,
   snowboardTargetYaw,
   snowboardTravelTurnRate,
   snowGravityAcceleration,
@@ -76,9 +78,79 @@ test("the nose leads a carve while a crosswise brake stops redirecting travel", 
   const carveYaw = snowboardTargetYaw(heading, 0, 1);
 
   assert.ok(carveYaw > straightYaw);
-  assert.ok(snowboardSkidAmount(carveYaw, heading) < 0.12);
+  assert.ok(snowboardSkidAmount(carveYaw, heading) < 0.22);
   assert.ok(snowboardTravelTurnRate(5.4, 0) > snowboardTravelTurnRate(1, 0));
   assert.equal(snowboardTravelTurnRate(5.4, 1), 0);
+});
+
+test("a committed carve fits a linked turn inside the Downline corridor", () => {
+  const speed = 8.6;
+  const heading = 0;
+  const fullCarveYaw = snowboardTargetYaw(heading, 0, 1);
+  const carveAngle = Math.abs(fullCarveYaw - (heading - Math.PI / 2));
+  const angularSpeed = carveAngle * snowboardTravelTurnRate(speed, 0);
+  const estimatedRadius = speed / angularSpeed;
+
+  assert.ok(carveAngle > 0.3 && carveAngle < 0.34);
+  assert.ok(estimatedRadius > 4 && estimatedRadius < 5.5);
+});
+
+test("opposite input releases and changes edge faster than a held carve", () => {
+  const heldRate = snowboardSteerResponseRate(0.7, 1);
+  const edgeChangeRate = snowboardSteerResponseRate(0.7, -1);
+
+  assert.equal(heldRate, 9.5);
+  assert.equal(edgeChangeRate, 15);
+  assert.ok(edgeChangeRate > heldRate);
+});
+
+test("linked-turn target alternates across the fall line and recentres near an edge", () => {
+  const firstSide = snowboardLinkedTurnTarget(Math.PI / (2 * 1.75), 0);
+  const otherSide = snowboardLinkedTurnTarget((Math.PI * 3) / (2 * 1.75), 0);
+  const centredFromRightEdge = snowboardLinkedTurnTarget(0, 5);
+
+  assert.ok(firstSide > 0.57);
+  assert.ok(otherSide < -0.57);
+  assert.ok(centredFromRightEdge < 0);
+});
+
+test("the linked-turn controller completes repeated S turns without touching course ropes", () => {
+  const delta = 1 / 120;
+  const speed = 8.6;
+  let lateralPosition = 0;
+  let heading = 0;
+  let boardYaw = snowboardTargetYaw(heading, 0, 0);
+  let steer = 0;
+  let minimumLateralPosition = 0;
+  let maximumLateralPosition = 0;
+  let crossedLeft = false;
+  let crossedRight = false;
+
+  const angleDelta = (target, current) =>
+    Math.atan2(Math.sin(target - current), Math.cos(target - current));
+
+  for (let elapsed = 0; elapsed < 8.1; elapsed += delta) {
+    const targetHeading = snowboardLinkedTurnTarget(elapsed, lateralPosition);
+    const steerInput = Math.max(-1, Math.min(1, angleDelta(targetHeading, heading) * 3.2));
+    const steerRate = snowboardSteerResponseRate(steer, steerInput);
+    steer += (steerInput - steer) * (1 - Math.exp(-delta * steerRate));
+
+    const targetBoardYaw = snowboardTargetYaw(heading, 0, steer);
+    boardYaw += angleDelta(targetBoardYaw, boardYaw) * (1 - Math.exp(-delta * 11));
+    heading +=
+      angleDelta(boardYaw + Math.PI / 2, heading) *
+      (1 - Math.exp(-delta * snowboardTravelTurnRate(speed, 0)));
+    lateralPosition += Math.sin(heading) * speed * delta;
+
+    minimumLateralPosition = Math.min(minimumLateralPosition, lateralPosition);
+    maximumLateralPosition = Math.max(maximumLateralPosition, lateralPosition);
+    crossedLeft ||= lateralPosition < -1.5;
+    crossedRight ||= lateralPosition > 1.5;
+  }
+
+  assert.ok(crossedLeft && crossedRight);
+  assert.ok(minimumLateralPosition > -6.65);
+  assert.ok(maximumLateralPosition < 6.65);
 });
 
 test("edge pressure turns the flat long ellipse into a narrow contact strip", () => {
