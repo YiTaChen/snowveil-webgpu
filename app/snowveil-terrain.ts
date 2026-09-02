@@ -1,3 +1,13 @@
+import {
+  RIDGE_RUN_FINISH_Z,
+  RIDGE_RUN_HALF_WIDTH,
+  RIDGE_RUN_JUMPS,
+  RIDGE_RUN_MOUNDS,
+  RIDGE_RUN_START_Z,
+  type SnowCourseJumpFeature,
+  type SnowCourseMoundFeature,
+} from "./snowveil-course-features.ts";
+
 const fract = (value: number) => value - Math.floor(value);
 
 const smoothstep = (edge0: number, edge1: number, value: number) => {
@@ -48,7 +58,33 @@ function fbm(x: number, y: number) {
   return result;
 }
 
-export type SnowTerrainMode = "rite" | "downline";
+export type SnowTerrainMode = "rite" | "downline" | "ridge-run";
+
+export function snowTerrainModeCode(mode: SnowTerrainMode) {
+  if (mode === "downline") return 1;
+  if (mode === "ridge-run") return 2;
+  return 0;
+}
+
+function snowMoundHeightAt(x: number, z: number, mound: SnowCourseMoundFeature) {
+  const localX = (x - mound.x) / mound.radiusX;
+  const localZ = (z - mound.z) / mound.radiusZ;
+  return Math.exp(-(localX * localX + localZ * localZ) * 1.35) * mound.height;
+}
+
+function snowKickerHeightAt(x: number, z: number, jump: SnowCourseJumpFeature) {
+  const lateral = 1 - smoothstep(
+    jump.halfWidth,
+    jump.halfWidth + 1.25,
+    Math.abs(x - jump.x),
+  );
+  const approach = Math.max(
+    0,
+    Math.min(1, (jump.lipZ + jump.approachLength - z) / jump.approachLength),
+  );
+  const lipDrop = smoothstep(jump.lipZ - jump.dropLength, jump.lipZ, z);
+  return Math.pow(approach, 1.45) * lipDrop * jump.height * lateral;
+}
 
 function baseSnowHeightAt(x: number, z: number) {
   const windX = 0.82 / Math.hypot(0.82, 0.57);
@@ -93,11 +129,46 @@ function baseSnowHeightAt(x: number, z: number) {
  */
 export function snowHeightAt(x: number, z: number, mode: SnowTerrainMode = "rite") {
   const baseHeight = baseSnowHeightAt(x, z);
-  if (mode !== "downline") return baseHeight;
+  if (mode === "rite") return baseHeight;
+
+  if (mode === "ridge-run") {
+    const lateralBlend =
+      1 - smoothstep(RIDGE_RUN_HALF_WIDTH + 0.9, RIDGE_RUN_HALF_WIDTH + 8.5, Math.abs(x));
+    const longitudinalBlend =
+      smoothstep(RIDGE_RUN_FINISH_Z - 11, RIDGE_RUN_FINISH_Z - 6, z) *
+      (1 - smoothstep(RIDGE_RUN_START_Z + 5, RIDGE_RUN_START_Z + 13, z));
+    const brokenGroom =
+      Math.sin(x * 0.44 + z * 0.13) * 0.065 +
+      Math.sin(x * 0.19 - z * 0.57 + 1.8) * 0.045 +
+      Math.sin(x * 0.91 + z * 0.33 - 0.7) * 0.026;
+    const windRuts = Math.sin(z * 0.83 + Math.sin(x * 0.37) * 1.6) * 0.03;
+    const naturalRollers =
+      Math.exp(-Math.pow((z - 31) / 5.8, 2)) * 0.24 -
+      Math.exp(-Math.pow((z - 1) / 6.4, 2)) * 0.13 +
+      Math.exp(-Math.pow((z + 34) / 5.2, 2)) * 0.19;
+    const mounds = RIDGE_RUN_MOUNDS.reduce(
+      (height, mound) => height + snowMoundHeightAt(x, z, mound),
+      0,
+    );
+    const kickers = RIDGE_RUN_JUMPS.reduce(
+      (height, jump) => height + snowKickerHeightAt(x, z, jump),
+      0,
+    );
+    const courseHeight =
+      -1.05 +
+      (z - RIDGE_RUN_FINISH_Z) * 0.115 +
+      brokenGroom +
+      windRuts +
+      naturalRollers +
+      mounds +
+      kickers;
+    const blend = lateralBlend * longitudinalBlend;
+    return baseHeight + (courseHeight - baseHeight) * blend;
+  }
 
   const lateralBlend = 1 - smoothstep(8.2, 17.5, Math.abs(x));
   const longitudinalBlend =
-    smoothstep(-45, -39, z) * (1 - smoothstep(36, 45, z));
+    smoothstep(-43, -38, z) * (1 - smoothstep(35, 43, z));
   const groomedUndulation =
     Math.sin(x * 0.31 + z * 0.038) * 0.055 + Math.sin(x * 0.12 - z * 0.021) * 0.035;
   const courseHeight = -0.68 + (z + 32) * 0.13 + groomedUndulation;

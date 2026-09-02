@@ -905,3 +905,41 @@ not a claim of a full musculoskeletal skier or deformable snowboard simulation.
 The formal skiing videos and guides were reference-only. All rendered frames,
 controller code, geometry, rider motion, tracks, particles, and audio remain
 original project output.
+
+### 2026-09-01 — Ridge Run 02 natural-freestyle checkpoint
+
+A same-session captured-frame review ran the real WebGPU course from count-in
+through both kicker lips, both landings, the finish line, the three-second
+result delay, retry, hub return, and hub-to-course switch. The opening and
+mid-course frames show that the fall line is not a planar chute: long wind
+ridges, shallow cross-ruts, broad rollers, and unequal side mounds catch the low
+sun at several scales while preserving a readable route. Coral ropes and paired
+lip flags stay visible before the rider reaches each feature.
+
+The first and second airborne frames were triggered by crossing the actual
+terrain lips at race speed. In both, the board separates from the crest, the
+rider enters the existing air pose, and the HUD reports physical clearance. The
+second frame also keeps an offset snow mound and the goal gate readable beyond
+the landing. A separate finish frame confirms the checker line and goal hardware;
+the delayed dialog exposes both `Retry course` and `Return to Frost Rite`.
+
+Defects inspected in the captured frames included a possible flat-course read,
+snow-on-snow mound loss, a visually disconnected mesh ramp, hidden lip timing,
+terrain-following pseudo-air, clipped boundary hardware, and result-flow
+regression. The retained multi-scale height field, off-centre mound placement,
+terrain-native kickers, paired lip markers, world-space airborne integration,
+and reused dialog resolve those defects. The low start/finish checks remain a
+deliberately graphic race marking rather than a photoreal resort texture.
+
+The ordinary 1280×720 path held 60 FPS after warm-up, with observed P95 between
+17.2 and 17.7 ms at 100% render scale; transient one-percent-low readings ranged
+from 29 to 57 while the preview tab initialized and captured frames. Browser
+diagnostics contained no warning, WGSL validation, WebGPU, or device error.
+Forty-four automated tests cover course registration, rough terrain and mound
+amplitudes, kicker lip/drop shape, lane and speed gating, shared CPU/WGSL
+feature data, world-space airborne motion over rising and falling ground,
+geometry reuse, navigation, and the existing world systems.
+
+All reviewed terrain, geometry, physics, shaders, UI, and audio are original
+project code. No terrain scan, DEM, height map, model, resort branding, texture,
+video frame, animation, or recorded sound was imported.

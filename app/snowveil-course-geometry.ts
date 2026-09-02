@@ -101,6 +101,48 @@ export function createSnowveilCourseGeometry(course: SnowveilCourse) {
     }
   }
 
+  const addJumpMarker = (x: number, z: number, direction: number) => {
+    const ground = courseHeight(x, z) - 0.05;
+    builder.addTaperedTube(
+      [x, ground - 0.12, z],
+      [x, ground + 1.28, z],
+      0.047,
+      0.038,
+      COURSE_MATERIAL.boundaryPole,
+    );
+    builder.addTaperedTube(
+      [x, ground + 0.66, z],
+      [x, ground + 0.83, z],
+      0.055,
+      0.052,
+      COURSE_MATERIAL.reflector,
+    );
+    builder.addTaperedTube(
+      [x, ground + 1.28, z],
+      [x, ground + 1.37, z],
+      0.05,
+      0.012,
+      COURSE_MATERIAL.snowCap,
+    );
+    const flagX = x + direction * 0.035;
+    builder.addPanel(
+      [
+        [flagX, ground + 1.18, z - 0.07],
+        [flagX + direction * 0.58, ground + 1.1, z - 0.07],
+        [flagX + direction * 0.42, ground + 0.76, z - 0.07],
+        [flagX, ground + 0.88, z - 0.07],
+      ],
+      [0, 0, 1],
+      COURSE_MATERIAL.pennant,
+    );
+  };
+
+  for (const jump of course.jumps) {
+    const markerOffset = jump.halfWidth + 0.7;
+    addJumpMarker(jump.x - markerOffset, jump.lipZ + 0.42, -1);
+    addJumpMarker(jump.x + markerOffset, jump.lipZ + 0.42, 1);
+  }
+
   const addCheckeredLine = (z: number) => {
     const columns = 12;
     const rows = 2;

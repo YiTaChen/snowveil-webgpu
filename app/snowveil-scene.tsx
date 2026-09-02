@@ -14,6 +14,7 @@ import {
 import {
   snowHeightAt,
   snowSurfaceAt,
+  snowTerrainModeCode,
   type SnowTerrainMode,
 } from "./snowveil-terrain";
 import { createRiderGeometry } from "./snowveil-rider-geometry";
@@ -24,13 +25,15 @@ import { createSnowveilCourseGeometry } from "./snowveil-course-geometry";
 import {
   courseDistanceRemaining,
   crossedCourseFinish,
-  DOWNLINE_COURSE,
+  crossedCourseJump,
   formatRaceTime,
   getSnowveilCourse,
+  SNOWVEIL_COURSES,
   resolveCourseBoundary,
 } from "./snowveil-course";
 import { createSnowveilAudio, type SnowveilAudio } from "./snowveil-audio";
 import {
+  advanceSnowboardAirborne,
   decayLandingCompression,
   downhillSpeedHeadroom,
   landingImpactForVelocity,
@@ -194,6 +197,7 @@ export function SnowveilScene() {
     let courseStartedAt = 0;
     let courseFinishedAt = 0;
     let courseMenuAt = 0;
+    let previousCourseX = playerX;
     let previousCourseZ = playerZ;
     const pressedKeys = new Set<string>();
     const keyPulseUntil = new Map<string, number>();
@@ -922,7 +926,7 @@ export function SnowveilScene() {
               raceCountdownRef.current.textContent = `${Math.max(1, Math.ceil(remaining / 1000))}`;
             }
             if (raceDetailRef.current) {
-              raceDetailRef.current.textContent = "Hold the fall line";
+              raceDetailRef.current.textContent = course.startPrompt;
             }
             playerSpeed = 0;
             if (remaining <= 0) {
@@ -1121,6 +1125,8 @@ export function SnowveilScene() {
             delta,
           );
 
+          const previousGroundHeight = playerSurface.height;
+          previousCourseX = playerX;
           previousCourseZ = playerZ;
           playerX += forwardX * playerSpeed * delta;
           playerZ += forwardZ * playerSpeed * delta;
@@ -1144,6 +1150,7 @@ export function SnowveilScene() {
           playerZ = boundaryResolution.z;
           playerHeading = boundaryResolution.heading;
           playerSpeed = boundaryResolution.speed;
+          const nextPlayerSurface = snowSurfaceAt(playerX, playerZ, 0.36, terrainMode);
           if (boundaryRef.current) {
             const visible = boundaryResolution.approach > 0.08;
             const visibleValue = visible ? "true" : "false";
@@ -1166,16 +1173,41 @@ export function SnowveilScene() {
             playerSpeed *= 0.72;
           }
 
-          const wasAirborne = jumpHeight > 0.001;
-          if (jumpVelocity > 0 || wasAirborne) {
-            jumpVelocity -= 10.8 * delta;
-            jumpHeight += jumpVelocity * delta;
-            if (jumpHeight <= 0) {
-              landingCompression = Math.max(landingCompression, landingImpactForVelocity(jumpVelocity));
-              jumpHeight = 0;
-              jumpVelocity = 0;
-              if (wasAirborne) audio.land();
-            }
+          const crossedJump =
+            course && courseRunPhase === "racing" && jumpHeight <= 0.001
+              ? crossedCourseJump(
+                  course,
+                  previousCourseX,
+                  previousCourseZ,
+                  playerX,
+                  playerZ,
+                  playerSpeed,
+                )
+              : null;
+          if (crossedJump) {
+            takeoffSlopeX = playerSlopeX;
+            takeoffSlopeZ = playerSlopeZ;
+            jumpVelocity =
+              crossedJump.launchVelocity +
+              Math.min(0.55, Math.max(0, playerSpeed - crossedJump.minimumSpeed) * 0.1);
+            audio.jump();
+          }
+
+          const airborneStep = advanceSnowboardAirborne(
+            previousGroundHeight,
+            nextPlayerSurface.height,
+            jumpHeight,
+            jumpVelocity,
+            delta,
+          );
+          jumpHeight = airborneStep.jumpHeight;
+          jumpVelocity = airborneStep.jumpVelocity;
+          if (airborneStep.landed) {
+            landingCompression = Math.max(
+              landingCompression,
+              landingImpactForVelocity(airborneStep.impactVelocity),
+            );
+            audio.land();
           }
 
           const animationState = riderAnimationState(
@@ -1203,7 +1235,7 @@ export function SnowveilScene() {
                 ? `${playerSpeed.toFixed(1)} m/s · AIR ${jumpHeight.toFixed(1)} m`
                 : `${playerSpeed.toFixed(1)} m/s`;
           }
-          playerSurface = snowSurfaceAt(playerX, playerZ, 0.36, terrainMode);
+          playerSurface = nextPlayerSurface;
           const slopeBlend = 1 - Math.exp(-delta * 7.5);
           playerSlopeX += (playerSurface.slopeX - playerSlopeX) * slopeBlend;
           playerSlopeZ += (playerSurface.slopeZ - playerSlopeZ) * slopeBlend;
@@ -1342,7 +1374,7 @@ export function SnowveilScene() {
           uniforms[43] = landPose;
           uniforms.set(clothFlowX, 44);
           uniforms.set(clothFlowZ, 48);
-          uniforms[52] = course ? 1 : 0;
+          uniforms[52] = snowTerrainModeCode(terrainMode);
           uniforms[53] = course?.startZ ?? 0;
           uniforms[54] = course?.finishZ ?? 0;
           uniforms[55] = course?.halfWidth ?? 0;
@@ -1593,7 +1625,7 @@ export function SnowveilScene() {
             >
               <span>{activeCourse.name}</span>
               <strong ref={raceCountdownRef}>3</strong>
-              <small ref={raceDetailRef}>Hold the fall line</small>
+              <small ref={raceDetailRef}>{activeCourse.startPrompt}</small>
             </div>
           )}
 
@@ -1643,18 +1675,34 @@ export function SnowveilScene() {
             {audioEnabled ? "Audio on" : audioReady ? "Audio off" : "Enable audio"}
           </button>
 
-          <button
-            className="snowveil__course-switch"
-            type="button"
-            onClick={() => {
-              window.location.href = activeCourse
-                ? window.location.pathname
-                : `${window.location.pathname}?course=${DOWNLINE_COURSE.id}`;
-            }}
-          >
-            <span aria-hidden="true">{activeCourse ? "‹" : "↘"}</span>
-            {activeCourse ? "Frost Rite" : "Race Downline 01"}
-          </button>
+          <nav className="snowveil__course-nav" aria-label="Scene and course selection">
+            {activeCourse ? (
+              <button
+                className="snowveil__course-switch"
+                type="button"
+                onClick={() => {
+                  window.location.href = window.location.pathname;
+                }}
+              >
+                <span aria-hidden="true">‹</span>
+                Frost Rite
+              </button>
+            ) : (
+              SNOWVEIL_COURSES.map((courseOption, index) => (
+                <button
+                  className="snowveil__course-switch"
+                  type="button"
+                  key={courseOption.id}
+                  onClick={() => {
+                    window.location.href = `${window.location.pathname}?course=${courseOption.id}`;
+                  }}
+                >
+                  <span aria-hidden="true">{index === 0 ? "↘" : "⌁"}</span>
+                  Race {courseOption.name}
+                </button>
+              ))
+            )}
+          </nav>
 
           <footer className="snowveil__footer">
             <span>

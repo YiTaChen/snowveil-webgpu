@@ -51,7 +51,8 @@ test("Space drives a physical airborne state instead of a secondary action", asy
 
   assert.match(sceneSource, /code === "Space"[^\n]+jumpHeight <= 0\.001/);
   assert.match(sceneSource, /jumpVelocity = 3\.85/);
-  assert.match(sceneSource, /jumpVelocity -= 10\.8 \* delta/);
+  assert.match(sceneSource, /advanceSnowboardAirborne\(/);
+  assert.match(sceneSource, /crossedCourseJump\(/);
   assert.match(sceneSource, /AIR \$\{jumpHeight\.toFixed\(1\)\} m/);
   assert.match(sceneSource, /const fallbackMode = query\.has\("fallback"\)/);
   assert.match(sceneSource, /if \(fallbackMode \|\| !webgpu\)/);
@@ -94,7 +95,8 @@ test("the scene routes into a reusable race course and exposes the complete resu
   assert.match(sceneSource, /createSnowveilCourseGeometry\(course\)/);
   assert.match(sceneSource, /resolveCourseBoundary\(/);
   assert.match(sceneSource, /crossedCourseFinish\(/);
-  assert.match(sceneSource, /Race Downline 01/);
+  assert.match(sceneSource, /SNOWVEIL_COURSES\.map/);
+  assert.match(sceneSource, /Race \{courseOption\.name\}/);
   assert.match(sceneSource, /Retry course/);
   assert.match(sceneSource, /Return to Frost Rite/);
   assert.match(sceneSource, /courseCountdownEndsAt === 0/);

@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import test from "node:test";
 
 import {
+  advanceSnowboardAirborne,
   decayLandingCompression,
   downhillSpeedHeadroom,
   landingImpactForVelocity,
@@ -58,6 +59,17 @@ test("landing response follows downward impact and decays without overshoot", ()
   assert.ok(firstFrame < 1 && firstFrame > 0);
   assert.ok(laterFrame < firstFrame && laterFrame > 0);
   assert.equal(decayLandingCompression(0.7, -1), 0.7);
+});
+
+test("airborne integration keeps a world-space arc over falling and rising terrain", () => {
+  const overDrop = advanceSnowboardAirborne(4, 3.5, 0, 3.6, 1 / 60);
+  const overRise = advanceSnowboardAirborne(4, 4.6, 0.45, -0.5, 1 / 60);
+
+  assert.ok(overDrop.jumpHeight > 0.5);
+  assert.ok(overDrop.jumpVelocity < 3.6);
+  assert.equal(overDrop.landed, false);
+  assert.equal(overRise.landed, true);
+  assert.ok(overRise.impactVelocity < 0);
 });
 
 test("snowboard points along travel until braking turns it across the velocity", () => {

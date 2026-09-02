@@ -1,4 +1,11 @@
 import type { SnowTerrainMode } from "./snowveil-terrain.ts";
+import {
+  RIDGE_RUN_FINISH_Z,
+  RIDGE_RUN_HALF_WIDTH,
+  RIDGE_RUN_JUMPS,
+  RIDGE_RUN_START_Z,
+  type SnowCourseJumpFeature,
+} from "./snowveil-course-features.ts";
 
 export type SnowveilCourse = {
   id: string;
@@ -11,6 +18,8 @@ export type SnowveilCourse = {
   halfWidth: number;
   boundaryInset: number;
   resultDelaySeconds: number;
+  startPrompt: string;
+  jumps: readonly SnowCourseJumpFeature[];
 };
 
 export const DOWNLINE_COURSE: SnowveilCourse = {
@@ -24,9 +33,29 @@ export const DOWNLINE_COURSE: SnowveilCourse = {
   halfWidth: 7.2,
   boundaryInset: 0.55,
   resultDelaySeconds: 3,
+  startPrompt: "Hold the fall line",
+  jumps: [],
 };
 
-export const SNOWVEIL_COURSES: readonly SnowveilCourse[] = [DOWNLINE_COURSE];
+export const RIDGE_RUN_COURSE: SnowveilCourse = {
+  id: "ridge-run",
+  name: "Ridge Run 02",
+  discipline: "Natural freestyle",
+  terrainMode: "ridge-run",
+  startX: 0,
+  startZ: RIDGE_RUN_START_Z,
+  finishZ: RIDGE_RUN_FINISH_Z,
+  halfWidth: RIDGE_RUN_HALF_WIDTH,
+  boundaryInset: 0.65,
+  resultDelaySeconds: 3,
+  startPrompt: "Read the rollers",
+  jumps: RIDGE_RUN_JUMPS,
+};
+
+export const SNOWVEIL_COURSES: readonly SnowveilCourse[] = [
+  DOWNLINE_COURSE,
+  RIDGE_RUN_COURSE,
+];
 
 export function getSnowveilCourse(id: string | null) {
   return SNOWVEIL_COURSES.find((course) => course.id === id) ?? null;
@@ -53,6 +82,32 @@ export function courseDistanceRemaining(course: SnowveilCourse, z: number) {
 
 export function crossedCourseFinish(course: SnowveilCourse, previousZ: number, z: number) {
   return previousZ > course.finishZ && z <= course.finishZ;
+}
+
+export function crossedCourseJump(
+  course: SnowveilCourse,
+  previousX: number,
+  previousZ: number,
+  x: number,
+  z: number,
+  speed: number,
+) {
+  const forwardDistance = previousZ - z;
+  if (forwardDistance <= 0) return null;
+
+  for (const jump of course.jumps) {
+    if (previousZ <= jump.lipZ || z > jump.lipZ || speed < jump.minimumSpeed) {
+      continue;
+    }
+    const crossingProgress = Math.max(
+      0,
+      Math.min(1, (previousZ - jump.lipZ) / forwardDistance),
+    );
+    const crossingX = previousX + (x - previousX) * crossingProgress;
+    if (Math.abs(crossingX - jump.x) <= jump.halfWidth) return jump;
+  }
+
+  return null;
 }
 
 export function formatRaceTime(milliseconds: number) {

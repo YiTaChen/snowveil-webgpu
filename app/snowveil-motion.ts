@@ -104,6 +104,57 @@ export function downhillSpeedHeadroom(slopeAlongTravel: number) {
   return Math.max(0, -slopeAlongTravel) * 5.2;
 }
 
+export type SnowboardAirborneStep = {
+  jumpHeight: number;
+  jumpVelocity: number;
+  landed: boolean;
+  impactVelocity: number;
+};
+
+/**
+ * Integrate vertical motion in world space, then express it as clearance above
+ * the new terrain sample. A jump therefore follows a ballistic arc while the
+ * snow below drops away or rises into a landing instead of following the ground.
+ */
+export function advanceSnowboardAirborne(
+  previousGroundHeight: number,
+  nextGroundHeight: number,
+  jumpHeight: number,
+  jumpVelocity: number,
+  delta: number,
+): SnowboardAirborneStep {
+  const frameDelta = Math.max(0, Math.min(delta, 0.05));
+  const wasAirborne = jumpVelocity > 0 || jumpHeight > 0.001;
+  if (!wasAirborne || frameDelta === 0) {
+    return {
+      jumpHeight: Math.max(0, jumpHeight),
+      jumpVelocity,
+      landed: false,
+      impactVelocity: 0,
+    };
+  }
+
+  const nextVelocity = jumpVelocity - 10.8 * frameDelta;
+  const previousWorldHeight = previousGroundHeight + Math.max(0, jumpHeight);
+  const nextWorldHeight = previousWorldHeight + nextVelocity * frameDelta;
+  const nextClearance = nextWorldHeight - nextGroundHeight;
+  if (nextClearance <= 0) {
+    return {
+      jumpHeight: 0,
+      jumpVelocity: 0,
+      landed: true,
+      impactVelocity: nextVelocity,
+    };
+  }
+
+  return {
+    jumpHeight: nextClearance,
+    jumpVelocity: nextVelocity,
+    landed: false,
+    impactVelocity: 0,
+  };
+}
+
 export function landingImpactForVelocity(verticalVelocity: number) {
   return Math.min(Math.max(-verticalVelocity / 4.8, 0), 1);
 }

@@ -656,3 +656,30 @@ dispatch, geometry rebuild, dependency, or allocation.
 Browser diagnostics were empty after the complete run. These are observed HUD
 readings from the ordinary adaptive path, not a claim that controller arithmetic
 improves GPU performance.
+
+## 2026-09-01 — Ridge Run 02 natural-freestyle cost
+
+Ridge Run's static course geometry contains 6,518 vertices, 15,912 indices, and
+5,304 triangles in the same single indexed world draw used by Downline. Its
+immutable vertex and index buffers total 246,152 bytes. The increase over the
+straight course is the paired pole, reflector, cap, and pennant marker at each
+of two kicker lips; the ramp and snow mounds are height-field terrain rather
+than separate meshes or draws.
+
+CPU and WGSL terrain each evaluate three bounded roller terms, four asymmetric
+mound terms, two kicker profiles, and restrained wind-ridge/rut terms only in
+Ridge Run mode. Jump crossing scans the course's two-feature array and airborne
+motion adds scalar world-height integration to the established frame loop.
+There is no new render pass, texture, sampler, compute dispatch, animation
+buffer, physics package, per-frame geometry rebuild, or heap allocation.
+
+| Clean single-tab state | Observed HUD | Result |
+| --- | ---: | --- |
+| early rough-terrain descent, 1280×720 | 60 FPS · P95 17.6 ms · 1% 56 · 100% | retained |
+| first physical kicker, 1280×720 | 60 FPS · P95 17.7 ms · 1% 29 · 100% | retained airborne state |
+| second physical kicker, 1280×720 | 60 FPS · P95 17.2 ms · 1% 57 · 100% | retained airborne state |
+| completed Ridge Run result, 1280×720 | 60 FPS · P95 17.3 ms · 1% 57 · 100% | retained result flow |
+
+Browser diagnostics were empty after the complete run, retry, hub return, and
+course reselection. These are active preview observations, not a cross-device
+benchmark or a claim of native-1440p 60 FPS.

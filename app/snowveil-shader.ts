@@ -1,3 +1,22 @@
+import {
+  RIDGE_RUN_FINISH_Z,
+  RIDGE_RUN_JUMPS,
+  RIDGE_RUN_MOUNDS,
+} from "./snowveil-course-features.ts";
+
+const wgslNumber = (value: number) =>
+  Number.isInteger(value) ? value.toFixed(1) : value.toString();
+
+const ridgeRunMoundsWgsl = RIDGE_RUN_MOUNDS.map(
+  (mound) =>
+    `courseHeight = courseHeight + snowCourseMound(point, vec2<f32>(${wgslNumber(mound.x)}, ${wgslNumber(mound.z)}), vec2<f32>(${wgslNumber(mound.radiusX)}, ${wgslNumber(mound.radiusZ)}), ${wgslNumber(mound.height)});`,
+).join("\n  ");
+
+const ridgeRunJumpsWgsl = RIDGE_RUN_JUMPS.map(
+  (jump) =>
+    `courseHeight = courseHeight + snowCourseKicker(point, vec2<f32>(${wgslNumber(jump.x)}, ${wgslNumber(jump.lipZ)}), ${wgslNumber(jump.halfWidth)}, ${wgslNumber(jump.approachLength)}, ${wgslNumber(jump.height)}, ${wgslNumber(jump.dropLength)});`,
+).join("\n  ");
+
 const sharedUniforms = /* wgsl */ `
 struct Globals {
   viewport: vec4<f32>,
@@ -17,6 +36,71 @@ struct Globals {
 };
 
 @group(0) @binding(0) var<uniform> globals: Globals;
+
+fn snowCourseMound(
+  point: vec2<f32>,
+  center: vec2<f32>,
+  radii: vec2<f32>,
+  height: f32,
+) -> f32 {
+  let local = (point - center) / radii;
+  return exp(-dot(local, local) * 1.35) * height;
+}
+
+fn snowCourseKicker(
+  point: vec2<f32>,
+  center: vec2<f32>,
+  halfWidth: f32,
+  approachLength: f32,
+  height: f32,
+  dropLength: f32,
+) -> f32 {
+  let lateral = 1.0 - smoothstep(halfWidth, halfWidth + 1.25, abs(point.x - center.x));
+  let approach = clamp((center.y + approachLength - point.y) / approachLength, 0.0, 1.0);
+  let lipDrop = smoothstep(center.y - dropLength, center.y, point.y);
+  return pow(approach, 1.45) * lipDrop * height * lateral;
+}
+
+fn authoredCourseTerrain(point: vec2<f32>, baseHeight: f32) -> f32 {
+  let courseMode = globals.course.x;
+  if (courseMode < 0.5) {
+    return baseHeight;
+  }
+
+  var blendInner = globals.course.w + 1.0;
+  var blendOuter = globals.course.w + 10.3;
+  if (courseMode > 1.5) {
+    blendInner = globals.course.w + 0.9;
+    blendOuter = globals.course.w + 8.5;
+  }
+  let lateralBlend = 1.0 - smoothstep(blendInner, blendOuter, abs(point.x));
+  let longitudinalBlend =
+    smoothstep(globals.course.z - 11.0, globals.course.z - 6.0, point.y) *
+    (1.0 - smoothstep(globals.course.y + 5.0, globals.course.y + 13.0, point.y));
+
+  var courseHeight = -0.68 + (point.y - globals.course.z) * 0.13;
+  courseHeight = courseHeight +
+    sin(point.x * 0.31 + point.y * 0.038) * 0.055 +
+    sin(point.x * 0.12 - point.y * 0.021) * 0.035;
+
+  if (courseMode > 1.5) {
+    let brokenGroom =
+      sin(point.x * 0.44 + point.y * 0.13) * 0.065 +
+      sin(point.x * 0.19 - point.y * 0.57 + 1.8) * 0.045 +
+      sin(point.x * 0.91 + point.y * 0.33 - 0.7) * 0.026;
+    let windRuts = sin(point.y * 0.83 + sin(point.x * 0.37) * 1.6) * 0.03;
+    let naturalRollers =
+      exp(-pow((point.y - 31.0) / 5.8, 2.0)) * 0.24 -
+      exp(-pow((point.y - 1.0) / 6.4, 2.0)) * 0.13 +
+      exp(-pow((point.y + 34.0) / 5.2, 2.0)) * 0.19;
+    courseHeight = -1.05 + (point.y - ${wgslNumber(RIDGE_RUN_FINISH_Z)}) * 0.115;
+    courseHeight = courseHeight + brokenGroom + windRuts + naturalRollers;
+    ${ridgeRunMoundsWgsl}
+    ${ridgeRunJumpsWgsl}
+  }
+
+  return mix(baseHeight, courseHeight, lateralBlend * longitudinalBlend);
+}
 `;
 
 export const snowveilSkyShader = /* wgsl */ `
@@ -456,15 +540,7 @@ fn terrainBaseHeight(point: vec2<f32>) -> f32 {
   let outcrop = outcropField(point);
   let outcropLift = smoothstep(0.12, 0.58, outcrop) * 1.55 + smoothstep(0.46, 0.78, outcrop) * 0.32;
   let baseHeight = -0.72 + broad + longSwell + drifts + ridges + heroDune + foregroundDip + farRise + outcropLift;
-  let lateralBlend = 1.0 - smoothstep(8.2, 17.5, abs(point.x));
-  let longitudinalBlend =
-    smoothstep(-45.0, -39.0, point.y) * (1.0 - smoothstep(36.0, 45.0, point.y));
-  let groomedUndulation =
-    sin(point.x * 0.31 + point.y * 0.038) * 0.055 +
-    sin(point.x * 0.12 - point.y * 0.021) * 0.035;
-  let courseHeight = -0.68 + (point.y + 32.0) * 0.13 + groomedUndulation;
-  let courseBlend = lateralBlend * longitudinalBlend * globals.course.x;
-  return mix(baseHeight, courseHeight, courseBlend);
+  return authoredCourseTerrain(point, baseHeight);
 }
 
 fn terrainHeight(point: vec2<f32>) -> f32 {
@@ -561,7 +637,8 @@ fn actorCastShadow(point: vec2<f32>, sunDirection: vec3<f32>) -> f32 {
       beaconCastShadow(point, globals.beaconC, shadowSlope)
     )
   );
-  return max(rider, max(board * 0.52, beacons * 0.62 * (1.0 - globals.course.x)));
+  let nonCourse = 1.0 - step(0.5, globals.course.x);
+  return max(rider, max(board * 0.52, beacons * 0.62 * nonCourse));
 }
 
 @vertex
@@ -753,7 +830,7 @@ fn fsTerrain(input: TerrainVertexOut) -> @location(0) vec4<f32> {
     vec3<f32>(0.035, 0.5, 1.0) *
     ritualMark *
     (0.2 + fresnel * 0.18) *
-    (1.0 - globals.course.x);
+    (1.0 - step(0.5, globals.course.x));
   let rock = vec3<f32>(0.065, 0.105, 0.14) * (0.72 + warmSun * direct * shadow * 0.65) + vec3<f32>(0.12, 0.19, 0.25) * fresnel * 0.22;
   snow = mix(snow, rock, rockReveal * 0.78);
 
@@ -857,15 +934,7 @@ fn terrainHeight(point: vec2<f32>) -> f32 {
   let outcrop = outcropField(point);
   let outcropLift = smoothstep(0.12, 0.58, outcrop) * 1.55 + smoothstep(0.46, 0.78, outcrop) * 0.32;
   let baseHeight = -0.72 + broad + longSwell + drifts + ridges + heroDune + foregroundDip + farRise + outcropLift;
-  let lateralBlend = 1.0 - smoothstep(8.2, 17.5, abs(point.x));
-  let longitudinalBlend =
-    smoothstep(-45.0, -39.0, point.y) * (1.0 - smoothstep(36.0, 45.0, point.y));
-  let groomedUndulation =
-    sin(point.x * 0.31 + point.y * 0.038) * 0.055 +
-    sin(point.x * 0.12 - point.y * 0.021) * 0.035;
-  let courseHeight = -0.68 + (point.y + 32.0) * 0.13 + groomedUndulation;
-  let courseBlend = lateralBlend * longitudinalBlend * globals.course.x;
-  return mix(baseHeight, courseHeight, courseBlend) + snowDeformation(point);
+  return authoredCourseTerrain(point, baseHeight) + snowDeformation(point);
 }
 
 @compute @workgroup_size(64)

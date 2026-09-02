@@ -68,6 +68,15 @@ the actual start, finish, collision, or timing rules. Use
 same physical rider through repeated left-right edge changes and full S-shaped
 turns rather than steering down the centre line.
 
+Append `?course=ridge-run` to enter the second course, an 84-metre natural
+freestyle descent. Ridge Run 02 keeps the shared rider, race state, controls,
+snow history, boundary hardware, timer, and result flow, but supplies its own
+wind-broken surface, three broad rollers, four asymmetric snow mounds, and two
+terrain-authored kickers. Crossing either kicker lip inside its marked lane at
+speed produces a world-space ballistic jump; the rider does not merely follow
+the terrain downward. `?course=ridge-run&demo` runs the same physics with held
+acceleration for repeatable jump, landing, and finish QA.
+
 ## Originality and licensing
 
 No reference-project code or assets are copied into this repository. The current
@@ -193,6 +202,10 @@ Original project code is released under the [MIT License](./LICENSE).
     speed-shaped direction following, and faster opposite-edge release let the
     rider cross the fall line repeatedly; a deterministic S-turn route verifies
     the same controller inside the existing Downline corridor.
+34. Natural-freestyle course pass — Ridge Run 02 reuses the established race
+    architecture while adding shared-data wind roughness, asymmetric snow
+    mounds, terrain-coupled jump markers, two physical kicker lips, and
+    world-space takeoff/landing integration verified through a complete run.
 
 The current build is a polished playable vertical slice, not a claim of a full
 AAA production or a hundred-million-particle physical simulation. See

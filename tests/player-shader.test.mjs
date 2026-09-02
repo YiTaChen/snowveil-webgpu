@@ -21,11 +21,15 @@ test("slope boundary uses world geometry, course colors, and atmospheric depth",
   assert.match(snowveilBoundaryShader, /input\.part == 7u/);
 });
 
-test("shared GPU globals select the same groomed course terrain across render passes", () => {
+test("shared GPU globals select both groomed and feature terrain across render passes", () => {
   for (const shader of [snowveilTerrainShader, snowveilSpindriftShader]) {
     assert.match(shader, /globals\.course\.x/);
-    assert.match(shader, /let courseHeight = -0\.68 \+ \(point\.y \+ 32\.0\) \* 0\.13/);
-    assert.match(shader, /mix\(baseHeight, courseHeight, courseBlend\)/);
+    assert.match(shader, /fn authoredCourseTerrain\(point: vec2<f32>, baseHeight: f32\)/);
+    assert.match(shader, /courseHeight = -0\.68 \+ \(point\.y - globals\.course\.z\) \* 0\.13/);
+    assert.match(shader, /if \(courseMode > 1\.5\)/);
+    assert.match(shader, /fn snowCourseKicker\(/);
+    assert.match(shader, /fn snowCourseMound\(/);
+    assert.match(shader, /return mix\(baseHeight, courseHeight, lateralBlend \* longitudinalBlend\)/);
   }
 });
 

@@ -292,11 +292,17 @@ canvas {
   outline-offset: 3px;
 }
 
-.snowveil__course-switch {
+.snowveil__course-nav {
   position: absolute;
   top: clamp(66px, 7.2vw, 96px);
   right: clamp(22px, 4vw, 58px);
   z-index: 2;
+  display: grid;
+  justify-items: end;
+  gap: 8px;
+}
+
+.snowveil__course-switch {
   display: flex;
   align-items: center;
   gap: 9px;
@@ -644,9 +650,13 @@ canvas {
     top: 134px;
   }
 
-  .snowveil__course-switch {
+  .snowveil__course-nav {
     top: 64px;
     right: 22px;
+    gap: 6px;
+  }
+
+  .snowveil__course-switch {
     max-width: 154px;
     font-size: 7px;
   }
@@ -815,6 +825,7 @@ canvas {
 
   .snowveil__race-menu,
   .snowveil__race-overlay,
+  .snowveil__course-nav,
   .snowveil__course-switch {
     animation: none;
     transition: none;

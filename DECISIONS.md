@@ -852,3 +852,35 @@ separate physics scene. It alternates a bounded target heading through the same
 input smoothing, board yaw, velocity following, terrain, boundary, and finish
 systems. A 120 Hz controller test proves both sides exceed 1.5 metres while the
 entire linked sequence stays inside the existing 6.65-metre half-corridor.
+
+## 2026-09-01 — Natural freestyle features share one physical terrain source
+
+Ridge Run 02 is another `SnowveilCourse`, not another scene or render loop. The
+course definition owns only its identity, dimensions, start prompt, and jump
+features. The established rider, controls, camera, snow history, powder, cloth,
+spindrift, audio, race state, result dialog, and corridor recovery remain the
+same systems used by Frost Rite and Downline. The hub enumerates the course
+registry, so a later discipline does not require another hard-coded switch.
+
+The retained terrain is intentionally imperfect without becoming random visual
+noise. A descending base is layered with restrained multi-frequency wind
+ridges, shallow cross-track ruts, three broad natural rollers, and four unequal
+snow mounds placed off the fall line. Two authored kicker profiles rise through
+a smooth approach and release at a defined lip. Their dimensions live in
+`snowveil-course-features.ts` and generate both CPU contact math and WGSL terrain
+math, preventing the visible snow and snowboard collision surface from drifting
+apart.
+
+Following the terrain after a lip was rejected because it reads as a fast bump,
+not a jump. Crossing a marked lip within its lane and minimum-speed envelope now
+injects vertical velocity. `advanceSnowboardAirborne` integrates absolute world
+height against gravity, converts it back to clearance over each new ground
+sample, and reports the real landing impact. This lets the slope fall away
+beneath the rider and lets a rising landing meet the board without a duplicate
+physics engine. Manual Space jumping still uses the same airborne state.
+
+Mesh ramps, a hidden launch trigger unrelated to the visible surface, duplicated
+WGSL constants, downloaded terrain scans, resort models, and terrain-park logos
+were rejected. The only additional geometry is paired original coral lip
+markers made with the existing tube/panel builder. No external model, texture,
+height map, animation, sound, footage, or third-party art enters the build.
